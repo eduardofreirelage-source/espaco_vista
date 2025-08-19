@@ -1,1837 +1,416 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maestro Food Dashboard - COM UPLOAD</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            color: white;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .project-badge {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-            display: inline-block;
-            margin: 5px;
-        }
-
-        .status-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            text-align: center;
-        }
-
-        .status-item {
-            color: white;
-        }
-
-        .status-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
-
-        .status-value {
-            font-size: 1.4rem;
-            font-weight: bold;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .loading-content {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            width: 90%;
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #28a745;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #f0f0f0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #28a745, #20c997);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .main-content {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .content-header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .content-body {
-            padding: 30px;
-        }
-
-        /* SISTEMA DE ABAS */
-        .tabs-container {
-            margin-bottom: 30px;
-        }
-
-        .tabs-nav {
-            display: flex;
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 5px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 15px 20px;
-            border: none;
-            background: transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .tab-button.active {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        .tab-button:hover:not(.active) {
-            background: #e9ecef;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* UPLOAD DE DADOS */
-        .upload-section {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            text-align: center;
-        }
-
-        .upload-area {
-            border: 3px dashed #28a745;
-            border-radius: 15px;
-            padding: 40px;
-            margin: 20px 0;
-            background: white;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .upload-area:hover {
-            border-color: #20c997;
-            background: #f8fff9;
-        }
-
-        .upload-area.dragover {
-            border-color: #20c997;
-            background: #e8f5e8;
-            transform: scale(1.02);
-        }
-
-        .upload-icon {
-            font-size: 3rem;
-            color: #28a745;
-            margin-bottom: 15px;
-        }
-
-        .upload-text {
-            font-size: 1.2rem;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .upload-subtext {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .upload-progress {
-            margin-top: 20px;
-            display: none;
-        }
-
-        .progress-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .file-preview {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            display: none;
-        }
-
-        .file-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .file-icon {
-            font-size: 2rem;
-            color: #28a745;
-        }
-
-        .file-details h4 {
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        .file-details p {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .column-mapping {
-            margin-top: 20px;
-        }
-
-        .mapping-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .mapping-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .mapping-arrow {
-            color: #28a745;
-            font-weight: bold;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            font-weight: 500;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .filters-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-        }
-
-        .filters-title {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.3em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .filter-label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #555;
-        }
-
-        .filter-input {
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        .filter-input:focus {
-            outline: none;
-            border-color: #28a745;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-info {
-            background: #17a2b8;
-            color: white;
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #212529;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .metric-card {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            border-left: 5px solid #28a745;
-            transition: transform 0.3s ease;
-        }
-
-        .metric-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .metric-title {
-            color: #666;
-            font-size: 0.9em;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .metric-value {
-            font-size: 2.2em;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .metric-change {
-            font-size: 0.9em;
-            color: #888;
-        }
-
-        .chart-container {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-        }
-
-        .chart-title {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.3em;
-        }
-
-        .data-table {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .table-header {
-            background: #f8f9fa;
-            padding: 20px 25px;
-            margin: 0;
-            color: #333;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .table-container {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #555;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        tr:hover {
-            background: #f8f9fa;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-
-        .pagination button {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .pagination button:hover {
-            background: #f0f0f0;
-        }
-
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .page-info {
-            font-weight: 600;
-            color: #555;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2em;
-            }
-            
-            .filter-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .metrics-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .button-group {
-                flex-direction: column;
-            }
-            
-            .status-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .tabs-nav {
-                flex-direction: column;
-            }
-
-            .mapping-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DASHBOARD — CFO (v2.9.10 Light)</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect x="0" y="0" width="128" height="128" rx="24" fill="%232f6ef7"/><text x="64" y="78" text-anchor="middle" font-family="Arial" font-size="56" fill="white">CFO</text></svg>'/>
+<style>
+  :root{--bg:#f6f8fb;--card:#ffffff;--ink:#0b1220;--muted:#667085;--line:#e6e7eb;--pri:#2f6ef7;--ok:#10b981;--down:#ef4444;--chip:#eef2ff;--bar:#334155}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu}
+  .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  h1{margin:0;font-size:28px;letter-spacing:.2px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .btn.clear{gap:6px}
+  .section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(10,18,32,.05);margin-bottom:12px}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .sec-title{display:flex;align-items:center;gap:10px;font-weight:700}
+  .ico{width:16px;height:16px;color:#475569}
+  .muted{color:var(--muted)}
+  .row{display:grid;gap:12px}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  .cols-2{grid-template-columns:repeat(2,1fr)}
+  input[type="date"],.msel-btn{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .chips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+  .chip{padding:10px 0;border:1px solid var(--line);border-radius:10px;background:var(--chip);cursor:pointer;text-align:center;font-weight:700}
+  .chip.active{background:var(--pri);border-color:var(--pri);color:#fff}
+  /* multiselect */
+  .msel{position:relative}
+  .msel-btn{cursor:pointer;text-align:left}
+  .msel-btn:after{content:"▾";float:right;color:#475569}
+  .msel-panel{position:absolute;z-index:40;top:110%;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.08);max-height:260px;overflow:auto;padding:8px;display:none}
+  .msel.open .msel-panel{display:block}
+  .msel-search{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+  .msel-opt{display:flex;align-items:center;gap:8px;padding:6px;border-radius:8px}
+  .msel-opt:hover{background:#f3f4f6}
+  /* KPIs */
+  .krow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .kpi{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px 14px;box-shadow:0 8px 24px rgba(10,18,32,.05)}
+  .kpi .bar{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:14px 0 0 14px;background:var(--bar)}
+  .kpi h4{margin:0 0 6px;font-size:13px;color:#475569;display:flex;align-items:center}
+  .kpi h4 .spacer{flex:1}
+  .kpi .val{font-size:22px;font-weight:800}
+  .kpi .sub{font-size:12px;color:#667085;margin-top:2px}
+  .delta{display:inline-flex;gap:6px;align-items:center;padding:2px 10px;border-radius:999px;border:1px solid var(--line);font-weight:800;font-size:13px;margin-left:12px}
+  .delta svg{width:12px;height:12px}
+  .delta.up{color:var(--ok);border-color:#86efac}
+  .delta.down{color:var(--down);border-color:#fecaca}
+  .delta.flat{color:#64748b}
+  /* Gráficos */
+  .chart-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 12px 8px 12px;box-shadow:0 8px 24px rgba(10,18,32,.05)}
+  .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{padding:6px 10px;border:0;background:#fff;cursor:pointer;font-weight:700}
+  .seg button.active{background:var(--pri);color:#fff}
+  .chart-box{height:280px}
+</style>
 </head>
 <body>
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <h3>📊 Maestro Food Dashboard</h3>
-            <p id="loadingText">Conectando ao projeto...</p>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <p id="progressText">0%</p>
-            <div style="margin-top: 15px; font-size: 0.9em; color: #666;">
-                📋 Sistema com upload de dados<br>
-                🚫 Filtro de registros inválidos ativo
-            </div>
-        </div>
+<div class="wrap">
+  <div class="top">
+    <h1>DASHBOARD</h1>
+    <div class="right">
+      <button id="btnUpload" class="btn">📤 Carregar Excel</button>
     </div>
+  </div>
 
-    <div class="dashboard-container">
-        <div class="header">
-            <h1>📊 Maestro Food Dashboard</h1>
-            <span class="project-badge">📤 COM UPLOAD</span>
-            <span class="project-badge">📋 EXCEL/CSV</span>
-        </div>
-
-        <div class="status-container">
-            <div class="status-grid">
-                <div class="status-item">
-                    <div class="status-label">Total de Registros</div>
-                    <div class="status-value" id="totalRecords">0</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Registros Válidos</div>
-                    <div class="status-value" id="validRecords">0</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Último Upload</div>
-                    <div class="status-value" id="lastUpload">Nenhum</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Status</div>
-                    <div class="status-value" id="connectionStatus">Conectando...</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="main-content">
-            <div class="content-header">
-                <h2>📊 Dashboard com Upload de Dados</h2>
-                <p>Importe arquivos Excel/CSV diretamente pela interface</p>
-            </div>
-
-            <div class="content-body">
-                <div class="tabs-container">
-                    <div class="tabs-nav">
-                        <button class="tab-button active" onclick="switchTab('upload')">
-                            📤 Carregar Dados
-                        </button>
-                        <button class="tab-button" onclick="switchTab('dashboard')">
-                            📊 Dashboard
-                        </button>
-                        <button class="tab-button" onclick="switchTab('config')">
-                            ⚙️ Configurações
-                        </button>
-                    </div>
-
-                    <!-- ABA UPLOAD DE DADOS -->
-                    <div id="uploadTab" class="tab-content active">
-                        <div class="alert alert-info">
-                            <strong>📤 Upload de Dados:</strong> Arraste e solte seu arquivo Excel (.xlsx) ou CSV (.csv) na área abaixo, ou clique para selecionar.
-                            <br><strong>📋 Formatos Suportados:</strong> Excel (.xlsx), CSV (.csv)
-                            <br><strong>🎯 Estrutura:</strong> O arquivo deve ter as mesmas colunas do template Excel fornecido.
-                        </div>
-
-                        <div class="upload-section">
-                            <h3>📤 Importar Dados do Banco</h3>
-                            
-                            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-                                <div class="upload-icon">📁</div>
-                                <div class="upload-text">Clique aqui ou arraste seu arquivo</div>
-                                <div class="upload-subtext">Suporta Excel (.xlsx) e CSV (.csv) | Máximo 150MB</div>
-                            </div>
-
-                            <input type="file" id="fileInput" class="file-input" accept=".xlsx,.csv" onchange="handleFileSelect(event)">
-
-                            <div class="upload-progress" id="uploadProgress">
-                                <div class="progress-info">
-                                    <span id="progressLabel">Processando...</span>
-                                    <span id="progressPercent">0%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="uploadProgressFill"></div>
-                                </div>
-                            </div>
-
-                            <div class="file-preview" id="filePreview">
-                                <div class="file-info">
-                                    <div class="file-icon">📊</div>
-                                    <div class="file-details">
-                                        <h4 id="fileName">arquivo.xlsx</h4>
-                                        <p id="fileSize">Tamanho: 0 KB | Linhas: 0</p>
-                                    </div>
-                                </div>
-
-                                <div class="column-mapping">
-                                    <h4>🔗 Mapeamento de Colunas</h4>
-                                    <div class="mapping-grid" id="columnMapping">
-                                        <!-- Mapeamento será preenchido dinamicamente -->
-                                    </div>
-                                </div>
-
-                                <div class="button-group" style="margin-top: 20px;">
-                                    <button class="btn btn-success" onclick="importData()" id="importBtn">
-                                        📤 Importar Dados
-                                    </button>
-                                    <button class="btn btn-secondary" onclick="clearUpload()">
-                                        🗑️ Limpar
-                                    </button>
-                                    <button class="btn btn-info" onclick="previewData()">
-                                        👁️ Visualizar Dados
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-warning" id="uploadWarning" style="display: none;">
-                            <strong>⚠️ Atenção:</strong> <span id="warningMessage"></span>
-                        </div>
-
-                        <div class="alert alert-success" id="uploadSuccess" style="display: none;">
-                            <strong>✅ Sucesso:</strong> <span id="successMessage"></span>
-                        </div>
-
-                        <div class="alert alert-danger" id="uploadError" style="display: none;">
-                            <strong>❌ Erro:</strong> <span id="errorMessage"></span>
-                        </div>
-                    </div>
-
-                    <!-- ABA DASHBOARD -->
-                    <div id="dashboardTab" class="tab-content">
-                        <div class="alert alert-success">
-                            <strong>📊 Dashboard Ativo:</strong> Visualize e analise seus dados importados.
-                            <br><strong>🚫 Filtro Automático:</strong> Registros com loja vazia são removidos automaticamente.
-                        </div>
-
-                        <div class="filters-section">
-                            <h3 class="filters-title">
-                                🔍 Filtros
-                                <span id="currentPeriod" style="font-size: 0.8em; color: #666;">Carregando...</span>
-                            </h3>
-                            
-                            <div class="filter-grid">
-                                <div class="filter-group">
-                                    <label class="filter-label">🏢 Unidade</label>
-                                    <select class="filter-input" id="unidadeFilter">
-                                        <option value="">Todas as Unidades</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">🏪 Loja</label>
-                                    <select class="filter-input" id="lojaFilter">
-                                        <option value="">Todas as Lojas</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">📋 Tipo</label>
-                                    <select class="filter-input" id="tipoFilter">
-                                        <option value="">Todos os Tipos</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">🌅 Turno</label>
-                                    <select class="filter-input" id="turnoFilter">
-                                        <option value="">Todos os Turnos</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">📱 Canal</label>
-                                    <select class="filter-input" id="canalFilter">
-                                        <option value="">Todos os Canais</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">💳 Pagamento</label>
-                                    <select class="filter-input" id="pagamentoFilter">
-                                        <option value="">Todas as Formas</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">📅 Data Inicial</label>
-                                    <input type="date" class="filter-input" id="dataInicial">
-                                </div>
-                                
-                                <div class="filter-group">
-                                    <label class="filter-label">📅 Data Final</label>
-                                    <input type="date" class="filter-input" id="dataFinal">
-                                </div>
-                            </div>
-                            
-                            <div class="button-group">
-                                <button class="btn btn-primary" onclick="applyFilters()">🔍 Aplicar Filtros</button>
-                                <button class="btn btn-secondary" onclick="clearFilters()">🔄 Limpar Filtros</button>
-                                <button class="btn btn-info" onclick="loadData()">🔄 Recarregar</button>
-                                <button class="btn btn-success" onclick="showStatistics()">📊 Estatísticas</button>
-                            </div>
-                        </div>
-
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <h4 class="metric-title">📦 Total de Pedidos</h4>
-                                <div class="metric-value" id="totalPedidos">-</div>
-                                <div class="metric-change">Dados válidos</div>
-                            </div>
-                            
-                            <div class="metric-card">
-                                <h4 class="metric-title">🎯 Ticket Médio</h4>
-                                <div class="metric-value" id="ticketMedio">R$ -</div>
-                                <div class="metric-change">Sem registros inválidos</div>
-                            </div>
-                            
-                            <div class="metric-card">
-                                <h4 class="metric-title">💰 Faturamento Total</h4>
-                                <div class="metric-value" id="faturamentoTotal">R$ -</div>
-                                <div class="metric-change">Dados limpos</div>
-                            </div>
-                            
-                            <div class="metric-card">
-                                <h4 class="metric-title">📈 Faturamento/Dia</h4>
-                                <div class="metric-value" id="faturamentoDia">R$ -</div>
-                                <div class="metric-change">Média diária</div>
-                            </div>
-                            
-                            <div class="metric-card">
-                                <h4 class="metric-title">👥 Consumidores Únicos</h4>
-                                <div class="metric-value" id="consumidoresUnicos">-</div>
-                                <div class="metric-change">Clientes diferentes</div>
-                            </div>
-                            
-                            <div class="metric-card">
-                                <h4 class="metric-title">🎫 Taxa de Cupom</h4>
-                                <div class="metric-value" id="taxaCupom">-%</div>
-                                <div class="metric-change">Pedidos com cupom</div>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <h3 class="chart-title">📊 Receita Diária</h3>
-                            <canvas id="receitaChart" width="400" height="200"></canvas>
-                        </div>
-
-                        <div class="data-table">
-                            <h3 class="table-header">📋 Dados Detalhados</h3>
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Data</th>
-                                            <th>Loja</th>
-                                            <th>Consumidor</th>
-                                            <th>Tipo</th>
-                                            <th>Canal</th>
-                                            <th>Total</th>
-                                            <th>Cupom</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tableBody">
-                                        <tr>
-                                            <td colspan="7" style="text-align: center; padding: 40px;">Carregando dados...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="pagination">
-                                <button onclick="previousPage()">⬅️ Anterior</button>
-                                <span class="page-info" id="pageInfo">Página 1 de 1</span>
-                                <button onclick="nextPage()">Próxima ➡️</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ABA CONFIGURAÇÕES -->
-                    <div id="configTab" class="tab-content">
-                        <div class="alert alert-info">
-                            <strong>⚙️ Configurações do Sistema:</strong> Gerencie dados e configurações do dashboard.
-                        </div>
-
-                        <div class="filters-section">
-                            <h3 class="filters-title">🗄️ Gerenciamento de Dados</h3>
-                            
-                            <div class="button-group">
-                                <button class="btn btn-info" onclick="showDatabaseInfo()">📊 Info do Banco</button>
-                                <button class="btn btn-warning" onclick="clearAllData()">🗑️ Limpar Todos os Dados</button>
-                                <button class="btn btn-success" onclick="exportData()">📤 Exportar Dados</button>
-                                <button class="btn btn-secondary" onclick="showDebugInfo()">🔧 Debug</button>
-                            </div>
-                        </div>
-
-                        <div class="filters-section">
-                            <h3 class="filters-title">📋 Template de Importação</h3>
-                            <p>Use este template para preparar seus dados antes da importação:</p>
-                            
-                            <div class="button-group">
-                                <button class="btn btn-primary" onclick="downloadTemplate()">📥 Baixar Template Excel</button>
-                                <button class="btn btn-secondary" onclick="downloadTemplateCSV()">📥 Baixar Template CSV</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <!-- Filtros de Data -->
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-title">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        Filtros de Data
+      </div>
+      <button id="btnClear" class="btn clear">✖ Limpar filtros</button>
     </div>
+    <div class="row cols-3">
+      <div><div class="muted" style="margin-bottom:6px;">Intervalo (início)</div><input type="date" id="fDe"></div>
+      <div><div class="muted" style="margin-bottom:6px;">Intervalo (fim)</div><input type="date" id="fAte"></div>
+      <div>
+        <div class="muted" style="margin-bottom:6px;">Período rápido</div>
+        <div class="chips">
+          <button class="chip" data-q="7">07</button><button class="chip" data-q="15">15</button>
+          <button class="chip active" data-q="30">30</button><button class="chip" data-q="60">60</button>
+          <button class="chip" data-q="90">90</button><button class="chip" data-q="120">120</button>
+        </div>
+        <div id="periodoInfo" class="muted" style="margin-top:6px;font-size:12px;">—</div>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        // 🚀 CONFIGURAÇÃO PARA PROJETO COM UPLOAD
-        const SUPABASE_URL = 'https://befjdgvxwkxqhvqwhzog.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlZmpkZ3Z4d2t4cWh2cXdoem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyODUwMjcsImV4cCI6MjA3MDg2MTAyN30.j2wDCGYEWjKiCcfvQoI8M14YdNrqz-YUphky4KNq5Qw';
-        
-        // Variáveis globais
-        let supabaseClient = null;
-        let allData = [];
-        let filteredData = [];
-        let currentPage = 1;
-        const itemsPerPage = 50;
-        let chart = null;
-        let uploadedFile = null;
-        let parsedData = null;
+  <!-- Filtros -->
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-title">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        Filtros
+      </div>
+      <div id="status" class="muted">—</div>
+    </div>
+    <!-- Linha 1 -->
+    <div class="row cols-3">
+      <div><div class="muted" style="margin-bottom:6px;">Unidade</div><div id="ms-unids" class="msel"><button class="msel-btn">Todas as unidades</button><div class="msel-panel"></div></div></div>
+      <div><div class="muted" style="margin-bottom:6px;">Nome da Loja</div><div id="ms-lojas" class="msel"><button class="msel-btn">Todas as lojas</button><div class="msel-panel"></div></div></div>
+      <div><div class="muted" style="margin-bottom:6px;">Turno da Venda</div><div id="ms-turnos" class="msel"><button class="msel-btn">Todos os turnos</button><div class="msel-panel"></div></div></div>
+    </div>
+    <!-- Linha 2 -->
+    <div class="row cols-3" style="margin-top:10px;">
+      <div><div class="muted" style="margin-bottom:6px;">Canal de Venda</div><div id="ms-canais" class="msel"><button class="msel-btn">Todos os canais</button><div class="msel-panel"></div></div></div>
+      <div><div class="muted" style="margin-bottom:6px;">Tipo de Pagamento</div><div id="ms-pags" class="msel"><button class="msel-btn">Todos os tipos</button><div class="msel-panel"></div></div></div>
+      <div>
+        <div class="muted" style="margin-bottom:6px;">Cancelado</div>
+        <div id="ms-cancel" class="msel"><button class="msel-btn">Não</button><div class="msel-panel"></div></div>
+      </div>
+    </div>
+  </div>
 
-        // Mapeamento de colunas Excel para Supabase
-        const COLUMN_MAPPING = {
-            'Unidade': 'unidade',
-            'Pedido': 'pedido',
-            'Codigo': 'codigo',
-            ' loja': 'loja',
-            'loja': 'loja',
-            'Tipo': 'tipo',
-            'Turno': 'turno',
-            'Canal': 'canal',
-            'Número do pedido no parceiro': 'numero_pedido_parceiro',
-            'Data': 'data_venda',
-            'Consumidor': 'consumidor',
-            'Cupom': 'cupom',
-            'Pagamento': 'pagamento',
-            'Cancelado': 'cancelado',
-            'Motivo do cancelamento': 'motivo_cancelamento',
-            'Itens': 'itens',
-            'Entrega': 'entrega',
-            'Entregador': 'entregador_id',
-            'Entregador.1': 'entregador_nome',
-            'Bairro': 'bairro',
-            'CEP': 'cep',
-            'Acrescimo': 'acrescimo',
-            'Motivo de acréscimo': 'motivo_acrescimo',
-            'Desconto': 'desconto',
-            'Motivo do desconto': 'motivo_desconto',
-            'Total': 'total',
-            'taxa de serviço': 'taxa_servico'
-        };
+  <!-- KPIs -->
+  <div class="krow">
+    <div class="kpi"><span class="bar"></span><h4><span>Pedidos</span><span class="spacer"></span><span id="d_ped" class="delta flat">—</span></h4><div class="val" id="k_ped">—</div><div class="sub">Anterior: <span id="p_ped">—</span></div></div>
+    <div class="kpi"><span class="bar"></span><h4><span>Ticket Médio</span><span class="spacer"></span><span id="d_tkt" class="delta flat">—</span></h4><div class="val" id="k_tkt">—</div><div class="sub">Anterior: <span id="p_tkt">—</span></div></div>
+    <div class="kpi"><span class="bar"></span><h4><span>Faturamento</span><span class="spacer"></span><span id="d_fat" class="delta flat">—</span></h4><div class="val" id="k_fat">—</div><div class="sub">Anterior: <span id="p_fat">—</span></div></div>
+  </div>
+  <div class="krow" style="margin-top:12px;">
+    <div class="kpi"><span class="bar"></span><h4><span>Faturamento Médio</span><span class="spacer"></span><span id="d_fatmed" class="delta flat">—</span></h4><div class="val" id="k_fatmed">—</div><div class="sub">Anterior: <span id="p_fatmed">—</span></div></div>
+    <div class="kpi"><span class="bar"></span><h4><span>Incentivos</span><span class="spacer"></span><span id="d_des" class="delta flat">—</span></h4><div class="val" id="k_des">—</div><div class="sub">Anterior: <span id="p_des">—</span></div></div>
+    <div class="kpi"><span class="bar"></span><h4><span>% de Incentivos</span><span class="spacer"></span><span id="d_desperc" class="delta flat">—</span></h4><div class="val" id="k_desperc">—</div><div class="sub">Anterior: <span id="p_desperc">—</span></div></div>
+  </div>
+  <div class="krow" style="margin-top:12px;">
+    <div class="kpi"><span class="bar"></span><h4><span>Frete</span><span class="spacer"></span><span id="d_fre" class="delta flat">—</span></h4><div class="val" id="k_fre">—</div><div class="sub">Anterior: <span id="p_fre">—</span></div></div>
+    <div class="kpi"><span class="bar"></span><h4><span>Frete Médio</span><span class="spacer"></span><span id="d_fremed" class="delta flat">—</span></h4><div class="val" id="k_fremed">—</div><div class="sub">Anterior: <span id="p_fremed">—</span></div></div>
+    <div class="kpi"><span class="bar"></span><h4><span>Pedidos Cancelados</span><span class="spacer"></span><span id="d_canc_ped" class="delta flat">—</span></h4><div class="val" id="k_canc_ped">—</div><div class="sub">Participação: <span id="k_canc_part">—</span> (Anterior: <span id="p_canc_part">—</span>)</div></div>
+  </div>
+  <div class="krow" style="margin-top:12px;">
+    <div class="kpi"><span class="bar"></span><h4><span>Valor de Cancelados</span><span class="spacer"></span><span id="d_canc_val" class="delta flat">—</span></h4><div class="val" id="k_canc_val">—</div><div class="sub">Anterior: <span id="p_canc_val">—</span></div></div>
+  </div>
 
-        // Aguardar carregamento completo
-        window.addEventListener('load', function() {
-            console.log('📊 Iniciando Dashboard com Upload...');
-            initDashboard();
-            setupUploadEvents();
-        });
+  <!-- GRÁFICOS -->
+  <div class="section">
+    <div class="sec-head"><div class="sec-title">Gráficos</div></div>
+    <div class="row cols-2">
+      <div class="chart-card"><div class="chart-head"><div class="muted">Vendas por dia da semana</div><div class="seg" data-chart="dow"><button class="seg-btn active" data-mode="total">Total</button><button class="seg-btn" data-mode="media">Média</button></div></div><div class="chart-box"><canvas id="ch_dow"></canvas></div></div>
+      <div class="chart-card"><div class="chart-head"><div class="muted">Vendas por mês</div><div class="seg" data-chart="month"><button class="seg-btn active" data-mode="total">Total</button><button class="seg-btn" data-mode="media">Média</button></div></div><div class="chart-box"><canvas id="ch_month"></canvas></div></div>
+      <div class="chart-card"><div class="chart-head"><div class="muted">Vendas por hora</div><div class="seg" data-chart="hour"><button class="seg-btn active" data-mode="total">Total</button><button class="seg-btn" data-mode="media">Média</button></div></div><div class="chart-box"><canvas id="ch_hour"></canvas></div></div>
+      <div class="chart-card"><div class="chart-head"><div class="muted">Vendas por turno</div><div class="seg" data-chart="turno"><button class="seg-btn active" data-mode="total">Total</button><button class="seg-btn" data-mode="media">Média</button></div></div><div class="chart-box"><canvas id="ch_turno"></canvas></div></div>
+    </div>
+  </div>
+</div>
 
-        // Função para inicializar dashboard
-        function initDashboard() {
-            try {
-                // Criar cliente Supabase
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Cliente Supabase criado');
-                
-                // Atualizar status
-                document.getElementById('connectionStatus').textContent = 'Conectado';
-                
-                // Iniciar carregamento
-                loadData();
-            } catch (error) {
-                console.error('❌ Erro ao inicializar dashboard:', error);
-                document.getElementById('loadingText').textContent = 'Erro ao conectar: ' + error.message;
-                document.getElementById('connectionStatus').textContent = 'Erro';
-            }
-        }
+<!-- libs -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+/* ===== CONFIG ===== */
+const SUPABASE_URL='https://uahmcfzerofhzjvlzrqc.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhaG1jZnplcm9maHpqdmx6cnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNTg2MzQsImV4cCI6MjA3MDczNDYzNH0.lPVr3wmrXAmSMY5j7JFy6mI87T3I2TxhVKV-gLc7_VU';
+const supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+const $=id=>document.getElementById(id);
+const setStatus=(t,k)=>{const el=$('status');el.textContent=t;el.style.color=(k==='err'?'#ef4444':k==='ok'?'#10b981':'#667085')};
 
-        // Função para configurar eventos de upload
-        function setupUploadEvents() {
-            const uploadArea = document.getElementById('uploadArea');
-            const fileInput = document.getElementById('fileInput');
+/* ===== UTIL ===== */
+const money=v=>(v==null||!isFinite(+v))?'R$ 0,00':'R$ '+(+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=v=>(v==null||!isFinite(+v))?'0':(+v).toLocaleString('pt-BR');
+const pctf=v=>(v==null||!isFinite(+v))?'0,0%':((+v)*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+function iso(d){return d.toISOString().slice(0,10)}
+function addDaysISO(isoStr,n){const d=new Date(isoStr+'T00:00:00');d.setDate(d.getDate()+n);return iso(d)}
+function daysLen(de,ate){const d1=new Date(de+'T00:00:00'),d2=new Date(ate+'T00:00:00');return Math.round((d2-d1)/(1000*60*60*24))+1}
+function upSVG(){return '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 3l5 6h-3v8H8V9H5l5-6z"/></svg>'}
+function downSVG(){return '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 17l-5-6h3V3h4v8h3l-5 6z"/></svg>'}
+function parseHour(val){if(val==null)return NaN;const m=String(val).match(/\d{1,2}/);const h=m?+m[0]:NaN;return(h>=0&&h<=23)?h:NaN}
+function inferTurno(h){if(!isFinite(h))return'Dia';if(h<=5)return'Madrugada';if(h<=11)return'Manhã';if(h<=17)return'Tarde';return'Noite'}
+function parseBR(v){if(v==null)return 0;if(typeof v==='number'&&isFinite(v))return v;let s=String(v).trim();if(s==='')return 0;s=s.replace(/[^\d,.\-]/g,'');const c=s.lastIndexOf(','),d=s.lastIndexOf('.');if(d>c){s=s.replace(/,/g,'')}else{s=s.replace(/\./g,'');s=s.replace(',', '.')}const n=Number(s);return isFinite(n)?n:0}
 
-            // Drag and drop events
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('dragover');
-            });
+/* ===== MULTISELECT ===== */
+function MultiSelect(rootId,placeholder){
+  const root=$(rootId),btn=root.querySelector('.msel-btn'),panel=root.querySelector('.msel-panel');
+  let options=[],selected=new Set(),filtered=[];
+  function render(){panel.innerHTML='';const q=document.createElement('input');q.className='msel-search';q.placeholder='Filtrar…';q.addEventListener('input',()=>{filtered=options.filter(v=>String(v).toLowerCase().includes(q.value.toLowerCase()));draw()});panel.appendChild(q);draw()}
+  function draw(){const box=document.createElement('div');(filtered.length?filtered:options).forEach((v)=>{const row=document.createElement('div');row.className='msel-opt';const cb=document.createElement('input');cb.type='checkbox';cb.value=v;cb.checked=selected.has(v);const lb=document.createElement('label');lb.textContent=v;cb.addEventListener('change',()=>{cb.checked?selected.add(v):selected.delete(v);refresh();applyAll()});row.appendChild(cb);row.appendChild(lb);box.appendChild(row)});const olds=[...panel.querySelectorAll('.msel-opt')];olds.forEach(n=>n.remove());panel.appendChild(box)}
+  function refresh(){btn.textContent=selected.size===0?placeholder:`${selected.size} selecionado(s)`}
+  btn.addEventListener('click',()=>root.classList.toggle('open'));
+  document.addEventListener('click',(e)=>{if(!root.contains(e.target))root.classList.remove('open')});
+  return{
+    setOptions(list){options=(list||[]).filter(v=>v!=null&&v!=='').map(String);filtered=options.slice();selected=new Set();render();refresh()},
+    get(){return[...selected]},
+    set(vals,skipApply=false){selected=new Set((vals||[]).map(String));refresh();draw();if(!skipApply)applyAll()}
+  }
+}
 
-            uploadArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-            });
+/* ===== ESTADO / PERÍODO ===== */
+let firstDay='',lastDay='';
+const chips=[...document.querySelectorAll('.chip')];
+const fDe=$('fDe'),fAte=$('fAte'),periodoInfo=$('periodoInfo');
+const ms={unids:MultiSelect('ms-unids','Todas as unidades'),lojas:MultiSelect('ms-lojas','Todas as lojas'),canais:MultiSelect('ms-canais','Todos os canais'),turnos:MultiSelect('ms-turnos','Todos os turnos'),pags:MultiSelect('ms-pags','Todos os tipos'),cancel:MultiSelect('ms-cancel','Todos')};
+function setActiveChip(val){chips.forEach(c=>c.classList.toggle('active',c.dataset.q===String(val)))}
+function applyQuick(val){setActiveChip(val);const ate=lastDay||iso(new Date());const de=addDaysISO(ate,-(Number(val)-1));fDe.value=de;fAte.value=ate;periodoInfo.textContent=`Último dia carregado: ${lastDay||'—'}`;applyAll()}
+$('btnClear').addEventListener('click',()=>{ms.unids.set([],true);ms.lojas.set([],true);ms.canais.set([],true);ms.turnos.set([],true);ms.pags.set([],true);ms.cancel.set(['Não'],true);applyQuick('30')});
+chips.forEach(b=>b.addEventListener('click',()=>applyQuick(b.dataset.q)));
+[fDe,fAte].forEach(inp=>inp.addEventListener('change',()=>{chips.forEach(c=>c.classList.remove('active'));periodoInfo.textContent=`Último dia carregado: ${lastDay||'—'}`;applyAll()}));
 
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    handleFile(files[0]);
-                }
-            });
-        }
+/* ===== PARÂMETROS / escolha da RPC ===== */
+function buildParams(de,ate,overrideCancel=null){
+  const canc=overrideCancel!=null?[overrideCancel]:ms.cancel.get();let p_cancelado=null;
+  if(canc.length===1&&(canc[0]==='Não'||canc[0]==='Sim'))p_cancelado=canc[0];
+  return{p_dini:de,p_dfim:ate,p_unids:ms.unids.get().length?ms.unids.get():null,p_lojas:ms.lojas.get().length?ms.lojas.get():null,p_turnos:ms.turnos.get().length?ms.turnos.get():null,p_canais:ms.canais.get().length?ms.canais.get():null,p_pags:ms.pags.get().length?ms.pags.get():null,p_cancelado}
+}
+function rpcName(params){return params.p_unids?'kpi_vendas_v2':'kpi_vendas'}
+function prepareArgs(name,params){if(name==='kpi_vendas'){const{p_unids,...rest}=params;return rest}return params}
 
-        // Função para alternar abas
-        function switchTab(tabName) {
-            // Remover classe active de todos os botões e conteúdos
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            // Adicionar classe active ao botão e conteúdo selecionado
-            event.target.classList.add('active');
-            document.getElementById(tabName + 'Tab').classList.add('active');
-        }
+/* ===== KPIs ===== */
+function agg(rows){let ped=0,fat=0,des=0,fre=0;for(const r of (rows||[])){ped+=+r.pedidos||0;fat+=+r.fat||0;des+=+r.des||0;fre+=+r.fre||0}return{ped,fat,des,fre}}
+function deltaBadge(el,curr,prev){if(!isFinite(prev)||+prev===0){el.textContent='—';el.className='delta flat';return}const p=((curr-prev)/prev)*100;el.innerHTML=(p>=0?upSVG():downSVG())+' '+Math.abs(p).toFixed(1)+'%';el.className='delta '+(p>=0?'up':'down')}
 
-        // Função para lidar com seleção de arquivo
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
-        }
+/* ===== DISCOVERY + FETCH para gráficos (dados brutos) ===== */
+function normalizeKey(k){return String(k||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'')}
+function findCol(cols,cands){const norm=new Map(cols.map(c=>[normalizeKey(c),c]));for(const c of cands){const hit=norm.get(normalizeKey(c));if(hit)return hit}return null}
+async function discoverColumns(source){
+  try{
+    const r=await supa.from(source).select('*').limit(1);
+    if(r.error)return null;
+    const row=(r.data||[])[0]||{};const cols=Object.keys(row);if(!cols.length)return null;
+    const dateCol=findCol(cols,['dia','data','dt','date','data_pedido','data_venda','emissao','dt_emissao','dataemissao']);
+    if(!dateCol)return null;
+    const hourCol=findCol(cols,['hora','hr','hour','horario','time_hour','hora_venda']);
+    const turnoCol=findCol(cols,['turno','periodo','shift']);
+    const fatCol=findCol(cols,['fat','faturamento','valor_total','valor','total','vlr_total','vl_total','valorfinal','valorliquido','valorbruto']);
+    const pedCol=findCol(cols,['pedidos','qtd_pedidos','qtde','qtd','qtd_ped','n_pedidos','pedido_count']);
+    const lojaCol=findCol(cols,['loja','lojanome','loja_nome','nome_loja','filial','cod_loja','nome_fantasia']);
+    const unidCol=findCol(cols,['unidade','unid','id_unidade','cod_unidade','filial','empresa']);
+    const canalCol=findCol(cols,['canal','canalvenda','canal_venda','origem','plataforma','marketplace']);
+    const pagCol=findCol(cols,['pagamento_base','tipopagamento','tipo_pagamento','pagamento','forma_pagamento']);
+    const cancCol=findCol(cols,['cancelado','canceled','is_cancel','cancel','status_cancelamento']);
+    return{dateCol,hourCol,turnoCol,fatCol,pedCol,lojaCol,unidCol,canalCol,pagCol,cancCol,cols}
+  }catch(_){return null}
+}
+function normCancel(v){const s=String(v??'').trim().toLowerCase();if(['sim','s','true','1','y','yes'].includes(s))return'Sim';if(['nao','não','n','false','0'].includes(s))return'Não';return'Não'}
+async function trySource(source,de,ate){
+  const map=await discoverColumns(source); if(!map) return null;
+  const sel=[map.dateCol,map.hourCol,map.turnoCol,map.fatCol,map.pedCol,map.lojaCol,map.unidCol,map.canalCol,map.pagCol,map.cancCol].filter(Boolean).join(',');
+  let q=supa.from(source).select(sel).gte(map.dateCol,de).lte(map.dateCol,ate);
 
-        // Função para processar arquivo
-        function handleFile(file) {
-            console.log('📁 Processando arquivo:', file.name);
-            
-            // Validar tipo de arquivo
-            const validTypes = ['.xlsx', '.csv'];
-            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-            
-            if (!validTypes.includes(fileExtension)) {
-                showError('Tipo de arquivo não suportado. Use Excel (.xlsx) ou CSV (.csv)');
-                return;
-            }
-            
-            // Validar tamanho (150MB)
-            if (file.size > 150 * 1024 * 1024) {
-                showError('Arquivo muito grande. Máximo 150MB permitido.');
-                return;
-            }
-            
-            uploadedFile = file;
-            
-            // Mostrar informações do arquivo
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileSize').textContent = `Tamanho: ${(file.size / 1024).toFixed(1)} KB`;
-            
-            // Mostrar preview
-            document.getElementById('filePreview').style.display = 'block';
-            
-            // Processar arquivo
-            if (fileExtension === '.xlsx') {
-                processExcelFile(file);
-            } else if (fileExtension === '.csv') {
-                processCSVFile(file);
-            }
-        }
+  const unids=ms.unids.get(); if(unids.length&&map.unidCol) q=q.in(map.unidCol,unids);
+  const lojas=ms.lojas.get(); if(lojas.length&&map.lojaCol) q=q.in(map.lojaCol,lojas);
+  const canais=ms.canais.get(); if(canais.length&&map.canalCol) q=q.in(map.canalCol,canais);
+  const turnos=ms.turnos.get(); if(turnos.length&&map.turnoCol) q=q.in(map.turnoCol,turnos);
+  const pags=ms.pags.get(); if(pags.length&&map.pagCol) q=q.in(map.pagCol,pags);
 
-        // Função para processar arquivo Excel
-        function processExcelFile(file) {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    // Pegar primeira planilha
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    
-                    // Converter para JSON
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    console.log('📊 Dados Excel processados:', jsonData.length, 'linhas');
-                    
-                    parsedData = jsonData;
-                    
-                    // Atualizar informações
-                    document.getElementById('fileSize').textContent = 
-                        `Tamanho: ${(file.size / 1024).toFixed(1)} KB | Linhas: ${jsonData.length}`;
-                    
-                    // Mostrar mapeamento de colunas
-                    showColumnMapping(Object.keys(jsonData[0] || {}));
-                    
-                    showSuccess(`Arquivo Excel processado: ${jsonData.length} linhas encontradas`);
-                    
-                } catch (error) {
-                    console.error('❌ Erro ao processar Excel:', error);
-                    showError('Erro ao processar arquivo Excel: ' + error.message);
-                }
-            };
-            
-            reader.readAsArrayBuffer(file);
-        }
+  q=q.limit(200000);
+  const r=await q; if(r.error){console.warn('[graf] erro source',source,r.error);return null}
+  const cancSel=ms.cancel.get();
+  const needCancel=(cancSel.length===1&&(cancSel[0]==='Sim'||cancSel[0]==='Não'))?cancSel[0]:null;
 
-        // Função para processar arquivo CSV
-        function processCSVFile(file) {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                try {
-                    const csv = e.target.result;
-                    const lines = csv.split('\n');
-                    const headers = lines[0].split(';'); // Assumindo separador ;
-                    
-                    const jsonData = [];
-                    for (let i = 1; i < lines.length; i++) {
-                        if (lines[i].trim()) {
-                            const values = lines[i].split(';');
-                            const row = {};
-                            headers.forEach((header, index) => {
-                                row[header.trim()] = values[index] ? values[index].trim() : '';
-                            });
-                            jsonData.push(row);
-                        }
-                    }
-                    
-                    console.log('📊 Dados CSV processados:', jsonData.length, 'linhas');
-                    
-                    parsedData = jsonData;
-                    
-                    // Atualizar informações
-                    document.getElementById('fileSize').textContent = 
-                        `Tamanho: ${(file.size / 1024).toFixed(1)} KB | Linhas: ${jsonData.length}`;
-                    
-                    // Mostrar mapeamento de colunas
-                    showColumnMapping(headers.map(h => h.trim()));
-                    
-                    showSuccess(`Arquivo CSV processado: ${jsonData.length} linhas encontradas`);
-                    
-                } catch (error) {
-                    console.error('❌ Erro ao processar CSV:', error);
-                    showError('Erro ao processar arquivo CSV: ' + error.message);
-                }
-            };
-            
-            reader.readAsText(file);
-        }
+  const rows=(r.data||[])
+    .filter(x=>!needCancel||!map.cancCol||normCancel(x[map.cancCol])===needCancel)
+    .map(x=>{
+      const d=String(x[map.dateCol]??'').slice(0,10);
+      let h=map.hourCol?parseInt(String(x[map.hourCol]).match(/\d{1,2}/)?.[0]||'0',10):NaN;
+      h=isFinite(h)?Math.min(23,Math.max(0,h)):NaN;
+      const fat=parseBR(map.fatCol?x[map.fatCol]:0);
+      const ped=parseBR(map.pedCol?x[map.pedCol]:0);
+      const t=(map.turnoCol&&x[map.turnoCol])?String(x[map.turnoCol]):inferTurno(h);
+      return{dia:d,hora:isFinite(h)?h:0,turno:t,fat,pedidos:ped};
+    });
 
-        // Função para mostrar mapeamento de colunas
-        function showColumnMapping(columns) {
-            const mappingContainer = document.getElementById('columnMapping');
-            mappingContainer.innerHTML = '';
-            
-            columns.forEach(column => {
-                const mappedColumn = COLUMN_MAPPING[column] || 'não_mapeado';
-                const isValid = COLUMN_MAPPING[column] ? '✅' : '⚠️';
-                
-                const mappingItem = document.createElement('div');
-                mappingItem.className = 'mapping-item';
-                mappingItem.innerHTML = `
-                    <span>${isValid} ${column}</span>
-                    <span class="mapping-arrow">→</span>
-                    <span>${mappedColumn}</span>
-                `;
-                
-                mappingContainer.appendChild(mappingItem);
-            });
-        }
+  return {rows,src:source,map};
+}
+async function fetchVendas(de,ate){
+  const sources=['vendas_canon','mv_vendas_canon','vw_vendas_canon','vw_vendas'];
+  for(const src of sources){
+    try{
+      const res=await trySource(src,de,ate);
+      if(!res) continue;
+      if((res.rows||[]).length===0){console.warn(`[graf] ${src} vazia p/ período/filtros; tentando próxima…`);continue}
+      console.log(`[graf] Fonte usada: ${res.src} • linhas: ${res.rows.length}`);
+      return res.rows;
+    }catch(e){console.warn('[graf] falha tentando',src,e)}
+  }
+  console.warn('[graf] nenhuma fonte retornou dados');
+  return [];
+}
 
-        // Função para importar dados
-        async function importData() {
-            if (!parsedData || parsedData.length === 0) {
-                showError('Nenhum dado para importar');
-                return;
-            }
-            
-            console.log('📤 Iniciando importação de', parsedData.length, 'registros...');
-            
-            // Mostrar progresso
-            document.getElementById('uploadProgress').style.display = 'block';
-            document.getElementById('importBtn').disabled = true;
-            
-            try {
-                // Converter dados para formato Supabase
-                const supabaseData = parsedData.map(row => {
-                    const mappedRow = {};
-                    
-                    Object.keys(row).forEach(key => {
-                        const supabaseColumn = COLUMN_MAPPING[key];
-                        if (supabaseColumn) {
-                            let value = row[key];
-                            
-                            // Tratar data
-                            if (supabaseColumn === 'data_venda' && value) {
-                                // Converter formato dd/mm/yyyy hh:mm para ISO
-                                if (typeof value === 'string' && value.includes('/')) {
-                                    const [datePart, timePart] = value.split(' ');
-                                    const [day, month, year] = datePart.split('/');
-                                    value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart || '00:00:00'}`;
-                                }
-                            }
-                            
-                            // Tratar números
-                            if (['total', 'itens', 'entrega', 'acrescimo', 'desconto', 'taxa_servico'].includes(supabaseColumn)) {
-                                value = parseFloat(value) || 0;
-                            }
-                            
-                            // Tratar inteiros
-                            if (['pedido', 'numero_pedido_parceiro', 'entregador_id'].includes(supabaseColumn)) {
-                                value = parseInt(value) || null;
-                            }
-                            
-                            mappedRow[supabaseColumn] = value;
-                        }
-                    });
-                    
-                    return mappedRow;
-                });
-                
-                console.log('📊 Dados convertidos:', supabaseData.slice(0, 3));
-                
-                // Importar em lotes de 1000
-                const batchSize = 1000;
-                let imported = 0;
-                
-                for (let i = 0; i < supabaseData.length; i += batchSize) {
-                    const batch = supabaseData.slice(i, i + batchSize);
-                    
-                    const { data, error } = await supabaseClient
-                        .from('maestro_vendas_excel')
-                        .insert(batch);
-                    
-                    if (error) {
-                        throw error;
-                    }
-                    
-                    imported += batch.length;
-                    const progress = (imported / supabaseData.length) * 100;
-                    
-                    // Atualizar progresso
-                    document.getElementById('uploadProgressFill').style.width = progress + '%';
-                    document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
-                    document.getElementById('progressLabel').textContent = `Importando... ${imported}/${supabaseData.length}`;
-                }
-                
-                console.log('✅ Importação concluída:', imported, 'registros');
-                
-                // Atualizar status
-                document.getElementById('lastUpload').textContent = new Date().toLocaleString('pt-BR');
-                
-                showSuccess(`Importação concluída com sucesso! ${imported} registros importados.`);
-                
-                // Recarregar dados
-                await loadData();
-                
-                // Ir para aba dashboard
-                switchTab('dashboard');
-                
-            } catch (error) {
-                console.error('❌ Erro na importação:', error);
-                showError('Erro na importação: ' + error.message);
-            } finally {
-                document.getElementById('uploadProgress').style.display = 'none';
-                document.getElementById('importBtn').disabled = false;
-            }
-        }
+/* ===== AGRUPADORES & CHART ===== */
+const DOW_LABELS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+function monthLabel(ym){const[y,m]=ym.split('-').map(Number);const n=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return `${n[m-1]}/${String(y).slice(-2)}`}
+function groupByDOW(rows,metric='fat',mode='total'){const sums=Array(7).fill(0),days=Array.from({length:7},()=>new Set());for(const r of rows){if(!r.dia)continue;const dow=new Date(r.dia+'T00:00:00').getDay();const v=+r[metric]||0;sums[dow]+=v;days[dow].add(r.dia)}return mode==='media'?sums.map((v,i)=>days[i].size?v/days[i].size:0):sums}
+function groupByMonth(rows,metric='fat',mode='total'){const sums=new Map(),days=new Map();for(const r of rows){if(!r.dia)continue;const k=r.dia.slice(0,7);const v=+r[metric]||0;sums.set(k,(sums.get(k)||0)+v);if(!days.has(k))days.set(k,new Set());days.get(k).add(r.dia)}const labels=[...sums.keys()].sort();const vals=labels.map(k=>mode==='media'?(sums.get(k)/((days.get(k)||new Set()).size||1)):sums.get(k));return{labels:labels.map(monthLabel),vals}}
+function groupByHour(rows,metric='fat',mode='total'){const sums=Array(24).fill(0),days=Array.from({length:24},()=>new Set());for(const r of rows){const h=parseHour(r.hora);if(!isFinite(h))continue;const v=+r[metric]||0;sums[h]+=v;days[h].add(r.dia)}return mode==='media'?sums.map((v,i)=>days[i].size?v/days[i].size:0):sums}
+const TURNO_ORDER=['Manhã','Tarde','Noite','Madrugada','Dia'];
+function groupByTurno(rows,metric='fat',mode='total'){const sums=new Map(TURNO_ORDER.map(t=>[t,0])),days=new Map(TURNO_ORDER.map(t=>[t,new Set()]));for(const r of rows){const h=parseHour(r.hora);const t=r.turno||inferTurno(h);const key=TURNO_ORDER.includes(t)?t:'Dia';const v=+r[metric]||0;sums.set(key,(sums.get(key)||0)+v);if(r.dia)days.get(key).add(r.dia)}const labels=TURNO_ORDER.filter(t=>(sums.get(t)||0)>0||(days.get(t)||new Set()).size>0);const vals=labels.map(k=>mode==='media'?((days.get(k)||new Set()).size?(sums.get(k)/days.get(k).size):0):(sums.get(k)||0));return{labels,vals}}
+function formatCurrencyTick(value){const v=Number(value)||0;if(Math.abs(v)>=1_000_000)return'R$ '+(v/1_000_000).toFixed(1).replace('.',',')+' mi';if(Math.abs(v)>=1_000)return'R$ '+(v/1_000).toFixed(1).replace('.',',')+' mil';return'R$ '+v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+function ensureChart(canvasId,labels,nowArr,prevArr){
+  const canvas=$(canvasId);if(!canvas)return;
+  if(canvas.__chart){try{canvas.__chart.destroy()}catch(e){}canvas.__chart=null}
+  const ctx=canvas.getContext('2d');
+  const chart=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+    {label:'Atual',data:nowArr,backgroundColor:'rgba(47,110,247,0.85)'},
+    {label:'Anterior',data:prevArr,backgroundColor:'rgba(2,132,199,0.6)'}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,
+    scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},
+      ticks:{callback:formatCurrencyTick}}},
+    plugins:{legend:{position:'top'},tooltip:{mode:'index',intersect:false,
+      callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${money(ctx.parsed.y||0)}`}}}});canvas.__chart=chart;
+}
 
-        // Função para limpar upload
-        function clearUpload() {
-            uploadedFile = null;
-            parsedData = null;
-            document.getElementById('fileInput').value = '';
-            document.getElementById('filePreview').style.display = 'none';
-            document.getElementById('uploadProgress').style.display = 'none';
-            hideMessages();
-        }
+/* ===== STATE Total|Média ===== */
+const chartMode={dow:'total',month:'total',hour:'total',turno:'total'};
+document.querySelectorAll('.seg').forEach(seg=>seg.addEventListener('click',e=>{
+  const btn=e.target.closest('.seg-btn');if(!btn)return;
+  const key=seg.dataset.chart;chartMode[key]=btn.dataset.mode;
+  seg.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  const de=fDe.value||firstDay,ate=fAte.value||lastDay;const len=daysLen(de,ate);
+  const atePrevISO=new Date(new Date(de+'T00:00:00').getTime()-24*60*60*1000);
+  const dePrevISO=new Date(atePrevISO.getTime()-(len-1)*24*60*60*1000);
+  updateCharts(de,ate,iso(dePrevISO),iso(atePrevISO),key);
+}));
 
-        // Função para visualizar dados
-        function previewData() {
-            if (!parsedData || parsedData.length === 0) {
-                showError('Nenhum dado para visualizar');
-                return;
-            }
-            
-            const preview = parsedData.slice(0, 5);
-            console.log('👁️ Preview dos dados:', preview);
-            
-            alert('Preview dos dados (5 primeiras linhas):\n\n' + 
-                  JSON.stringify(preview, null, 2));
-        }
+/* ===== UPDATE CHARTS (dados brutos) ===== */
+async function updateCharts(de,ate,dePrev,atePrev,onlyKey=null){
+  const [nowRows,prevRows]=await Promise.all([fetchVendas(de,ate),fetchVendas(dePrev,atePrev)]);
+  if(!onlyKey||onlyKey==='dow'){ensureChart('ch_dow',DOW_LABELS,groupByDOW(nowRows,'fat',chartMode.dow),groupByDOW(prevRows,'fat',chartMode.dow))}
+  if(!onlyKey||onlyKey==='month'){const gN=groupByMonth(nowRows,'fat',chartMode.month),gP=groupByMonth(prevRows,'fat',chartMode.month);const all=[...new Set([...gN.labels,...gP.labels])];const mN=new Map(gN.labels.map((l,i)=>[l,gN.vals[i]]));const mP=new Map(gP.labels.map((l,i)=>[l,gP.vals[i]]));ensureChart('ch_month',all,all.map(l=>mN.get(l)||0),all.map(l=>mP.get(l)||0))}
+  if(!onlyKey||onlyKey==='hour'){const labels=Array.from({length:24},(_,h)=>String(h).padStart(2,'0')+'h');ensureChart('ch_hour',labels,groupByHour(nowRows,'fat',chartMode.hour),groupByHour(prevRows,'fat',chartMode.hour))}
+  if(!onlyKey||onlyKey==='turno'){const gN=groupByTurno(nowRows,'fat',chartMode.turno),gP=groupByTurno(prevRows,'fat',chartMode.turno);const all=[...new Set([...gN.labels,...gP.labels])];const mN=new Map(gN.labels.map((l,i)=>[l,gN.vals[i]]));const mP=new Map(gP.labels.map((l,i)=>[l,gP.vals[i]]));ensureChart('ch_turno',all,all.map(l=>mN.get(l)||0),all.map(l=>mP.get(l)||0))}
+}
 
-        // Funções de mensagem
-        function showSuccess(message) {
-            hideMessages();
-            document.getElementById('uploadSuccess').style.display = 'block';
-            document.getElementById('successMessage').textContent = message;
-        }
+/* ===== applyAll com lock/runId ===== */
+let _applyLock=false,_runId=0;
+async function applyAll(){
+  if(_applyLock) return;
+  _applyLock=true;
+  const myRun=++_runId;
+  try{
+    const de=fDe.value||firstDay,ate=fAte.value||lastDay;
+    const len=daysLen(de,ate);
+    const atePrevISO=new Date(new Date(de+'T00:00:00').getTime()-24*60*60*1000);
+    const dePrevISO=new Date(atePrevISO.getTime()-(len-1)*24*60*60*1000);
+    const dePrev=iso(dePrevISO),atePrev=iso(atePrevISO);
 
-        function showError(message) {
-            hideMessages();
-            document.getElementById('uploadError').style.display = 'block';
-            document.getElementById('errorMessage').textContent = message;
-        }
+    setStatus('Consultando…');
+    // KPIs
+    try{
+      const pNow=buildParams(de,ate),pPrev=buildParams(dePrev,atePrev);
+      const nameNow=rpcName(pNow),namePrev=rpcName(pPrev);
+      const [now,prev,cNow,cPrev]=await Promise.all([
+        supa.rpc(nameNow,prepareArgs(nameNow,pNow)),
+        supa.rpc(namePrev,prepareArgs(namePrev,pPrev)),
+        supa.rpc(nameNow,prepareArgs(nameNow,{...pNow,p_cancelado:'Sim'})),
+        supa.rpc(namePrev,prepareArgs(namePrev,{...pPrev,p_cancelado:'Sim'})),
+      ]);
+      if(now.error||prev.error||cNow.error||cPrev.error) throw (now.error||prev.error||cNow.error||cPrev.error);
+      const N=agg(now.data||[]),P=agg(prev.data||[]),CN=agg(cNow.data||[]),CP=agg(cPrev.data||[]);
+      const tktN=N.ped>0?(N.fat/N.ped):0,tktP=P.ped>0?(P.fat/P.ped):0;
+      const fatMedN=len>0?(N.fat/len):0,fatMedP=len>0?(P.fat/len):0;
+      const desPercN=N.fat>0?(N.des/N.fat):0,desPercP=P.fat>0?(P.des/P.fat):0;
+      const freMedN=N.ped>0?(N.fre/N.ped):0,freMedP=P.ped>0?(P.fre/P.ped):0;
+      const partCancN=N.ped>0?(CN.ped/N.ped):0,partCancP=P.ped>0?(CP.ped/P.ped):0;
 
-        function showWarning(message) {
-            hideMessages();
-            document.getElementById('uploadWarning').style.display = 'block';
-            document.getElementById('warningMessage').textContent = message;
-        }
+      $('k_ped').textContent=num(N.ped);$('p_ped').textContent=num(P.ped);deltaBadge($('d_ped'),N.ped,P.ped);
+      $('k_tkt').textContent=money(tktN);$('p_tkt').textContent=money(tktP);deltaBadge($('d_tkt'),tktN,tktP);
+      $('k_fat').textContent=money(N.fat);$('p_fat').textContent=money(P.fat);deltaBadge($('d_fat'),N.fat,P.fat);
+      $('k_fatmed').textContent=money(fatMedN);$('p_fatmed').textContent=money(fatMedP);deltaBadge($('d_fatmed'),fatMedN,fatMedP);
+      $('k_des').textContent=money(N.des);$('p_des').textContent=money(P.des);deltaBadge($('d_des'),N.des,P.des);
+      $('k_desperc').textContent=pctf(desPercN);$('p_desperc').textContent=pctf(desPercP);deltaBadge($('d_desperc'),desPercN,desPercP);
+      $('k_fre').textContent=money(N.fre);$('p_fre').textContent=money(P.fre);deltaBadge($('d_fre'),N.fre,P.fre);
+      $('k_fremed').textContent=money(freMedN);$('p_fremed').textContent=money(freMedP);deltaBadge($('d_fremed'),freMedN,freMedP);
+      $('k_canc_ped').textContent=num(CN.ped);deltaBadge($('d_canc_ped'),CN.ped,CP.ped);
+      $('k_canc_val').textContent=money(CN.fat);$('p_canc_val').textContent=money(CP.fat);deltaBadge($('d_canc_val'),CN.fat,CP.fat);
+      $('k_canc_part').textContent=pctf(partCancN);$('p_canc_part').textContent=pctf(partCancP);
+      setStatus('OK','ok');
+    }catch(errKpi){
+      console.warn('[kpi] falha RPC, seguindo só com gráficos',errKpi);
+      setStatus('OK (sem KPIs)','ok');
+    }
 
-        function hideMessages() {
-            document.getElementById('uploadSuccess').style.display = 'none';
-            document.getElementById('uploadError').style.display = 'none';
-            document.getElementById('uploadWarning').style.display = 'none';
-        }
+    await updateCharts(de,ate,dePrev,atePrev);
+  }catch(e){console.error(e);setStatus('Erro: '+(e.message||e),'err')}
+  finally{_applyLock=false}
+}
 
-        // Função para carregar dados (mesmo código anterior)
-        async function loadData() {
-            console.log('📊 Carregando dados...');
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('maestro_vendas_excel')
-                    .select('*')
-                    .order('data_venda', { ascending: false });
-                
-                if (error) {
-                    throw error;
-                }
-                
-                console.log(`✅ Dados carregados: ${data.length} registros`);
-                
-                // Filtrar dados válidos (loja não vazia)
-                const validData = filterValidData(data || []);
-                
-                allData = validData;
-                filteredData = [...allData];
-                
-                // Atualizar contadores
-                document.getElementById('totalRecords').textContent = (data || []).length;
-                document.getElementById('validRecords').textContent = allData.length;
-                
-                // Processar dados
-                await processData();
-                
-                // Esconder loading
-                document.getElementById('loadingOverlay').classList.add('hidden');
-                document.getElementById('connectionStatus').textContent = 'Ativo';
-                
-                console.log('✅ Dashboard carregado com sucesso!');
-                
-            } catch (error) {
-                console.error('❌ Erro ao carregar dados:', error);
-                document.getElementById('loadingText').textContent = 'Erro: ' + error.message;
-                document.getElementById('connectionStatus').textContent = 'Erro';
-            }
-        }
+/* ===== BOOT ===== */
+(async function init(){
+  setStatus('Carregando…');
+  // Datas
+  try{
+    const dr=await supa.from('vw_vendas_daterange').select('*').limit(1);
+    if(dr.data?.length){firstDay=dr.data[0].min_dia;lastDay=dr.data[0].max_dia}
+  }catch(_){}
+  if(!firstDay||!lastDay){ // fallback 30d
+    lastDay=iso(new Date());firstDay=addDaysISO(lastDay,-29);
+  }
 
-        // Função para filtrar dados válidos
-        function filterValidData(data) {
-            console.log(`🔍 Aplicando filtro de loja vazia em ${data.length} registros...`);
-            
-            const validData = data.filter(record => {
-                const loja = (record.loja || '').trim();
-                
-                // Remove registros com loja vazia
-                if (!loja || loja === '') {
-                    return false;
-                }
-                
-                return true;
-            });
-            
-            const removedCount = data.length - validData.length;
-            
-            console.log(`🚫 Filtro loja vazia: Removidos ${removedCount} registros inválidos`);
-            console.log(`✅ Registros válidos mantidos: ${validData.length}`);
-            
-            return validData;
-        }
+  // Opções
+  try{
+    const [unids,lojas,canais,turnos,pags]=await Promise.all([
+      supa.from('vw_vendas_unidades').select('unidade').order('unidade'),
+      supa.from('vw_vendas_lojas').select('loja').order('loja'),
+      supa.from('vw_vendas_canais').select('canal').order('canal'),
+      supa.from('vw_vendas_turnos').select('turno').order('turno'),
+      supa.from('vw_vendas_pagamentos').select('pagamento_base').order('pagamento_base'),
+    ]);
+    const setOpts=(res,field,msel)=>msel.setOptions((res?.data||[]).map(r=>r[field]));
+    if(!unids.error) setOpts(unids,'unidade',ms.unids);
+    if(!lojas.error) setOpts(lojas,'loja',ms.lojas);
+    if(!canais.error) setOpts(canais,'canal',ms.canais);
+    if(!turnos.error) setOpts(turnos,'turno',ms.turnos);
+    if(!pags.error) setOpts(pags,'pagamento_base',ms.pags);
+  }catch(_){}
+  ms.cancel.setOptions(['','Não','Sim']); ms.cancel.set(['Não'],true);
 
-        // Função para processar dados
-        async function processData() {
-            console.log('📊 Processando dados...');
-            
-            if (allData.length === 0) {
-                console.log('⚠️ Nenhum dado para processar');
-                return;
-            }
-            
-            // Atualizar período
-            const dates = allData.map(d => new Date(d.data_venda)).filter(d => !isNaN(d));
-            if (dates.length > 0) {
-                const minDate = new Date(Math.min(...dates));
-                const maxDate = new Date(Math.max(...dates));
-                document.getElementById('currentPeriod').textContent = 
-                    `${minDate.toLocaleDateString('pt-BR')} - ${maxDate.toLocaleDateString('pt-BR')}`;
-            }
-            
-            // Preencher filtros
-            populateFilters();
-            
-            // Aplicar filtros iniciais
-            applyFilters();
-        }
-
-        // Função para preencher filtros
-        function populateFilters() {
-            // Unidades
-            const unidades = [...new Set(allData.map(d => d.unidade).filter(Boolean))].sort();
-            const unidadeSelect = document.getElementById('unidadeFilter');
-            unidadeSelect.innerHTML = '<option value="">Todas as Unidades</option>';
-            unidades.forEach(unidade => {
-                unidadeSelect.innerHTML += `<option value="${unidade}">${unidade}</option>`;
-            });
-            
-            // Lojas
-            const lojas = [...new Set(allData.map(d => d.loja).filter(Boolean))].sort();
-            const lojaSelect = document.getElementById('lojaFilter');
-            lojaSelect.innerHTML = '<option value="">Todas as Lojas</option>';
-            lojas.forEach(loja => {
-                lojaSelect.innerHTML += `<option value="${loja}">${loja}</option>`;
-            });
-            
-            // Tipos
-            const tipos = [...new Set(allData.map(d => d.tipo).filter(Boolean))].sort();
-            const tipoSelect = document.getElementById('tipoFilter');
-            tipoSelect.innerHTML = '<option value="">Todos os Tipos</option>';
-            tipos.forEach(tipo => {
-                tipoSelect.innerHTML += `<option value="${tipo}">${tipo}</option>`;
-            });
-            
-            // Turnos
-            const turnos = [...new Set(allData.map(d => d.turno).filter(Boolean))].sort();
-            const turnoSelect = document.getElementById('turnoFilter');
-            turnoSelect.innerHTML = '<option value="">Todos os Turnos</option>';
-            turnos.forEach(turno => {
-                turnoSelect.innerHTML += `<option value="${turno}">${turno}</option>`;
-            });
-            
-            // Canais
-            const canais = [...new Set(allData.map(d => d.canal).filter(Boolean))].sort();
-            const canalSelect = document.getElementById('canalFilter');
-            canalSelect.innerHTML = '<option value="">Todos os Canais</option>';
-            canais.forEach(canal => {
-                canalSelect.innerHTML += `<option value="${canal}">${canal}</option>`;
-            });
-            
-            // Pagamentos
-            const pagamentos = [...new Set(allData.map(d => d.pagamento).filter(Boolean))].sort();
-            const pagamentoSelect = document.getElementById('pagamentoFilter');
-            pagamentoSelect.innerHTML = '<option value="">Todas as Formas</option>';
-            pagamentos.forEach(pagamento => {
-                pagamentoSelect.innerHTML += `<option value="${pagamento}">${pagamento}</option>`;
-            });
-        }
-
-        // Função para aplicar filtros
-        function applyFilters() {
-            console.log('🔍 Aplicando filtros...');
-            
-            filteredData = allData.filter(record => {
-                // Filtro por unidade
-                const unidade = document.getElementById('unidadeFilter').value;
-                if (unidade && record.unidade !== unidade) return false;
-                
-                // Filtro por loja
-                const loja = document.getElementById('lojaFilter').value;
-                if (loja && record.loja !== loja) return false;
-                
-                // Filtro por tipo
-                const tipo = document.getElementById('tipoFilter').value;
-                if (tipo && record.tipo !== tipo) return false;
-                
-                // Filtro por turno
-                const turno = document.getElementById('turnoFilter').value;
-                if (turno && record.turno !== turno) return false;
-                
-                // Filtro por canal
-                const canal = document.getElementById('canalFilter').value;
-                if (canal && record.canal !== canal) return false;
-                
-                // Filtro por pagamento
-                const pagamento = document.getElementById('pagamentoFilter').value;
-                if (pagamento && record.pagamento !== pagamento) return false;
-                
-                // Filtro por data
-                const dataInicial = document.getElementById('dataInicial').value;
-                const dataFinal = document.getElementById('dataFinal').value;
-                
-                if (dataInicial || dataFinal) {
-                    const dataVenda = new Date(record.data_venda);
-                    if (dataInicial && dataVenda < new Date(dataInicial)) return false;
-                    if (dataFinal && dataVenda > new Date(dataFinal + 'T23:59:59')) return false;
-                }
-                
-                return true;
-            });
-            
-            console.log(`✅ Filtros aplicados: ${filteredData.length} registros`);
-            
-            // Atualizar métricas
-            updateMetrics();
-            
-            // Atualizar gráfico
-            updateChart();
-            
-            // Atualizar tabela
-            updateTable();
-        }
-
-        // Função para atualizar métricas
-        function updateMetrics() {
-            if (filteredData.length === 0) {
-                document.getElementById('totalPedidos').textContent = '0';
-                document.getElementById('ticketMedio').textContent = 'R$ 0,00';
-                document.getElementById('faturamentoTotal').textContent = 'R$ 0,00';
-                document.getElementById('faturamentoDia').textContent = 'R$ 0,00';
-                document.getElementById('consumidoresUnicos').textContent = '0';
-                document.getElementById('taxaCupom').textContent = '0%';
-                return;
-            }
-            
-            // Calcular métricas
-            const totalPedidos = filteredData.length;
-            const faturamentoTotal = filteredData.reduce((sum, record) => {
-                const total = parseFloat(record.total || 0);
-                return sum + (isNaN(total) ? 0 : total);
-            }, 0);
-            const ticketMedio = faturamentoTotal / totalPedidos;
-            
-            // Calcular dias únicos
-            const diasUnicos = new Set(filteredData.map(d => d.data_venda.split('T')[0])).size;
-            const faturamentoDia = diasUnicos > 0 ? faturamentoTotal / diasUnicos : 0;
-            
-            // Consumidores únicos
-            const consumidoresUnicos = new Set(filteredData.map(d => d.consumidor).filter(Boolean)).size;
-            
-            // Taxa de cupom
-            const pedidosComCupom = filteredData.filter(d => d.cupom === 'S').length;
-            const taxaCupom = totalPedidos > 0 ? (pedidosComCupom / totalPedidos) * 100 : 0;
-            
-            // Atualizar DOM
-            document.getElementById('totalPedidos').textContent = totalPedidos.toLocaleString();
-            document.getElementById('ticketMedio').textContent = `R$ ${ticketMedio.toFixed(2).replace('.', ',')}`;
-            document.getElementById('faturamentoTotal').textContent = `R$ ${faturamentoTotal.toFixed(2).replace('.', ',')}`;
-            document.getElementById('faturamentoDia').textContent = `R$ ${faturamentoDia.toFixed(2).replace('.', ',')}`;
-            document.getElementById('consumidoresUnicos').textContent = consumidoresUnicos.toLocaleString();
-            document.getElementById('taxaCupom').textContent = `${taxaCupom.toFixed(1)}%`;
-        }
-
-        // Função para atualizar gráfico
-        function updateChart() {
-            const ctx = document.getElementById('receitaChart').getContext('2d');
-            
-            // Agrupar dados por data
-            const receitaPorDia = {};
-            filteredData.forEach(record => {
-                const data = record.data_venda.split('T')[0];
-                const total = parseFloat(record.total || 0);
-                if (!isNaN(total)) {
-                    receitaPorDia[data] = (receitaPorDia[data] || 0) + total;
-                }
-            });
-            
-            // Ordenar datas
-            const datas = Object.keys(receitaPorDia).sort();
-            const receitas = datas.map(data => receitaPorDia[data]);
-            
-            // Destruir gráfico anterior se existir
-            if (chart) {
-                chart.destroy();
-            }
-            
-            // Criar novo gráfico
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: datas.map(data => new Date(data).toLocaleDateString('pt-BR')),
-                    datasets: [{
-                        label: 'Receita Diária',
-                        data: receitas,
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return 'R$ ' + value.toFixed(0);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Função para atualizar tabela
-        function updateTable() {
-            const tbody = document.getElementById('tableBody');
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const pageData = filteredData.slice(startIndex, endIndex);
-            
-            if (pageData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">Nenhum dado encontrado</td></tr>';
-            } else {
-                tbody.innerHTML = pageData.map(record => {
-                    const total = parseFloat(record.total || 0);
-                    
-                    return `
-                        <tr>
-                            <td>${new Date(record.data_venda).toLocaleDateString('pt-BR')}</td>
-                            <td>${record.loja || 'N/A'}</td>
-                            <td>${record.consumidor || 'N/A'}</td>
-                            <td>${record.tipo || 'N/A'}</td>
-                            <td>${record.canal || 'N/A'}</td>
-                            <td>R$ ${(isNaN(total) ? 0 : total).toFixed(2).replace('.', ',')}</td>
-                            <td>${record.cupom === 'S' ? '✅' : '❌'}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-            
-            // Atualizar paginação
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
-        }
-
-        // Funções de paginação
-        function previousPage() {
-            if (currentPage > 1) {
-                currentPage--;
-                updateTable();
-            }
-        }
-
-        function nextPage() {
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                updateTable();
-            }
-        }
-
-        // Função para limpar filtros
-        function clearFilters() {
-            document.getElementById('unidadeFilter').value = '';
-            document.getElementById('lojaFilter').value = '';
-            document.getElementById('tipoFilter').value = '';
-            document.getElementById('turnoFilter').value = '';
-            document.getElementById('canalFilter').value = '';
-            document.getElementById('pagamentoFilter').value = '';
-            document.getElementById('dataInicial').value = '';
-            document.getElementById('dataFinal').value = '';
-            
-            applyFilters();
-        }
-
-        // Função para mostrar estatísticas
-        async function showStatistics() {
-            try {
-                const { data: stats, error } = await supabaseClient
-                    .from('estatisticas_excel')
-                    .select('*')
-                    .single();
-                
-                if (error) throw error;
-                
-                alert(`📊 Estatísticas do Sistema:\n\n` +
-                      `📋 Total de registros: ${stats.total_registros}\n` +
-                      `🚫 Registros sem loja: ${stats.registros_sem_loja}\n` +
-                      `👥 Registros sem consumidor: ${stats.registros_sem_consumidor}\n` +
-                      `✅ Registros ativos: ${stats.registros_ativos}\n` +
-                      `💰 Faturamento total: R$ ${stats.faturamento_total?.toFixed(2) || '0,00'}\n` +
-                      `🎯 Ticket médio: R$ ${stats.ticket_medio?.toFixed(2) || '0,00'}\n` +
-                      `🏢 Total de unidades: ${stats.total_unidades}\n` +
-                      `📋 Total de tipos: ${stats.total_tipos}\n` +
-                      `📱 Total de canais: ${stats.total_canais}\n` +
-                      `👥 Consumidores únicos: ${stats.consumidores_unicos}`);
-                
-            } catch (error) {
-                console.error('Erro ao carregar estatísticas:', error);
-                alert('Erro ao carregar estatísticas: ' + error.message);
-            }
-        }
-
-        // Funções da aba configurações
-        function showDatabaseInfo() {
-            alert(`🗄️ Informações do Banco de Dados:\n\n` +
-                  `📊 URL: ${SUPABASE_URL}\n` +
-                  `📋 Tabela: maestro_vendas_excel\n` +
-                  `✅ Registros válidos: ${allData.length}\n` +
-                  `🔍 Registros filtrados: ${filteredData.length}\n` +
-                  `📅 Último carregamento: ${new Date().toLocaleString('pt-BR')}`);
-        }
-
-        async function clearAllData() {
-            if (!confirm('⚠️ ATENÇÃO: Isso irá remover TODOS os dados do banco. Confirma?')) {
-                return;
-            }
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('maestro_vendas_excel')
-                    .delete()
-                    .neq('id', 0); // Deletar todos
-                
-                if (error) throw error;
-                
-                alert('✅ Todos os dados foram removidos com sucesso!');
-                await loadData();
-                
-            } catch (error) {
-                console.error('Erro ao limpar dados:', error);
-                alert('Erro ao limpar dados: ' + error.message);
-            }
-        }
-
-        function exportData() {
-            if (filteredData.length === 0) {
-                alert('Nenhum dado para exportar');
-                return;
-            }
-            
-            // Converter para CSV
-            const headers = ['Data', 'Loja', 'Consumidor', 'Tipo', 'Canal', 'Total', 'Cupom'];
-            const csvContent = [
-                headers.join(','),
-                ...filteredData.map(record => [
-                    new Date(record.data_venda).toLocaleDateString('pt-BR'),
-                    record.loja || '',
-                    record.consumidor || '',
-                    record.tipo || '',
-                    record.canal || '',
-                    record.total || 0,
-                    record.cupom || 'N'
-                ].join(','))
-            ].join('\n');
-            
-            // Download
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `maestro_food_export_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-
-        function downloadTemplate() {
-            // Criar template Excel básico
-            const templateData = [
-                ['Unidade', 'Pedido', 'Codigo', 'loja', 'Tipo', 'Turno', 'Canal', 'Número do pedido no parceiro', 'Data', 'Consumidor', 'Cupom', 'Pagamento', 'Cancelado', 'Motivo do cancelamento', 'Itens', 'Entrega', 'Entregador', 'Entregador.1', 'Bairro', 'CEP', 'Acrescimo', 'Motivo de acréscimo', 'Desconto', 'Motivo do desconto', 'Total', 'taxa de serviço'],
-                ['Uni.Exemplo', 1, 'uuid-exemplo', 'Loja Exemplo', 'D', 'Dia', 'iFood', 12345, '19/04/2023 10:00', 'Cliente Exemplo', 'N', 'Pago Online', 'N', '', 25.50, 3.99, 1, 'Entregador Exemplo', 'Bairro Exemplo', '12345-678', 0, '', 0, '', 29.49, 0]
-            ];
-            
-            const ws = XLSX.utils.aoa_to_sheet(templateData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Template');
-            XLSX.writeFile(wb, 'template_maestro_food.xlsx');
-        }
-
-        function downloadTemplateCSV() {
-            const templateCSV = [
-                'Unidade;Pedido;Codigo;loja;Tipo;Turno;Canal;Número do pedido no parceiro;Data;Consumidor;Cupom;Pagamento;Cancelado;Motivo do cancelamento;Itens;Entrega;Entregador;Entregador.1;Bairro;CEP;Acrescimo;Motivo de acréscimo;Desconto;Motivo do desconto;Total;taxa de serviço',
-                'Uni.Exemplo;1;uuid-exemplo;Loja Exemplo;D;Dia;iFood;12345;19/04/2023 10:00;Cliente Exemplo;N;Pago Online;N;;25.50;3.99;1;Entregador Exemplo;Bairro Exemplo;12345-678;0;;0;;29.49;0'
-            ].join('\n');
-            
-            const blob = new Blob([templateCSV], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'template_maestro_food.csv';
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-
-        function showDebugInfo() {
-            console.log('🔧 Informações de Debug:');
-            console.log('URL Supabase:', SUPABASE_URL);
-            console.log('Tabela:', 'maestro_vendas_excel');
-            console.log('Total de registros válidos:', allData.length);
-            console.log('Registros após filtros:', filteredData.length);
-            console.log('Arquivo carregado:', uploadedFile?.name || 'Nenhum');
-            console.log('Dados parseados:', parsedData?.length || 0);
-            console.log('Amostra de dados:', allData.slice(0, 3));
-            
-            alert('🔧 Informações de debug enviadas para o console (F12)');
-        }
-    </script>
+  $('periodoInfo').textContent=`Último dia carregado: ${lastDay||'—'}`;
+  applyQuick('30');
+})();
+</script>
 </body>
 </html>
-
