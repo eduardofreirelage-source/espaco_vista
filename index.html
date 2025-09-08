@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema de Orçamentos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Orçamentos Profissional</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -14,10 +15,10 @@
 
         <main>
             <section class="card">
-                <h2>Dados Gerais</h2>
+                <h2>Dados Gerais da Proposta</h2>
                 <div class="form-grid">
-                    <div class="form-group"><label for="guestCount">Nº de Convidados</label><input type="number" id="guestCount" value="100" min="1"></div>
-                    <div class="form-group"><label for="priceTableSelect">Tabela de Preços</label><select id="priceTableSelect"></select></div>
+                    <div class="form-group"><label for="guestCount">Nº de Convidados:</label><input type="number" id="guestCount" value="100" min="1"></div>
+                    <div class="form-group"><label for="priceTableSelect">Tabela de Preços:</label><select id="priceTableSelect"></select></div>
                 </div>
             </section>
             
@@ -29,24 +30,8 @@
 
             <section class="card">
                 <h2>Itens do Orçamento</h2>
-                <table class="quote-table">
-                    <thead><tr>
-                        <th>Categoria</th>
-                        <th>Item</th>
-                        <th>Data</th>
-                        <th style="width: 80px;">Qtde.</th>
-                        <th>Vlr. Unitário</th>
-                        <th>Vlr. Total</th>
-                        <th style="width: 100px;">Ações</th>
-                    </tr></thead>
-                    <tbody id="quote-table-body"></tbody>
-                </table>
-                <div class="add-item-bar">
-                    <div class="form-group">
-                        <input type="text" id="service-search" placeholder="Comece a digitar para adicionar um item ao orçamento...">
-                        <div id="service-search-results"></div>
+                <div id="quote-categories-container">
                     </div>
-                </div>
             </section>
         </main>
     </div>
@@ -63,7 +48,33 @@
             <span id="totalValue">R$ 0,00</span>
         </div>
     </footer>
-    
+
+    <template id="category-template">
+        <div class="category-block">
+            <div class="category-header">
+                <h3 class="category-title"></h3>
+                <div class="multiselect-container">
+                    <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
+                    <div class="multiselect-dropdown">
+                        <div class="multiselect-list"></div>
+                        <button class="btn btn-add-selected">Adicionar Selecionados</button>
+                    </div>
+                </div>
+            </div>
+            <table class="quote-table">
+                <thead><tr>
+                    <th style="width:40%;">Item</th>
+                    <th>Data</th>
+                    <th style="width: 80px;">Qtde.</th>
+                    <th>Vlr. Unitário</th>
+                    <th>Vlr. Total</th>
+                    <th style="width: 100px;">Ações</th>
+                </tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </template>
+
     <script type="module" src="app.js"></script>
 </body>
 </html>
