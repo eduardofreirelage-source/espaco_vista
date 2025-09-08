@@ -14,6 +14,7 @@
             <div class="header-actions">
                 <button id="save-quote-btn" class="btn btn-save">Salvar</button>
                 <a href="admin.html" target="_blank" class="btn">⚙️ Gerenciar</a>
+                <button id="print-btn" class="btn">Exportar PDF</button>
             </div>
         </header>
 
@@ -21,12 +22,12 @@
             <section class="card">
                 <h2>Dados Gerais</h2>
                 <div class="form-grid">
-                    <div class="form-group"><label>Nome do Cliente:</label><input type="text" id="clientName"></div>
-                    <div class="form-group"><label>CNPJ/CPF:</label><input type="text" id="clientCnpj"></div>
-                    <div class="form-group"><label>E-mail:</label><input type="email" id="clientEmail"></div>
-                    <div class="form-group"><label>Telefone:</label><input type="tel" id="clientPhone"></div>
-                    <div class="form-group"><label>Nº de Convidados:</label><input type="number" id="guestCount" value="100" min="1"></div>
-                    <div class="form-group"><label>Tabela de Preços:</label><select id="priceTableSelect"></select></div>
+                    <div class="form-group"><label for="clientName">Nome do Cliente:</label><input type="text" id="clientName"></div>
+                    <div class="form-group"><label for="clientCnpj">CNPJ/CPF:</label><input type="text" id="clientCnpj"></div>
+                    <div class="form-group"><label for="clientEmail">E-mail:</label><input type="email" id="clientEmail"></div>
+                    <div class="form-group"><label for="clientPhone">Telefone:</label><input type="tel" id="clientPhone"></div>
+                    <div class="form-group"><label for="guestCount">Nº de Convidados:</label><input type="number" id="guestCount" value="100" min="1"></div>
+                    <div class="form-group"><label for="priceTableSelect">Tabela de Preços:</label><select id="priceTableSelect"></select></div>
                 </div>
             </section>
             
@@ -36,7 +37,7 @@
                 <button id="add-date-btn" class="btn">+ Adicionar Data</button>
             </section>
 
-            <section class="card">
+            <section class="card" id="quote-card">
                 <div id="quote-categories-container"></div>
             </section>
         </main>
