@@ -30,8 +30,41 @@
 
             <section class="card">
                 <h2>Itens do Orçamento</h2>
-                <div id="quote-categories-container">
+                
+                <div class="quote-toolbar">
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="toolbar-category-select">
+                            <option value="Espaço">Espaço</option>
+                            <option value="Gastronomia">Gastronomia</option>
+                            <option value="Equipamentos">Equipamentos</option>
+                            <option value="Serviços / Outros">Serviços / Outros</option>
+                        </select>
                     </div>
+                    <div class="form-group multiselect-container" id="toolbar-multiselect">
+                        <label>Itens</label>
+                        <div class="multiselect-input" tabindex="0">Selecione um ou mais itens...</div>
+                        <div class="multiselect-dropdown">
+                            <div class="multiselect-list"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Adicionar para a Data</label>
+                        <select id="toolbar-date-target-select"></select>
+                    </div>
+                    <button id="toolbar-add-btn" class="btn">Adicionar Itens</button>
+                </div>
+
+                <table class="quote-table">
+                    <thead><tr>
+                        <th style="width:40%;">Item</th>
+                        <th style="width: 80px;">Qtde.</th>
+                        <th>Vlr. Unitário</th>
+                        <th>Vlr. Total</th>
+                        <th style="width: 100px;">Ações</th>
+                    </tr></thead>
+                    <tbody id="quote-table-body"></tbody>
+                </table>
             </section>
         </main>
     </div>
@@ -48,33 +81,7 @@
             <span id="totalValue">R$ 0,00</span>
         </div>
     </footer>
-
-    <template id="category-template">
-        <div class="category-block">
-            <div class="category-header">
-                <h3 class="category-title"></h3>
-                <div class="multiselect-container">
-                    <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
-                    <div class="multiselect-dropdown">
-                        <div class="multiselect-list"></div>
-                        <button class="btn btn-add-selected">Adicionar Selecionados</button>
-                    </div>
-                </div>
-            </div>
-            <table class="quote-table">
-                <thead><tr>
-                    <th style="width:40%;">Item</th>
-                    <th>Data</th>
-                    <th style="width: 80px;">Qtde.</th>
-                    <th>Vlr. Unitário</th>
-                    <th>Vlr. Total</th>
-                    <th style="width: 100px;">Ações</th>
-                </tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </template>
-
+    
     <script type="module" src="app.js"></script>
 </body>
 </html>
