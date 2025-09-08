@@ -1,56 +1,34 @@
-// ===================================================================================
-// ARQUIVO CENTRAL DE DADOS DO SISTEMA
-// ===================================================================================
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
-const data = {
-    // 1. LISTA MESTRA DE SERVIÇOS
-    // Contém todos os serviços que sua empresa oferece. O preço não fica aqui.
-    servicos: [
-        // Locação
-        { id: "loc01", categoria: "LOCAÇÃO DO ESPAÇO", nome: "Sexta e Sábado - Horário Nobre (08 horas)", unidade: "diaria" },
-        { id: "loc02", categoria: "LOCAÇÃO DO ESPAÇO", nome: "Sexta e Sábado - Outros Horários (05 horas)", unidade: "diaria" },
-        { id: "loc03", categoria: "LOCAÇÃO DO ESPAÇO", nome: "Domingo a Quinta - Horário Nobre (08 horas)", unidade: "diaria" },
-        { id: "loc04", categoria: "LOCAÇÃO DO ESPAÇO", nome: "Domingo a Quinta - Outros Horários (05 horas)", unidade: "diaria" },
-        // Buffet
-        { id: "buf01", categoria: "SERVIÇOS DE BUFFET", nome: "Cardápio Coquetel", unidade: "por_pessoa" },
-        { id: "buf02", categoria: "SERVIÇOS DE BUFFET", nome: "Cardápio Butiquim", unidade: "por_pessoa" },
-        { id: "buf03", categoria: "SERVIÇOS DE BUFFET", nome: "Cardápio Personalizado", unidade: "por_pessoa" },
-        // Bebidas
-        { id: "beb01", categoria: "BEBIDAS", nome: "Pacote de Bebidas 1 (Refrigerante, Suco, Água)", unidade: "por_pessoa" },
-        { id: "beb02", categoria: "BEBIDAS", nome: "Chopp", unidade: "por_pessoa" },
-        // Opcionais
-        { id: "opc01", categoria: "SERVIÇOS OPCIONAIS", nome: "Mesa de Café da Manhã", unidade: "por_pessoa" },
-        { id: "opc02", categoria: "SERVIÇOS OPCIONAIS", nome: "Música ao Vivo", unidade: "unidade" },
-        { id: "opc03", categoria: "SERVIÇOS OPCIONAIS", nome: "DJ", unidade: "unidade" },
-        { id: "opc04", categoria: "SERVIÇOS OPCIONAIS", nome: "Decoração", unidade: "unidade" },
-        // Equipe
-        { id: "equ01", categoria: "EQUIPE", nome: "Garçom", unidade: "unidade" },
-        { id: "equ02", categoria: "EQUIPE", nome: "Segurança", unidade: "unidade" },
-        { id: "equ03", categoria: "EQUIPE", nome: "Recepcionista", unidade: "unidade" }
-    ],
+:root {
+    --primary-color: #8B0000; /* COR VINHO / BORDÔ */
+    --secondary-color: #f9f4f4;
+    --text-color: #333;
+    --border-color: #e0d8d8;
+    --card-bg: #ffffff;
+    --shadow: 0 4px 12px rgba(0,0,0,0.08);
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+}
 
-    // 2. TABELAS DE PREÇOS
-    // Cada tabela contém os preços para os serviços listados acima.
-    tabelas: {
-        "Tabela A (Padrão 2025)": {
-            tipo: "base",
-            precos: {
-                "loc01": 15000.00, "loc02": 10000.00, "loc03": 12000.00, "loc04": 8000.00,
-                "buf01": 165.00, "buf02": 185.00, "buf03": 215.00,
-                "beb01": 20.00, "beb02": 30.00,
-                "opc01": 15.00, "opc02": 3500.00, "opc03": 2500.00, "opc04": 5000.00,
-                "equ01": 200.00, "equ02": 250.00, "equ03": 250.00
-            }
-        },
-        "Tabela B (Parceiros +10%)": {
-            tipo: "derivada",
-            base: "Tabela A (Padrão 2025)", // Baseada na Tabela A
-            modificador: 1.10 // +10%
-        },
-        "Tabela C (Eventos Corporativos -5%)": {
-            tipo: "derivada",
-            base: "Tabela A (Padrão 2025)",
-            modificador: 0.95 // -5%
-        }
-    }
-};
+body { font-family: 'Poppins', sans-serif; background-color: var(--secondary-color); color: #333; margin: 0; padding: 0; }
+.container { max-width: 1400px; margin: 2rem auto; padding: 1rem; }
+header { text-align: center; margin-bottom: 2rem; }
+h1, h2, h3 { color: var(--primary-color); }
+h2 { border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; }
+.card { background: var(--card-bg); padding: 1.5rem; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 2rem; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+.form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; background: white; box-shadow: var(--shadow); }
+th, td { padding: 0.8rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+th { background-color: var(--secondary-color); font-weight: 600; }
+.price-input { width: 100px; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right; }
+.actions { display: flex; gap: 0.5rem; }
+.btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: 600; }
+.btn-primary { background-color: var(--primary-color); }
+.btn-primary:hover { background-color: #6d0000; }
+.btn-danger { background-color: var(--danger-color); }
+.btn-success { background-color: var(--success-color); }
+.backup-section { display: flex; gap: 1rem; align-items: center; }
+#importFile { display: none; }
