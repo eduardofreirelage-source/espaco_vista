@@ -27,6 +27,7 @@ header h1 { color: var(--text-color); font-size: 1.3rem; font-weight: 600; }
 h2 { color: var(--primary-color); font-size: 1.1rem; padding: 1.2rem 1.5rem; margin: 0; border-bottom: 1px solid var(--border-color); }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1.2rem 1.5rem; }
+.form-group { margin-bottom: 0.8rem; }
 .form-group label { display: block; font-weight: 500; margin-bottom: 0.3rem; font-size: 0.85rem; }
 .form-group input, .form-group select { width: 100%; padding: 0.5rem 0.7rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
 
@@ -36,29 +37,29 @@ h2 { color: var(--primary-color); font-size: 1.1rem; padding: 1.2rem 1.5rem; mar
 .btn-icon:hover { color: var(--primary-color); }
 
 #event-dates-container { padding: 1.2rem 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
-.date-entry { display: grid; grid-template-columns: 150px 100px 100px 1fr auto; gap: 0.8rem; align-items: center; }
+.date-entry { display: grid; grid-template-columns: 140px 90px 90px 1fr auto; gap: 0.8rem; align-items: center; }
 #add-date-btn { margin: 0 1.5rem 1.2rem; align-self: flex-start; }
 
-.category-block { margin-bottom: 2rem; }
-.category-block:last-child { margin-bottom: 0; }
-.category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.category-title { color: var(--primary-color); font-size: 1.2rem; border: none; padding: 0; margin: 0; }
+/* LAYOUT REFINADO DAS CATEGORIAS */
+.category-block { padding: 1.5rem; border-top: 1px solid var(--border-color); }
+#quote-categories-container .card > .category-block:first-child { border-top: none; }
+.category-header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 1rem; }
+.category-title { color: var(--primary-color); font-size: 1.2rem; font-weight: 600; }
 
 .quote-table { width: 100%; border-collapse: collapse; }
-.quote-table th, .quote-table td { padding: 0.8rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-.quote-table th { font-weight: 500; font-size: 0.75rem; text-transform: uppercase; color: #666; background-color: var(--secondary-color); }
+.quote-table th, .quote-table td { padding: 0.8rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+.quote-table th { font-weight: 500; font-size: 0.75rem; text-transform: uppercase; color: #666; background-color: var(--secondary-color); padding-left: 1rem; }
+.quote-table td { padding-left: 1rem; }
 .quote-table td input, .quote-table td select { padding: 0.4rem; font-size: 0.9rem; }
 .quote-table tr:last-child td { border-bottom: none; }
-.quote-table tr.observations-row td { padding: 0.5rem 1.5rem 1rem 1.5rem; background-color: #fafafa; }
+.quote-table tr.observations-row td { padding: 0.5rem 1rem 1rem 1rem; background-color: #fafafa; }
 .quote-table textarea { width: 100%; font-size: 0.9rem; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem; }
 .item-actions { display: flex; align-items: center; }
-tr.category-subheader td { background-color: var(--secondary-color); font-weight: 600; color: var(--primary-color); border-top: 2px solid var(--border-color); }
-tr.category-subtotal td { font-weight: 600; text-align: right; }
-tr.category-subtotal td:first-child { text-align: right; padding-right: 2rem; }
 
-.multiselect-container { position: relative; width: 250px; }
+/* MENU MULTISELECT REPOSICIONADO */
+.multiselect-container { position: relative; width: 350px; margin-top: 0.8rem; }
 .multiselect-input { background: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.9rem; }
-.multiselect-dropdown { display: none; position: absolute; top: 100%; right: 0; width: 350px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 10; margin-top: 0.5rem; padding: 0.5rem; }
+.multiselect-dropdown { display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: var(--shadow); z-index: 10; margin-top: 0.5rem; padding: 0.5rem; }
 .multiselect-container.open .multiselect-dropdown { display: block; }
 .multiselect-list { max-height: 200px; overflow-y: auto; margin-bottom: 0.5rem; }
 .multiselect-list-item { display: block; padding: 0.6rem; }
@@ -66,36 +67,12 @@ tr.category-subtotal td:first-child { text-align: right; padding-right: 2rem; }
 .multiselect-list-item:hover { background-color: var(--secondary-color); }
 .btn-add-selected { width: 100%; margin-top: 0.5rem; }
 
-/* --- RODAPÉ FIXO DO RESUMO (REDESENHADO) --- */
-.summary-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: #2c2c2c;
-    color: white;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
-    padding: 0.8rem 2rem;
-    display: flex;
-    justify-content: space-between; /* Alinha os blocos nas extremidades */
-    align-items: center;
-    z-index: 100;
-}
-.summary-details {
-    display: flex;
-    gap: 2rem; /* Espaço entre Subtotal e Desconto */
-    align-items: center;
-}
+/* RODAPÉ FIXO REFINADO */
+.summary-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #2c2c2c; color: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); padding: 0.8rem 1rem; display: flex; justify-content: center; align-items: center; z-index: 100; }
+.summary-content { display: flex; justify-content: center; align-items: center; gap: 2rem; flex-wrap: wrap; }
 .summary-item { display: flex; align-items: center; gap: 0.8rem; }
-.summary-item span, .summary-item label { font-weight: 500; font-size: 0.9rem; opacity: 0.8; }
-.summary-item strong { font-size: 1rem; font-weight: 600; }
-.summary-item input { width: 100px; text-align: right; background: #555; color: white; border: 1px solid #777; border-radius: 4px; padding: 0.4rem; }
-.summary-total { text-align: right; }
-.summary-total span { font-size: 0.9rem; opacity: 0.8; display: block; }
-.summary-total strong { font-size: 1.5rem; font-weight: 600; color: white; }
-
-@media (max-width: 900px) { 
-    header, .summary-footer { flex-direction: column; gap: 1rem; text-align: center; }
-    .summary-footer { padding: 1rem; }
-    .summary-total { text-align: center; border-top: 1px solid #555; width: 100%; padding-top: 1rem; margin-top: 1rem; }
-}
+.summary-item span, .summary-item label { font-weight: 500; font-size: 0.8rem; opacity: 0.8; }
+.summary-item strong { font-size: 0.9rem; font-weight: 600; }
+.summary-item input { width: 90px; text-align: right; background: #555; color: white; border: 1px solid #777; border-radius: 4px; padding: 0.4rem; }
+.summary-total { font-size: 1.1rem; font-weight: 600; color: white; display: flex; align-items: center; gap: 0.8rem; border-left: 1px solid #555; padding-left: 2rem; }
+.summary-total strong { font-size: 1.4rem; }
