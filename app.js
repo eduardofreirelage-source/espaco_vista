@@ -23,12 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initialize() {
         try {
             await loadDataFromSupabase();
-            populatePriceTables(); // <-- ESTA FUNÇÃO ESTAVA FALTANDO
+            populatePriceTables();
             addEventListeners();
             render();
         } catch (error) {
             console.error("Falha crítica na inicialização:", error);
-            alert("Não foi possível carregar os dados do banco de dados. Verifique sua conexão ou as configurações do Supabase.");
+            alert("Não foi possível carregar os dados do banco de dados. Verifique sua conexão ou as configurações do Supabase e recarregue a página.");
         }
     }
 
@@ -45,8 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return acc;
         }, {});
     }
-
-    // --- FUNÇÃO CORRIGIDA/ADICIONADA ---
+    
     function populatePriceTables() {
         priceTableSelect.innerHTML = Object.keys(appData.tabelas)
             .map(name => `<option value="${name}">${name}</option>`)
@@ -60,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA DE RENDERIZAÇÃO ---
     function render() {
         renderDateManager();
-        renderQuoteTable();
+        renderQuoteTable(); // Esta função agora faz o agrupamento
         calculateTotal();
     }
     
@@ -71,9 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const div = document.createElement('div');
             div.className = 'date-entry';
             div.innerHTML = `
-                <input type="date" value="${dateObj.date}" data-index="${index}" data-field="date">
+                <input type="date" value="${dateObj.date}" data-index="${index}" data-field="date" title="Data">
                 <input type="time" value="${dateObj.startTime}" data-index="${index}" data-field="startTime" title="Horário de Início">
                 <input type="time" value="${dateObj.endTime}" data-index="${index}" data-field="endTime" title="Horário de Término">
+                <input type="text" placeholder="Observações da data..." value="${dateObj.observations || ''}" data-index="${index}" data-field="observations">
                 <button class="btn-icon" data-action="removeDate" data-index="${index}">&times;</button>
             `;
             container.appendChild(div);
@@ -84,40 +84,67 @@ document.addEventListener('DOMContentLoaded', () => {
         quoteTableBody.innerHTML = '';
         const prices = getCalculatedPrices();
         
-        quote.items.forEach((item, index) => {
+        // Agrupa os itens por categoria para renderização
+        const groupedItems = quote.items.reduce((acc, item) => {
             const service = appData.services.find(s => s.id === item.id);
-            if (!service) return;
-
-            const unitPrice = prices[item.id] || 0;
-            const isPerPerson = service.unit === 'por_pessoa';
-            const quantity = isPerPerson ? quote.general.guestCount : item.quantity;
-            const total = unitPrice * quantity;
-            const dateOptions = quote.general.dates.map((d, i) => `<option value="${d.date}" ${d.date === item.assignedDate ? 'selected' : ''}>Data ${i + 1} (${d.date || 'N/D'})</option>`).join('');
-
-            const row = document.createElement('tr');
-            row.dataset.index = index;
-            row.innerHTML = `
-                <td><span class="category-badge">${service.category}</span></td>
-                <td>${service.name}</td>
-                <td><select data-field="assignedDate"><option value="">Selecione</option>${dateOptions}</select></td>
-                <td><input type="number" value="${quantity}" min="1" ${isPerPerson ? 'disabled' : ''} data-field="quantity"></td>
-                <td>R$ ${unitPrice.toFixed(2)}</td>
-                <td>R$ ${total.toFixed(2)}</td>
-                <td class="item-actions">
-                    <button class="btn-icon" data-action="toggleObs" title="Observações">💬</button>
-                    <button class="btn-icon" data-action="duplicate" title="Duplicar Item">📋</button>
-                    <button class="btn-icon" data-action="remove" title="Remover Item">&times;</button>
-                </td>
-            `;
-            quoteTableBody.appendChild(row);
-
-            if (item.showObs) {
-                const obsRow = document.createElement('tr');
-                obsRow.className = 'observations-row';
-                obsRow.innerHTML = `<td colspan="7"><textarea data-field="observacoes" placeholder="Adicione observações para este item...">${item.observacoes || ''}</textarea></td>`;
-                quoteTableBody.appendChild(obsRow);
+            if (service) {
+                (acc[service.category] = acc[service.category] || []).push(item);
             }
-        });
+            return acc;
+        }, {});
+
+        // Renderiza cada grupo de categoria
+        for (const category in groupedItems) {
+            const headerRow = document.createElement('tr');
+            headerRow.className = 'category-subheader';
+            headerRow.innerHTML = `<td colspan="7">${category}</td>`;
+            quoteTableBody.appendChild(headerRow);
+            
+            let categorySubtotal = 0;
+
+            // Renderiza os itens dentro do grupo
+            groupedItems[category].forEach(item => {
+                const itemIndex = quote.items.indexOf(item);
+                const service = appData.services.find(s => s.id === item.id);
+                const unitPrice = prices[item.id] || 0;
+                const isPerPerson = service.unit === 'por_pessoa';
+                const quantity = isPerPerson ? quote.general.guestCount : item.quantity;
+                const total = unitPrice * quantity;
+                categorySubtotal += total;
+
+                const dateOptions = quote.general.dates.map((d, i) => `<option value="${d.date}" ${d.date === item.assignedDate ? 'selected' : ''}>Data ${i + 1} (${d.date || 'N/D'})</option>`).join('');
+
+                const row = document.createElement('tr');
+                row.dataset.index = itemIndex;
+                row.innerHTML = `
+                    <td><span class="category-badge">${service.category}</span></td>
+                    <td>${service.name}</td>
+                    <td><select data-field="assignedDate"><option value="">Selecione</option>${dateOptions}</select></td>
+                    <td><input type="number" value="${quantity}" min="1" ${isPerPerson ? 'disabled' : ''} data-field="quantity"></td>
+                    <td>R$ ${unitPrice.toFixed(2)}</td>
+                    <td>R$ ${total.toFixed(2)}</td>
+                    <td class="item-actions">
+                        <button class="btn-icon" data-action="toggleObs" title="Observações">💬</button>
+                        <button class="btn-icon" data-action="duplicate" title="Duplicar Item">📋</button>
+                        <button class="btn-icon" data-action="remove" title="Remover Item">&times;</button>
+                    </td>
+                `;
+                quoteTableBody.appendChild(row);
+
+                if (item.showObs) {
+                    const obsRow = document.createElement('tr');
+                    obsRow.className = 'observations-row';
+                    obsRow.innerHTML = `<td colspan="7"><textarea data-field="observacoes" placeholder="Adicione observações para este item...">${item.observacoes || ''}</textarea></td>`;
+                    quoteTableBody.appendChild(obsRow);
+                }
+            });
+
+            // Adiciona a linha de subtotal da categoria
+            const subtotalRow = document.createElement('tr');
+            subtotalRow.className = 'category-subtotal';
+            subtotalRow.innerHTML = `<td colspan="6">Subtotal ${category}</td><td>R$ ${categorySubtotal.toFixed(2)}</td>`;
+            quoteTableBody.appendChild(subtotalRow);
+        }
     }
 
     // --- LÓGICA DE CÁLCULO ---
@@ -148,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- MANIPULADORES DE EVENTOS ---
     function addEventListeners() {
         addDateBtn.addEventListener('click', () => {
-            quote.general.dates.push({ date: new Date().toISOString().split('T')[0], startTime: '19:00', endTime: '23:00' });
+            quote.general.dates.push({ date: new Date().toISOString().split('T')[0], startTime: '19:00', endTime: '23:00', observations: '' });
             render();
         });
         
@@ -164,17 +191,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const { index, field } = e.target.dataset;
             const targetId = e.target.id;
 
-            if (index && field) { // Para itens da tabela
-                updateItem(index, field, e.target.value);
+            if (index && field) {
+                const dateEntry = e.target.closest('.date-entry');
+                if (dateEntry) {
+                    updateDate(index, field, e.target.value);
+                } else {
+                    updateItem(index, field, e.target.value);
+                }
             } else if (targetId === 'guestCount' || targetId === 'priceTableSelect' || targetId === 'discountValue') {
                 const key = targetId.replace('Value', '');
                 quote.general[key] = e.target.value;
                 render();
-            } else { // Para datas
-                const dateEntry = e.target.closest('.date-entry');
-                if (dateEntry && index && field) {
-                    updateDate(index, field, e.target.value);
-                }
             }
         });
 
@@ -215,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- FUNÇÕES DE MANIPULAÇÃO DO ORÇAMENTO ---
-    function updateItem(index, key, value) { quote.items[parseInt(index)][key] = (key === 'quantity') ? parseInt(value) : value; render(); }
+    function updateItem(index, key, value) { const item = quote.items[parseInt(index)]; if(item) item[key] = (key === 'quantity') ? parseInt(value) : value; render(); }
     function removeItem(index) { quote.items.splice(parseInt(index), 1); render(); }
     function duplicateItem(index) { const item = quote.items[parseInt(index)]; if(item) quote.items.splice(parseInt(index) + 1, 0, JSON.parse(JSON.stringify(item))); render(); }
     function toggleObs(index) { const item = quote.items[parseInt(index)]; if(item) item.showObs = !item.showObs; render(); }
