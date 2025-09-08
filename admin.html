@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-R">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Sistema de Orçamentos</title>
     <link rel="stylesheet" href="admin.css">
 </head>
@@ -11,44 +12,62 @@
             <h1>Painel de Administração</h1>
             <a href="index.html" class="btn">← Voltar para Orçamentos</a>
         </header>
+
         <main>
             <section class="card">
                 <h2>Orçamentos Salvos</h2>
-                <div class="card-content" id="quotes-list-container"></div>
-            </section>
-
-            <section class="card">
-                <h2>Configuração de Preços</h2>
-                <div class="tabs">
-                    <button class="tab-link active" data-tab="tab-services">Catálogo de Serviços</button>
-                    <button class="tab-link" data-tab="tab-price-tables">Listas de Preços</button>
-                    <button class="tab-link" data-tab="tab-bulk-update">Alteração em Massa</button>
+                <div class="card-content" id="quotes-list-container">
+                    <table id="quotes-table">
+                        <thead><tr><th>Cliente</th><th>Data de Criação</th><th>Status</th><th>Ações</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
-                
-                <div id="tab-services" class="tab-content active">
-                    <form id="addServiceForm"><input type="text" id="serviceName" required placeholder="Nome do novo serviço"><select id="serviceCategory" required><option value="" disabled selected>Categoria</option><option>Espaço</option><option>Gastronomia</option><option>Equipamentos</option><option>Serviços / Outros</option></select><select id="serviceUnit" required><option value="" disabled selected>Unidade</option><option>unidade</option><option>diaria</option><option>por_pessoa</option></select><button type="submit" class="btn">Adicionar Serviço</button></form>
-                    <div class="price-matrix-container">
-                        <table id="price-matrix"></table>
+            </section>
+            
+            <div class="admin-grid">
+                <section class="card">
+                    <h2>Listas de Preços</h2>
+                    <div class="card-content">
+                        <table id="price-tables-list">
+                            <thead><tr><th>Nome da Lista</th><th>Ações</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <form id="addPriceTableForm" class="inline-form">
+                            <input type="text" id="tableName" placeholder="Nome da nova lista" required>
+                            <button type="submit" class="btn">Adicionar</button>
+                        </form>
                     </div>
-                </div>
+                </section>
 
-                <div id="tab-price-tables" class="tab-content">
-                    <form id="addPriceTableForm"><input type="text" id="tableName" required placeholder="Nome da nova lista de preços (Ex: Corporativo 2026)"><button type="submit" class="btn">Adicionar Lista</button></form>
-                    <table id="price-tables-list"></table>
-                </div>
-
-                <div id="tab-bulk-update" class="tab-content">
-                    <h3>Aplicar Aumento/Desconto em uma Lista</h3>
-                    <form id="bulkUpdateForm">
-                        <div class="form-group"><label>Usar preços da lista:</label><select id="bulk-base-table"></select></div>
-                        <div class="form-group"><label>Para atualizar a lista:</label><select id="bulk-target-table"></select></div>
-                        <div class="form-group"><label>Aplicar modificador de (%):</label><input type="number" id="bulk-modifier" value="10" step="1" placeholder="Ex: 10 para +10%, -5 para -5%"></div>
-                        <button type="submit" class="btn">Aplicar Alteração em Massa</button>
-                    </form>
-                </div>
-            </section>
+                <section class="card">
+                    <h2>Catálogo de Serviços</h2>
+                    <div class="card-content">
+                        <table id="services-table">
+                            <thead><tr><th>Nome</th><th>Categoria</th><th>Ações</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <form id="addServiceForm" class="inline-form">
+                            <input type="text" id="serviceName" placeholder="Nome do novo serviço" required>
+                            <select id="serviceCategory" required><option value="" disabled selected>Categoria</option><option>Espaço</option><option>Gastronomia</option><option>Equipamentos</option><option>Serviços / Outros</option></select>
+                            <select id="serviceUnit" required><option value="" disabled selected>Unidade</option><option>unidade</option><option>diaria</option><option>por_pessoa</option></select>
+                            <button type="submit" class="btn">Adicionar Serviço</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
+
+    <div id="editPricesModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2 id="editPricesModalTitle"></h2>
+            <form id="editPricesForm">
+                </form>
+            <button id="savePricesButton" class="btn">Salvar Preços</button>
+        </div>
+    </div>
+    
     <div id="save-notification" class="notification"></div>
     <script type="module" src="admin.js"></script>
 </body>
