@@ -1,11 +1,66 @@
-<main>
-    <section class="card">
-        <h2>Orçamentos Salvos</h2>
-        <div class="card-content">
-            <table id="quotes-table">
-                <thead><tr><th>Cliente</th><th>Data de Criação</th><th>Status</th><th>Ações</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </section>
-    </main>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Sistema de Orçamentos</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Painel de Administração</h1>
+            <a href="index.html" class="btn">← Voltar para Orçamentos</a>
+        </header>
+
+        <main>
+            <section class="card">
+                <h2>Orçamentos Salvos</h2>
+                <div class="card-content">
+                    <table id="quotes-table">
+                        <thead><tr><th>Cliente</th><th>Data de Criação</th><th>Status</th><th>Ações</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <div class="admin-grid">
+                <section class="card">
+                    <h2>Tabelas de Preços</h2>
+                    <div class="card-content">
+                        <table id="price-tables-table">
+                            <thead><tr><th>Nome da Tabela</th><th>Multiplicador</th><th>Ações</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <form id="addPriceTableForm">
+                            <h3>Adicionar Nova Tabela</h3>
+                            <input type="text" id="tableName" placeholder="Nome da Tabela" required>
+                            <input type="number" id="modifier" placeholder="Multiplicador (Ex: 1.2)" step="0.01" required>
+                            <button type="submit" class="btn">Adicionar</button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>Catálogo de Serviços</h2>
+                    <div class="card-content">
+                        <table id="services-table">
+                            <thead><tr><th>Nome</th><th>Categoria</th><th>Preço Base (R$)</th><th>Ações</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <form id="addServiceForm">
+                            <h3>Adicionar Novo Serviço</h3>
+                            <input type="text" id="serviceName" placeholder="Nome do Serviço" required>
+                            <select id="serviceCategory" required><option value="" disabled selected>Categoria</option><option>Espaço</option><option>Gastronomia</option><option>Equipamentos</option><option>Serviços / Outros</option></select>
+                            <select id="serviceUnit" required><option value="" disabled selected>Unidade</option><option>unidade</option><option>diaria</option><option>por_pessoa</option></select>
+                            <input type="number" id="serviceBasePrice" placeholder="Preço Base (R$)" step="0.01" required>
+                            <button type="submit" class="btn">Adicionar</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <div id="save-notification" class="notification"></div>
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
