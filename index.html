@@ -39,9 +39,10 @@
                 <button id="add-date-btn" class="btn">+ Adicionar Data</button>
             </section>
 
-            <section class="card" id="quote-card">
+            <section class="card">
                 <h2>Itens do Orçamento</h2>
-                <div id="quote-categories-container"></div>
+                <div id="quote-categories-container">
+                    </div>
             </section>
         </main>
     </div>
@@ -61,7 +62,31 @@
     </footer>
 
     <template id="category-template">
-        </template>
+        <div class="category-block">
+            <div class="category-header">
+                <h3 class="category-title"></h3>
+                <div class="multiselect-container">
+                    <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
+                    <div class="multiselect-dropdown">
+                        <div class="multiselect-list"></div>
+                        <button class="btn btn-add-selected">Adicionar</button>
+                    </div>
+                </div>
+            </div>
+            <table class="quote-table">
+                <thead><tr>
+                    <th style="width:35%;">Item</th>
+                    <th>Data</th>
+                    <th style="width:70px;">Qtde.</th>
+                    <th>Vlr. Unitário</th>
+                    <th style="width:100px;">Desc. (%)</th>
+                    <th>Vlr. Total</th>
+                    <th style="width:80px;">Ações</th>
+                </tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </template>
     
     <div id="save-notification" class="notification"></div>
     <div id="print-output" class="print-only"></div>
