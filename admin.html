@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Cadastro de Preços</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Área de Cadastro</h1>
+            <p>Gerencie suas tabelas de preços.</p>
+        </header>
+        <main id="admin-content">
+            </main>
+        <aside>
+            <h2>Salvar Alterações</h2>
+            <p><strong>Importante:</strong> Como o sistema ainda não tem banco de dados, você precisa copiar o código gerado e colar no arquivo <strong>dados.js</strong> para salvar as alterações.</p>
+            <button id="exportButton">Gerar Código para Salvar</button>
+            <textarea id="exportData" readonly></textarea>
+        </aside>
+    </div>
+    <script src="dados.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
