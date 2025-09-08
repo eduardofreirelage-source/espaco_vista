@@ -13,26 +13,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const priceTableSelect = document.getElementById('priceTableSelect');
     const discountInput = document.getElementById('discountValue');
     const addDateBtn = document.getElementById('add-date-btn');
+    const addItemModal = document.getElementById('addItemModal');
     const quoteTableBody = document.getElementById('quote-table-body');
     const serviceSearchInput = document.getElementById('service-search');
     const searchResultsContainer = document.getElementById('service-search-results');
+
 
     // --- INICIALIZAÇÃO ---
     async function initialize() {
         try {
             await loadDataFromSupabase();
-            populatePriceTables();
+            populatePriceTables(); // <-- ESTA FUNÇÃO ESTAVA FALTANDO
             addEventListeners();
             render();
         } catch (error) {
             console.error("Falha crítica na inicialização:", error);
-            alert("Não foi possível carregar os dados do banco de dados.");
+            alert("Não foi possível carregar os dados do banco de dados. Verifique sua conexão ou as configurações do Supabase.");
         }
     }
 
     async function loadDataFromSupabase() {
         const { data: servicesData, error: servicesError } = await supabase.from('services').select('*');
         if (servicesError) throw servicesError;
+
         const { data: tablesData, error: tablesError } = await supabase.from('price_tables').select('*');
         if (tablesError) throw tablesError;
 
@@ -41,6 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
             acc[table.name] = { modificador: table.modifier };
             return acc;
         }, {});
+    }
+
+    // --- FUNÇÃO CORRIGIDA/ADICIONADA ---
+    function populatePriceTables() {
+        priceTableSelect.innerHTML = Object.keys(appData.tabelas)
+            .map(name => `<option value="${name}">${name}</option>`)
+            .join('');
+
+        if (priceTableSelect.options.length > 0) {
+            quote.general.priceTable = priceTableSelect.value;
+        }
     }
 
     // --- LÓGICA DE RENDERIZAÇÃO ---
@@ -106,8 +120,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- LÓGICA DE CÁLCULO (sem alteração significativa) ---
-    function calculateTotal() { /* ... */ }
+    // --- LÓGICA DE CÁLCULO ---
+    function calculateTotal() {
+        const prices = getCalculatedPrices();
+        let subtotal = 0;
+        let gastronomySubtotal = 0;
+
+        quote.items.forEach(item => {
+            const service = appData.services.find(s => s.id === item.id);
+            if (!service) return;
+            const unitPrice = prices[item.id] || 0;
+            const quantity = service.unit === 'por_pessoa' ? quote.general.guestCount : (item.quantity || 1);
+            const itemTotal = unitPrice * quantity;
+            subtotal += itemTotal;
+            if (service.category === 'Gastronomia') gastronomySubtotal += itemTotal;
+        });
+
+        const serviceFee = gastronomySubtotal * 0.10;
+        const discount = parseFloat(discountInput.value) || 0;
+        const total = subtotal + serviceFee - discount;
+
+        document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
+        document.getElementById('serviceFeeValue').textContent = `R$ ${serviceFee.toFixed(2)}`;
+        document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
+    }
 
     // --- MANIPULADORES DE EVENTOS ---
     function addEventListeners() {
@@ -116,22 +152,29 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         });
         
-        // Listener para o campo de busca de itens
         serviceSearchInput.addEventListener('keyup', handleServiceSearch);
         serviceSearchInput.addEventListener('focus', handleServiceSearch);
-        document.addEventListener('click', (e) => { // Esconde resultados se clicar fora
+        document.addEventListener('click', (e) => {
             if (!searchResultsContainer.contains(e.target) && e.target !== serviceSearchInput) {
                 searchResultsContainer.style.display = 'none';
             }
         });
 
-        // Delegação de eventos para ações na página
         document.body.addEventListener('change', e => {
             const { index, field } = e.target.dataset;
-            if (index && field) updateItem(index, field, e.target.value);
-            if (e.target.id === 'guestCount' || e.target.id === 'priceTableSelect' || e.target.id === 'discountValue') {
-                quote.general[e.target.id.replace('Value', '')] = e.target.value;
+            const targetId = e.target.id;
+
+            if (index && field) { // Para itens da tabela
+                updateItem(index, field, e.target.value);
+            } else if (targetId === 'guestCount' || targetId === 'priceTableSelect' || targetId === 'discountValue') {
+                const key = targetId.replace('Value', '');
+                quote.general[key] = e.target.value;
                 render();
+            } else { // Para datas
+                const dateEntry = e.target.closest('.date-entry');
+                if (dateEntry && index && field) {
+                    updateDate(index, field, e.target.value);
+                }
             }
         });
 
@@ -149,10 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA DO DROPDOWN DE BUSCA ---
     function handleServiceSearch(e) {
         const searchTerm = e.target.value.toLowerCase();
-        if (searchTerm.length < 1) {
-            searchResultsContainer.style.display = 'none';
-            return;
-        }
+        searchResultsContainer.style.display = 'none';
+        if (searchTerm.length < 1) return;
+        
         const filteredServices = appData.services.filter(s => s.name.toLowerCase().includes(searchTerm));
         searchResultsContainer.innerHTML = '';
         if (filteredServices.length > 0) {
@@ -169,21 +211,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchResultsContainer.appendChild(itemDiv);
             });
             searchResultsContainer.style.display = 'block';
-        } else {
-            searchResultsContainer.style.display = 'none';
         }
     }
     
     // --- FUNÇÕES DE MANIPULAÇÃO DO ORÇAMENTO ---
-    function updateItem(index, key, value) { quote.items[index][key] = (key === 'quantity') ? parseInt(value) : value; render(); }
-    function removeItem(index) { quote.items.splice(index, 1); render(); }
-    function duplicateItem(index) { const item = quote.items[index]; if(item) quote.items.splice(parseInt(index) + 1, 0, JSON.parse(JSON.stringify(item))); render(); }
-    function toggleObs(index) { quote.items[index].showObs = !quote.items[index].showObs; render(); }
-    function updateDate(index, field, value) { quote.general.dates[index][field] = value; render(); }
-    function removeDate(index) { quote.general.dates.splice(index, 1); render(); }
+    function updateItem(index, key, value) { quote.items[parseInt(index)][key] = (key === 'quantity') ? parseInt(value) : value; render(); }
+    function removeItem(index) { quote.items.splice(parseInt(index), 1); render(); }
+    function duplicateItem(index) { const item = quote.items[parseInt(index)]; if(item) quote.items.splice(parseInt(index) + 1, 0, JSON.parse(JSON.stringify(item))); render(); }
+    function toggleObs(index) { const item = quote.items[parseInt(index)]; if(item) item.showObs = !item.showObs; render(); }
+    function updateDate(index, field, value) { const date = quote.general.dates[parseInt(index)]; if (date) date[field] = value; render(); }
+    function removeDate(index) { quote.general.dates.splice(parseInt(index), 1); render(); }
 
     // --- FUNÇÕES AUXILIARES ---
-    function getCalculatedPrices() { /* ... */ }
-
+    function getCalculatedPrices() {
+        const tableName = priceTableSelect.value;
+        const table = appData.tabelas[tableName];
+        if (!table) return {};
+        const prices = {};
+        appData.services.forEach(service => {
+            prices[service.id] = (service.base_price || 0) * (table.modificador || 1);
+        });
+        return prices;
+    }
+    
     initialize();
 });
