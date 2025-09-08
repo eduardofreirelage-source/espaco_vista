@@ -10,7 +10,7 @@
     <div class="container">
         <header>
             <h1>Área de Cadastro e Administração</h1>
-            <p>Gerencie todos os dados do sistema de orçamentos.</p>
+            <p>Gerencie o catálogo de serviços e as tabelas de preços.</p>
         </header>
 
         <section class="card">
@@ -23,33 +23,24 @@
         </section>
 
         <section class="card">
-            <h2><img src="https://img.icons8.com/ios-filled/24/8B0000/add-shopping-cart.png" alt=""/> Cadastrar Novo Serviço</h2>
+            <h2><img src="https://img.icons8.com/ios-filled/24/8B0000/add-shopping-cart.png" alt=""/> Cadastrar Novo Item no Catálogo</h2>
             <form id="addServiceForm" class="form-grid">
-                <div class="form-group"><label for="serviceName">Nome do Serviço</label><input type="text" id="serviceName" required></div>
-                <div class="form-group"><label for="serviceCategory">Categoria</label><input type="text" id="serviceCategory" required></div>
-                <div class="form-group"><label for="serviceUnit">Unidade</label>
-                    <select id="serviceUnit"><option value="por_pessoa">por_pessoa</option><option value="unidade">unidade</option><option value="diaria">diaria</option></select>
+                <div class="form-group"><label for="serviceName">Nome do Item</label><input type="text" id="serviceName" required></div>
+                <div class="form-group"><label for="serviceCategory">Categoria</label>
+                    <select id="serviceCategory">
+                        <option value="Gastronomia">Gastronomia</option>
+                        <option value="Equipamentos">Equipamentos</option>
+                        <option value="Serviços / Outros">Serviços / Outros</option>
+                    </select>
                 </div>
-                <div class="form-group" style="align-self: end;"><button type="submit" class="btn btn-primary">Adicionar Serviço</button></div>
-            </form>
-        </section>
-
-        <section class="card">
-            <h2><img src="https://img.icons8.com/ios-filled/24/8B0000/price-tag.png" alt=""/> Cadastrar Nova Tabela de Preços</h2>
-            <form id="addPriceTableForm" class="form-grid">
-                 <div class="form-group"><label for="tableName">Nome da Tabela</label><input type="text" id="tableName" required></div>
-                 <div class="form-group"><label for="tableType">Tipo</label>
-                    <select id="tableType"><option value="base">Base</option><option value="derivada">Derivada</option></select>
-                </div>
-                <div class="form-group" id="baseTableGroup" style="display:none;"><label for="baseTable">Tabela Base</label><select id="baseTable"></select></div>
-                <div class="form-group" id="modifierGroup" style="display:none;"><label for="modifier">Modificador (%)</label><input type="number" id="modifier" value="10" step="1"></div>
-                <div class="form-group" style="align-self: end;"><button type="submit" class="btn btn-primary">Adicionar Tabela</button></div>
+                <div class="form-group" style="align-self: end;"><button type="submit" class="btn btn-primary">Adicionar ao Catálogo</button></div>
             </form>
         </section>
 
         <main id="admin-content">
             </main>
     </div>
-    <script src="dados.js"></script> <script src="admin.js"></script>
+    <script src="dados.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>
