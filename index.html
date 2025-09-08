@@ -3,58 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Orçamentos - Seu Espaço de Eventos</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Admin - Cadastro de Preços</title>
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Gerador de Propostas de Investimento</h1>
-            <p>Preencha os dados e selecione os serviços para calcular o valor do evento.</p>
+            <h1>Área de Cadastro</h1>
+            <p>Gerencie suas tabelas de preços.</p>
         </header>
-
-        <main>
-            <section class="card" id="dados-evento">
-                <h2>1. Dados do Evento</h2>
-                <div class="form-group">
-                    <label for="clientName">Nome do Cliente:</label>
-                    <input type="text" id="clientName" placeholder="Digite o nome do cliente">
-                </div>
-                <div class="form-group">
-                    <label for="guestCount">Número de Convidados (Adultos):</label>
-                    <input type="number" id="guestCount" value="100" min="1">
-                </div>
-            </section>
-
-            <section class="card" id="servicos">
-                <h2>2. Detalhes do Investimento</h2>
-                <div id="service-categories">
-                    </div>
-            </section>
-        </main>
-        
-        <aside class="summary-card">
-            <h2>Resumo da Proposta</h2>
-            <div id="summary-content">
-                <p>Preencha os dados e selecione os serviços.</p>
-            </div>
-            <div id="summary-total">
-                <div class="total-line">
-                    <span>Subtotal de Serviços:</span>
-                    <span id="subtotalServicesValue">R$ 0,00</span>
-                </div>
-                <div class="total-line">
-                    <span>Taxa de Serviço (10% sobre Buffet/Bebidas):</span>
-                    <span id="serviceFeeValue">R$ 0,00</span>
-                </div>
-                <div class="total-line grand-total">
-                    <span>VALOR TOTAL:</span>
-                    <span id="totalValue">R$ 0,00</span>
-                </div>
-            </div>
-             <button id="printButton">Gerar PDF da Proposta</button>
+        <main id="admin-content">
+            </main>
+        <aside>
+            <h2>Salvar Alterações</h2>
+            <p><strong>Importante:</strong> Como o sistema ainda não tem banco de dados, você precisa copiar o código gerado e colar no arquivo <strong>dados.js</strong> para salvar as alterações.</p>
+            <button id="exportButton">Gerar Código para Salvar</button>
+            <textarea id="exportData" readonly></textarea>
         </aside>
     </div>
-    <script src="app.js"></script>
+    <script src="dados.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>
