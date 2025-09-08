@@ -2,7 +2,6 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Orçamentos Profissional</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="print.css" media="print">
@@ -12,10 +11,9 @@
         <header>
             <h1>Gerador de Propostas</h1>
             <div class="header-actions">
-                <button id="save-quote-btn" class="btn">Salvar Cotação</button>
-                <button id="load-quote-btn" class="btn">Carregar Cotação</button>
+                <button id="save-quote-btn" class="btn">Salvar no Banco</button>
                 <button id="print-btn" class="btn">Exportar PDF</button>
-                <a href="admin.html" target="_blank" class="btn">⚙️ Administrar</a>
+                <a href="admin.html" target="_blank" class="btn">⚙️ Gerenciar</a>
             </div>
         </header>
 
@@ -23,12 +21,12 @@
             <section class="card">
                 <h2>Dados Gerais</h2>
                 <div class="form-grid">
-                    <div class="form-group"><label for="clientName">Nome do Cliente:</label><input type="text" id="clientName"></div>
-                    <div class="form-group"><label for="clientCnpj">CNPJ/CPF:</label><input type="text" id="clientCnpj"></div>
-                    <div class="form-group"><label for="clientEmail">E-mail:</label><input type="email" id="clientEmail"></div>
-                    <div class="form-group"><label for="clientPhone">Telefone:</label><input type="tel" id="clientPhone"></div>
-                    <div class="form-group"><label for="guestCount">Nº de Convidados:</label><input type="number" id="guestCount" value="100" min="1"></div>
-                    <div class="form-group"><label for="priceTableSelect">Tabela de Preços:</label><select id="priceTableSelect"></select></div>
+                    <div class="form-group"><label>Nome do Cliente:</label><input type="text" id="clientName"></div>
+                    <div class="form-group"><label>CNPJ/CPF:</label><input type="text" id="clientCnpj"></div>
+                    <div class="form-group"><label>E-mail:</label><input type="email" id="clientEmail"></div>
+                    <div class="form-group"><label>Telefone:</label><input type="tel" id="clientPhone"></div>
+                    <div class="form-group"><label>Nº de Convidados:</label><input type="number" id="guestCount" value="100" min="1"></div>
+                    <div class="form-group"><label>Tabela de Preços:</label><select id="priceTableSelect"></select></div>
                 </div>
             </section>
             
@@ -38,10 +36,8 @@
                 <button id="add-date-btn" class="btn">+ Adicionar Data</button>
             </section>
 
-            <section class="card" id="quote-card">
-                <h2>Itens do Orçamento</h2>
-                <div id="quote-categories-container">
-                    </div>
+            <section class="card">
+                <div id="quote-categories-container"></div>
             </section>
         </main>
     </div>
@@ -50,7 +46,7 @@
         <div class="summary-content">
             <div class="summary-item"><span>Subtotal:</span><strong id="subtotalValue">R$ 0,00</strong></div>
             <div class="summary-item">
-                <label for="discountValue">Desconto (R$):</label>
+                <label for="discountValue">Desconto Geral (R$):</label>
                 <input type="number" id="discountValue" value="0" min="0">
             </div>
             <div class="summary-total">
@@ -68,35 +64,26 @@
                     <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
                     <div class="multiselect-dropdown">
                         <div class="multiselect-list"></div>
-                        <button class="btn btn-add-selected">Adicionar Selecionados</button>
+                        <button class="btn btn-add-selected">Adicionar</button>
                     </div>
                 </div>
             </div>
             <table class="quote-table">
                 <thead><tr>
-                    <th style="width:40%;">Item</th>
+                    <th style="width:35%;">Item</th>
                     <th>Data</th>
-                    <th style="width: 80px;">Qtde.</th>
-                    <th>Vlr. Unitário</th>
+                    <th style="width:70px;">Qtde.</th>
+                    <th>Vlr. Unit.</th>
+                    <th style="width:100px;">Desc. (%)</th>
                     <th>Vlr. Total</th>
-                    <th style="width: 100px;">Ações</th>
+                    <th style="width:80px;">Ações</th>
                 </tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </template>
-
-    <div id="detailsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2 id="detailsModalTitle">Detalhes do Item</h2>
-            <div id="detailsModalBody"></div>
-            <button id="saveDetailsButton" class="btn">Salvar Detalhes</button>
-        </div>
-    </div>
     
     <div id="print-output" class="print-only"></div>
-    
     <script type="module" src="app.js"></script>
 </body>
 </html>
