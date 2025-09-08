@@ -5,12 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Orçamentos Profissional</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="print.css" media="print">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Gerador de Propostas</h1>
-            <a href="admin.html" target="_blank" class="btn">⚙️ Administrar Catálogo</a>
+            <div class="header-actions">
+                <button id="save-quote-btn" class="btn">Salvar Cotação</button>
+                <button id="load-quote-btn" class="btn">Carregar Cotação</button>
+                <button id="print-btn" class="btn">Exportar PDF</button>
+                <a href="admin.html" target="_blank" class="btn">⚙️ Administrar</a>
+            </div>
         </header>
 
         <main>
@@ -32,7 +38,7 @@
                 <button id="add-date-btn" class="btn">+ Adicionar Data</button>
             </section>
 
-            <section class="card">
+            <section class="card" id="quote-card">
                 <h2>Itens do Orçamento</h2>
                 <div id="quote-categories-container">
                     </div>
