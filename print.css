@@ -1,0 +1,51 @@
+/* print.css - Estilos para Impressão e PDF */
+@media print {
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 10pt;
+        background-color: #fff;
+    }
+
+    /* Esconde elementos da interface */
+    header, #add-date-btn, .multiselect-container, .item-actions, .summary-footer,
+    input[type="number"], input[type="date"], input[type="time"], input[type="text"], select, textarea {
+        display: none !important;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: none;
+        page-break-inside: avoid;
+    }
+    
+    .container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    h1, h2, h3 {
+        color: #000;
+    }
+
+    .quote-table {
+        margin-top: 0.5rem;
+    }
+    
+    .quote-table th {
+        background-color: #eee !important;
+        color: #000;
+    }
+
+    .quote-table, .quote-table th, .quote-table td {
+        border: 1px solid #ccc;
+    }
+
+    /* Mostra o conteúdo dos campos de observação */
+    .observations-row-content {
+        display: block;
+        font-style: italic;
+        color: #555;
+        padding-top: 5px;
+    }
+}
