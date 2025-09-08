@@ -62,3 +62,28 @@ h2 { color: var(--primary-color); margin: 1.2rem 1.5rem; padding: 0; border: non
 .summary-item strong { font-size: 0.9rem; font-weight: 600; }
 .summary-item input { width: 90px; text-align: right; background: #555; color: white; border: 1px solid #777; border-radius: 4px; padding: 0.4rem; }
 .summary-total { font-size: 1.2rem; font-weight: 600; color: white; display: flex; align-items: center; gap: 0.8rem; border-left: 1px solid #555; padding-left: 2rem; }
+/* ... (todo o css da versão minimalista anterior) ... */
+
+/* ESTILOS PARA AGRUPAMENTO NA TABELA */
+.category-subheader td {
+    background-color: var(--secondary-color);
+    font-weight: 600;
+    color: var(--primary-color);
+    border-top: 2px solid var(--border-color);
+}
+.category-subtotal td {
+    font-weight: 600;
+    text-align: right;
+}
+.category-subtotal td:first-child {
+    text-align: right;
+    padding-right: 2rem;
+}
+
+/* ESTILOS PARA O PAINEL DE DATAS */
+.date-entry {
+    display: grid;
+    grid-template-columns: 150px 100px 100px 1fr auto; /* Colunas para Data, Início, Fim, Obs, Remover */
+    gap: 0.8rem;
+    align-items: center;
+}
