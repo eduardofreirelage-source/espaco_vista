@@ -17,15 +17,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INICIALIZAÇÃO ---
     async function initialize() {
-        await loadDataFromSupabase();
-        populatePriceTables();
-        addEventListeners();
-        render();
+        try {
+            await loadDataFromSupabase();
+            populatePriceTables();
+            addEventListeners();
+            render();
+        } catch (error) {
+            console.error("Falha crítica na inicialização:", error);
+            alert("Não foi possível carregar os dados do banco de dados. Verifique sua conexão ou as configurações do Supabase.");
+        }
     }
 
     async function loadDataFromSupabase() {
-        const { data: servicesData } = await supabase.from('services').select('*');
-        const { data: tablesData } = await supabase.from('price_tables').select('*');
+        const { data: servicesData, error: servicesError } = await supabase.from('services').select('*');
+        if (servicesError) throw servicesError; // Lança o erro para o bloco catch
+
+        const { data: tablesData, error: tablesError } = await supabase.from('price_tables').select('*');
+        if (tablesError) throw tablesError; // Lança o erro para o bloco catch
+
         appData.services = servicesData || [];
         appData.tabelas = (tablesData || []).reduce((acc, table) => {
             acc[table.name] = { modificador: table.modifier };
@@ -45,6 +54,20 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDateInputs();
         renderQuoteTables();
         calculateTotal();
+    }
+    
+    function renderDateInputs() {
+        const container = document.getElementById('event-dates-container');
+        container.innerHTML = '';
+        quote.general.dates.forEach((date, index) => {
+            const div = document.createElement('div');
+            div.className = 'date-entry';
+            div.innerHTML = `
+                <input type="date" value="${date}" data-index="${index}" data-action="updateDate">
+                <button class="btn-remove" data-index="${index}" data-action="removeDate">&times;</button>
+            `;
+            container.appendChild(div);
+        });
     }
 
     function renderQuoteTables() {
@@ -89,37 +112,112 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // ... (As funções calculateTotal, addEventListeners, openAddItemModal permanecem as mesmas da versão anterior, com a adição do listener para o botão de duplicar)
+    // --- LÓGICA DE CÁLCULO ---
+    function calculateTotal() {
+        const prices = getCalculatedPrices();
+        let subtotal = 0;
+        let gastronomySubtotal = 0;
 
-    // --- ADIÇÃO DE EVENT LISTENERS (DENTRO DA FUNÇÃO addEventListeners) ---
+        quote.items.forEach(item => {
+            const service = appData.services.find(s => s.id === item.id);
+            if (!service) return;
+            const unitPrice = prices[item.id] || 0;
+            const quantity = service.unit === 'por_pessoa' ? quote.general.guestCount : (item.quantity || 1);
+            const itemTotal = unitPrice * quantity;
+            subtotal += itemTotal;
+            if (service.category === 'Gastronomia') gastronomySubtotal += itemTotal;
+        });
+
+        const serviceFee = gastronomySubtotal * 0.10;
+        const discount = parseFloat(discountInput.value) || 0;
+        const total = subtotal + serviceFee - discount;
+
+        document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
+        document.getElementById('serviceFeeValue').textContent = `R$ ${serviceFee.toFixed(2)}`;
+        document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
+    }
+
+    // --- MANIPULADORES DE EVENTOS ---
     function addEventListeners() {
-        // ... (todos os outros listeners: addDateBtn, guestCountInput, etc.)
+        addDateBtn.addEventListener('click', () => {
+            quote.general.dates.push(new Date().toISOString().split('T')[0]);
+            render();
+        });
+
+        document.querySelectorAll('.btn-add').forEach(btn => {
+            btn.addEventListener('click', () => openAddItemModal(btn.dataset.category));
+        });
         
-        // Delegação de eventos para botões de duplicar
-        document.querySelector('main').addEventListener('click', (e) => {
-             if (e.target.classList.contains('btn-duplicate')) {
-                duplicateItem(e.target.dataset.index);
-            }
+        guestCountInput.addEventListener('input', e => { quote.general.guestCount = parseInt(e.target.value) || 0; render(); });
+        priceTableSelect.addEventListener('change', e => { quote.general.priceTable = e.target.value; render(); });
+        discountInput.addEventListener('input', calculateTotal);
+        
+        document.body.addEventListener('change', e => {
+            const { index, field, action } = e.target.dataset;
+            if (index && field) updateItem(index, field, e.target.value);
+            if (index && action === 'updateDate') updateDate(index, e.target.value);
+        });
+        document.body.addEventListener('click', e => {
+            const { index, action } = e.target.dataset;
+            if (action === 'removeDate') removeDate(index);
+            if (e.target.classList.contains('btn-remove') && index) removeItem(index);
+            if (e.target.classList.contains('btn-duplicate') && index) duplicateItem(index);
         });
     }
     
-    // --- NOVA FUNÇÃO PARA DUPLICAR ---
+    // --- LÓGICA DO MODAL ---
+    function openAddItemModal(category) {
+        document.getElementById('modalCategoryTitle').textContent = `Adicionar Item de ${category}`;
+        const itemList = document.getElementById('modalItemList');
+        itemList.innerHTML = '';
+        appData.services
+            .filter(s => s.category === category)
+            .forEach(service => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'modal-item';
+                itemDiv.textContent = service.name;
+                itemDiv.onclick = () => {
+                    quote.items.push({ id: service.id, quantity: 1, assignedDate: '', observacoes: '' });
+                    addItemModal.style.display = 'none';
+                    render();
+                };
+                itemList.appendChild(itemDiv);
+            });
+        addItemModal.style.display = 'block';
+    }
+    document.querySelector('#addItemModal .close-button').onclick = () => addItemModal.style.display = 'none';
+    
+    // --- FUNÇÕES DE MANIPULAÇÃO DO ORÇAMENTO ---
+    function updateDate(index, value) { quote.general.dates[index] = value; render(); }
+    function removeDate(index) { quote.general.dates.splice(index, 1); render(); }
+    function removeItem(index) { quote.items.splice(parseInt(index), 1); render(); }
     function duplicateItem(index) {
         const itemToDuplicate = quote.items[parseInt(index)];
-        if (!itemToDuplicate) return;
-        
-        // Cria uma cópia profunda do item
-        const newItem = JSON.parse(JSON.stringify(itemToDuplicate));
-        
-        // Insere a cópia logo após o original
-        quote.items.splice(parseInt(index) + 1, 0, newItem);
-        
-        render(); // Re-renderiza a UI
+        if (itemToDuplicate) {
+            const newItem = JSON.parse(JSON.stringify(itemToDuplicate));
+            quote.items.splice(parseInt(index) + 1, 0, newItem);
+            render();
+        }
+    }
+    function updateItem(index, key, value) {
+        const item = quote.items[parseInt(index)];
+        if (item) {
+            item[key] = (key === 'quantity') ? parseInt(value) : value;
+            render();
+        }
     }
 
-    // O restante do código (calculateTotal, openAddItemModal, funções globais, etc.)
-    // pode ser mantido da versão funcional anterior, pois a lógica central de cálculo não mudou.
-    // Apenas a renderização e o novo botão foram adicionados.
+    // --- FUNÇÕES AUXILIARES ---
+    function getCalculatedPrices() {
+        const tableName = priceTableSelect.value;
+        const table = appData.tabelas[tableName];
+        if (!table) return {};
+        const prices = {};
+        appData.services.forEach(service => {
+            prices[service.id] = (service.base_price || 0) * (table.modificador || 1);
+        });
+        return prices;
+    }
     
-    initialize(); // Inicia a aplicação
+    initialize();
 });
