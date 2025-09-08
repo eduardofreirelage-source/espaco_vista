@@ -8,52 +8,153 @@
     --card-bg: #ffffff;
     --shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
-/* O restante do CSS continua o mesmo da versão anterior... */
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Poppins', sans-serif; background-color: var(--secondary-color); color: var(--text-color); line-height: 1.6; }
-.container { max-width: 1300px; margin: 2rem auto; padding: 1rem; display: grid; grid-template-columns: 2.5fr 1fr; gap: 2rem; align-items: start; }
-header { grid-column: 1 / -1; text-align: center; margin-bottom: 1rem; }
-header h1 { color: var(--primary-color); margin-bottom: 0.5rem; }
+
+body { 
+    font-family: 'Poppins', sans-serif; 
+    background-color: var(--secondary-color); 
+    color: var(--text-color); 
+    line-height: 1.6; 
+}
+
+.container { 
+    max-width: 1300px; 
+    margin: 2rem auto; 
+    padding: 1rem; 
+    display: grid; 
+    grid-template-columns: 2.5fr 1fr; 
+    gap: 2rem; 
+    align-items: start; 
+}
+
+/* --- ESTILOS ATUALIZADOS DO CABEÇALHO --- */
+header { 
+    grid-column: 1 / -1; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 1.5rem;
+}
+
+header h1 { 
+    color: var(--primary-color); 
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+header p {
+    margin: 0;
+}
+/* --- FIM DOS ESTILOS ATUALIZADOS --- */
+
 main { display: flex; flex-direction: column; gap: 2rem; }
-.card, .summary-card { background-color: var(--card-bg); border-radius: 8px; box-shadow: var(--shadow); padding: 1.5rem 2rem; }
-h2 { color: var(--primary-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border-color); }
+
+.card, .summary-card { 
+    background-color: var(--card-bg); 
+    border-radius: 8px; 
+    box-shadow: var(--shadow); 
+    padding: 1.5rem 2rem; 
+}
+
+h2 { 
+    color: var(--primary-color); 
+    margin-bottom: 1.5rem; 
+    padding-bottom: 0.5rem; 
+    border-bottom: 2px solid var(--border-color); 
+}
+
 .form-group-wrapper { display: flex; gap: 1rem; }
 .form-group { margin-bottom: 1rem; width: 100%;}
 .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
-.form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; }
+.form-group input, .form-group select { 
+    width: 100%; 
+    padding: 0.75rem; 
+    border: 1px solid var(--border-color); 
+    border-radius: 4px; 
+    font-size: 1rem; 
+}
+
 .category { margin-bottom: 2rem; }
-.category-title { font-weight: 700; font-size: 1.2rem; margin-bottom: 1rem; background-color: var(--secondary-color); padding: 0.5rem 1rem; border-radius: 4px; }
-.item, .radio-item { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 0.5rem; border-bottom: 1px solid var(--border-color); }
+.category-title { 
+    font-weight: 700; 
+    font-size: 1.2rem; 
+    margin-bottom: 1rem; 
+    background-color: var(--secondary-color); 
+    padding: 0.5rem 1rem; 
+    border-radius: 4px; 
+}
+
+.item, .radio-item { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 0.85rem 0.5rem; 
+    border-bottom: 1px solid var(--border-color); 
+}
 .item:last-child, .radio-item:last-child { border-bottom: none; }
-.item-label, .radio-label { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
-input[type="checkbox"], input[type="radio"] { min-width: 18px; height: 18px; cursor: pointer; }
+
+.item-label, .radio-label { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.75rem; 
+    cursor: pointer; 
+}
+
+input[type="checkbox"], input[type="radio"] { 
+    min-width: 18px; 
+    height: 18px; 
+    cursor: pointer; 
+}
+
 .item-price { font-weight: 600; color: #555; }
+
 .summary-card { position: sticky; top: 2rem; }
 #summary-content { margin-bottom: 1.5rem; }
 #summary-total { border-top: 2px solid var(--border-color); padding-top: 1rem; }
-.total-line { display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 0.5rem; }
-.total-line.grand-total { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); margin-top: 1rem; }
-#printButton { width: 100%; padding: 0.8rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 1.5rem; transition: background-color 0.2s; }
-#printButton:hover { background-color: #6d0000; }
-@media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
-/* ... (todo o seu css anterior) ... */
 
-.admin-footer {
-    grid-column: 1 / -1; /* Ocupa a largura total */
-    text-align: center;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
+.total-line { 
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 1.1rem; 
+    margin-bottom: 0.5rem; 
+}
+.total-line.grand-total { 
+    font-size: 1.5rem; 
+    font-weight: 700; 
+    color: var(--primary-color); 
+    margin-top: 1rem; 
 }
 
-.admin-footer a {
-    text-decoration: none;
-    color: var(--primary-color);
+/* --- ESTILO DO BOTÃO PRINCIPAL E DO NOVO BOTÃO ADMIN --- */
+.btn {
+    display: inline-block;
+    padding: 0.7rem 1.2rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
     font-weight: 600;
-    opacity: 0.7;
-    transition: opacity 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: background-color 0.2s;
 }
 
-.admin-footer a:hover {
-    opacity: 1;
+.btn:hover { 
+    background-color: #6d0000; 
+}
+
+#printButton { 
+    width: 100%; 
+    margin-top: 1.5rem; 
+}
+/* --- FIM DO ESTILO DO BOTÃO --- */
+
+@media (max-width: 900px) { 
+    .container { grid-template-columns: 1fr; } 
+    header { flex-direction: column; gap: 1rem; text-align: center; }
 }
