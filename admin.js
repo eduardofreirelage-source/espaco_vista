@@ -1,13 +1,11 @@
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ESTADO
     let services = [];
     let priceTables = [];
     let servicePrices = [];
     let quotes = [];
 
-    // ELEMENTOS DO DOM
     const servicesTbody = document.getElementById('services-table')?.querySelector('tbody');
     const priceTablesTbody = document.getElementById('price-tables-list')?.querySelector('tbody');
     const quotesTbody = document.getElementById('quotes-table')?.querySelector('tbody');
@@ -15,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const addPriceTableForm = document.getElementById('addPriceTableForm');
     const editPricesModal = document.getElementById('editPricesModal');
     const editPricesForm = document.getElementById('editPricesForm');
+    const notification = document.getElementById('save-notification');
     
-    // --- INICIALIZAÇÃO ---
     async function initialize() {
         await fetchData();
         addEventListeners();
@@ -48,11 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RENDERIZAÇÃO ---
     function renderAll() {
-        renderServicesTable();
-        renderPriceTablesList();
-        renderQuotesTable();
+        if(servicesTbody) renderServicesTable();
+        if(priceTablesTbody) renderPriceTablesList();
+        if(quotesTbody) renderQuotesTable();
     }
 
     function renderServicesTable() {
@@ -64,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${service.category}</td>
                 <td class="actions">
                     <button class="btn" data-action="edit-prices" data-id="${service.id}">Editar Preços</button>
-                    <button class="btn-remove" data-action="delete-service" data-id="${service.id}">&times;</button>
+                    <button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button>
                 </td>
             `;
             servicesTbody.appendChild(row);
@@ -78,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = `
                 <td>${table.name}</td>
                 <td class="actions">
-                    <button class="btn-remove" data-action="delete-table" data-id="${table.id}">&times;</button>
+                    <button class="btn-remove" data-action="delete-table" data-id="${table.id}" title="Excluir Lista">&times;</button>
                 </td>
             `;
             priceTablesTbody.appendChild(row);
@@ -96,14 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><span class="status">${quote.status}</span></td>
                 <td class="actions">
                     <a href="index.html?quote_id=${quote.id}" class="btn">Carregar</a>
-                    <button class="btn-remove" data-action="delete-quote" data-id="${quote.id}">&times;</button>
+                    <button class="btn-remove" data-action="delete-quote" data-id="${quote.id}" title="Excluir Orçamento">&times;</button>
                 </td>
             `;
             quotesTbody.appendChild(row);
         });
     }
 
-    // --- LÓGICA DO MODAL DE EDIÇÃO DE PREÇOS ---
     function openEditPricesModal(serviceId) {
         const service = services.find(s => s.id === serviceId);
         document.getElementById('editPricesModalTitle').textContent = `Preços para: ${service.name}`;
@@ -125,14 +121,28 @@ document.addEventListener('DOMContentLoaded', () => {
         editPricesModal.style.display = 'block';
     }
 
-    // --- EVENT LISTENERS ---
     function addEventListeners() {
-        // ... (Listeners para os formulários de adicionar serviço/tabela)
+        addServiceForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newService = {
+                name: document.getElementById('serviceName').value,
+                category: document.getElementById('serviceCategory').value,
+                unit: document.getElementById('serviceUnit').value,
+            };
+            const { error } = await supabase.from('services').insert([newService]);
+            if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço adicionado!'); e.target.reset(); fetchData(); }
+        });
+        
+        addPriceTableForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newTable = { name: document.getElementById('tableName').value };
+            const { error } = await supabase.from('price_tables').insert([newTable]);
+            if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
+        });
 
         document.body.addEventListener('click', e => {
             const button = e.target.closest('button');
             if (!button) return;
-
             const { action, id } = button.dataset;
             if (action === 'edit-prices') openEditPricesModal(id);
             if (action === 'delete-service') deleteService(id);
@@ -145,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('savePricesButton').addEventListener('click', async (e) => {
             const serviceId = e.target.dataset.serviceId;
             const inputs = editPricesForm.querySelectorAll('input');
-            
             const recordsToUpsert = Array.from(inputs).map(input => ({
                 service_id: serviceId,
                 price_table_id: input.dataset.tableId,
@@ -153,16 +162,35 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
             
             const { error } = await supabase.from('service_prices').upsert(recordsToUpsert);
-            if (error) {
-                showNotification(`Erro ao salvar preços: ${error.message}`, true);
-            } else {
-                showNotification('Preços salvos com sucesso!');
-                editPricesModal.style.display = 'none';
-                fetchData(); // Recarrega os preços
-            }
+            if (error) { showNotification(`Erro ao salvar: ${error.message}`, true); } 
+            else { showNotification('Preços salvos!'); editPricesModal.style.display = 'none'; fetchData(); }
         });
     }
 
-    // ... (funções de delete, notificações, etc.)
+    async function deleteService(id) {
+        if (!confirm('Tem certeza? Isso excluirá o serviço e todos os seus preços.')) return;
+        const { error } = await supabase.from('services').delete().eq('id', id);
+        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço excluído.'); fetchData(); }
+    }
+    
+    async function deletePriceTable(id) {
+        if (!confirm('Tem certeza? Isso excluirá a lista e todos os preços associados a ela.')) return;
+        const { error } = await supabase.from('price_tables').delete().eq('id', id);
+        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços excluída.'); fetchData(); }
+    }
+    
+    async function deleteQuote(id) {
+        if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
+        const { error } = await supabase.from('quotes').delete().eq('id', id);
+        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Orçamento excluído.'); fetchData(); }
+    }
+
+    function showNotification(message, isError = false) {
+        notification.textContent = message;
+        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 3000);
+    }
+
     initialize();
 });
