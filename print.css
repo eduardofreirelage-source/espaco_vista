@@ -1,51 +1,103 @@
 /* print.css - Estilos para Impressão e PDF */
 @media print {
+    /* Reseta a página */
+    body * {
+        visibility: hidden;
+    }
+    #print-output, #print-output * {
+        visibility: visible;
+    }
+    #print-output {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    /* Estilos do Documento */
+    @page {
+        size: A4;
+        margin: 2cm;
+    }
     body {
         font-family: Arial, sans-serif;
         font-size: 10pt;
         background-color: #fff;
     }
 
-    /* Esconde elementos da interface */
-    header, #add-date-btn, .multiselect-container, .item-actions, .summary-footer,
-    input[type="number"], input[type="date"], input[type="time"], input[type="text"], select, textarea {
-        display: none !important;
+    /* Cabeçalho da Proposta */
+    .print-header {
+        text-align: center;
+        border-bottom: 2px solid #333;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
     }
-    
-    .card {
-        border: none;
-        box-shadow: none;
-        page-break-inside: avoid;
-    }
-    
-    .container {
-        max-width: 100%;
+    .print-header h1 {
+        font-size: 24pt;
         margin: 0;
-        padding: 0;
     }
-
-    h1, h2, h3 {
-        color: #000;
-    }
-
-    .quote-table {
-        margin-top: 0.5rem;
-    }
-    
-    .quote-table th {
-        background-color: #eee !important;
-        color: #000;
-    }
-
-    .quote-table, .quote-table th, .quote-table td {
+    .print-client-info {
+        margin-top: 20px;
         border: 1px solid #ccc;
+        padding: 10px;
+        text-align: left;
     }
 
-    /* Mostra o conteúdo dos campos de observação */
-    .observations-row-content {
-        display: block;
+    /* Tabelas de Itens */
+    .print-category-title {
+        font-size: 14pt;
+        font-weight: bold;
+        color: #8B0000;
+        margin-top: 20px;
+        border-bottom: 1px solid #8B0000;
+        padding-bottom: 5px;
+    }
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 9pt;
+    }
+    .print-table th, .print-table td {
+        border: 1px solid #ccc;
+        padding: 6px;
+        text-align: left;
+    }
+    .print-table th {
+        background-color: #f2f2f2;
+    }
+    .print-table .price {
+        text-align: right;
+    }
+    .print-item-obs {
         font-style: italic;
         color: #555;
-        padding-top: 5px;
+        font-size: 8pt;
+    }
+
+    /* Bloco de Totais */
+    .print-summary {
+        margin-top: 30px;
+        float: right;
+        width: 40%;
+    }
+    .print-summary table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .print-summary td {
+        padding: 8px;
+        border-bottom: 1px solid #ccc;
+    }
+    .print-summary .total-label {
+        font-weight: bold;
+    }
+    .print-summary .total-value {
+        text-align: right;
+    }
+    .print-summary .grand-total td {
+        font-size: 14pt;
+        font-weight: bold;
+        background-color: #f2f2f2;
     }
 }
