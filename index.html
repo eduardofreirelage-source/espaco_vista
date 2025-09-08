@@ -20,26 +20,28 @@
 
         <main>
             <section class="card">
-                <h2>Dados Gerais</h2>
+                <h2>Dados do Cliente</h2>
                 <div class="form-grid">
-                    <div class="form-group"><label for="clientName">Nome do Cliente:</label><input type="text" id="clientName"></div>
-                    <div class="form-group"><label for="clientCnpj">CNPJ/CPF:</label><input type="text" id="clientCnpj"></div>
-                    <div class="form-group"><label for="clientEmail">E-mail:</label><input type="email" id="clientEmail"></div>
-                    <div class="form-group"><label for="clientPhone">Telefone:</label><input type="tel" id="clientPhone"></div>
-                    <div class="form-group"><label for="guestCount">Nº de Convidados:</label><input type="number" id="guestCount" value="100" min="1"></div>
-                    <div class="form-group"><label for="priceTableSelect">Tabela de Preços:</label><select id="priceTableSelect"></select></div>
+                    <div class="form-group"><label for="clientName">Nome</label><input type="text" id="clientName"></div>
+                    <div class="form-group"><label for="clientCnpj">CNPJ</label><input type="text" id="clientCnpj" maxlength="18"></div>
+                    <div class="form-group"><label for="clientEmail">E-mail</label><input type="email" id="clientEmail"></div>
+                    <div class="form-group"><label for="clientPhone">Telefone</label><input type="tel" id="clientPhone"></div>
                 </div>
             </section>
             
             <section class="card">
-                <h2>Datas e Horários do Evento</h2>
+                <h2>Dados do Evento</h2>
+                <div class="form-grid">
+                    <div class="form-group"><label for="guestCount">Nº de Convidados</label><input type="number" id="guestCount" value="100" min="1"></div>
+                    <div class="form-group"><label for="priceTableSelect">Tabela de Preços</label><select id="priceTableSelect"></select></div>
+                </div>
                 <div id="event-dates-container"></div>
                 <button id="add-date-btn" class="btn">+ Adicionar Data</button>
             </section>
 
             <section class="card" id="quote-card">
-                <div id="quote-categories-container">
-                    </div>
+                <h2>Itens do Orçamento</h2>
+                <div id="quote-categories-container"></div>
             </section>
         </main>
     </div>
@@ -59,8 +61,8 @@
     </footer>
 
     <template id="category-template">
-        <div class="category-block">
-            <div class="category-header">
+        <details class="category-accordion" open>
+            <summary class="category-header">
                 <h3 class="category-title"></h3>
                 <div class="multiselect-container">
                     <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
@@ -69,34 +71,35 @@
                         <button class="btn btn-add-selected">Adicionar</button>
                     </div>
                 </div>
+            </summary>
+            <div class="category-content">
+                <table class="quote-table">
+                    <colgroup>
+                        <col style="width: 38%;">
+                        <col style="width: 14%;">
+                        <col style="width: 8%;">
+                        <col style="width: 12%;">
+                        <col style="width: 8%;">
+                        <col style="width: 12%;">
+                        <col style="width: 8%;">
+                    </colgroup>
+                    <thead><tr>
+                        <th>Item</th>
+                        <th>Data</th>
+                        <th>Qtde.</th>
+                        <th>Vlr. Unitário</th>
+                        <th>Desc. (%)</th>
+                        <th>Vlr. Total</th>
+                        <th>Ações</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                </table>
             </div>
-            <table class="quote-table">
-                <colgroup>
-                    <col style="width: 42%;">
-                    <col style="width: 13%;">
-                    <col style="width: 7%;">
-                    <col style="width: 11%;">
-                    <col style="width: 9%;">
-                    <col style="width: 11%;">
-                    <col style="width: 7%;">
-                </colgroup>
-                <thead><tr>
-                    <th>Item</th>
-                    <th>Data</th>
-                    <th>Qtde.</th>
-                    <th>Vlr. Unitário</th>
-                    <th>Desc. (%)</th>
-                    <th>Vlr. Total</th>
-                    <th>Ações</th>
-                </tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        </details>
     </template>
     
     <div id="save-notification" class="notification"></div>
     <div id="print-output" class="print-only"></div>
-    
-    <script type="module" src="app.js"></script>
+    <div id="obs-popover" class="obs-popover"></div> <script type="module" src="app.js"></script>
 </body>
 </html>
