@@ -1,64 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Orçamentos Profissional</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="print.css" media="print">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Gerador de Propostas</h1>
-            <div class="header-actions">
-                <button id="save-quote-btn" class="btn">Salvar</button>
-                <button id="load-quote-btn" class="btn">Carregar</button> <button id="print-btn" class="btn">Exportar PDF</button>
-                <a href="admin.html" target="_blank" class="btn">⚙️ Gerenciar</a>
-            </div>
-        </header>
-
-        <main>
-            <section class="card">
-                <h2>Dados Gerais</h2>
-                <div class="form-grid">
-                    <div class="form-group"><label for="clientName">Nome do Cliente:</label><input type="text" id="clientName"></div>
-                    <div class="form-group"><label for="clientCnpj">CNPJ/CPF:</label><input type="text" id="clientCnpj"></div>
-                    <div class="form-group"><label for="clientEmail">E-mail:</label><input type="email" id="clientEmail"></div>
-                    <div class="form-group"><label for="clientPhone">Telefone:</label><input type="tel" id="clientPhone"></div>
-                    <div class="form-group"><label for="guestCount">Nº de Convidados:</label><input type="number" id="guestCount" value="100" min="1"></div>
-                    <div class="form-group"><label for="priceTableSelect">Tabela de Preços:</label><select id="priceTableSelect"></select></div>
-                </div>
-            </section>
-            
-            <section class="card">
-                <h2>Datas e Horários do Evento</h2>
-                <div id="event-dates-container"></div>
-                <button id="add-date-btn" class="btn">+ Adicionar Data</button>
-            </section>
-
-            <section class="card" id="quote-card">
-                <h2>Itens do Orçamento</h2>
-                <div id="quote-categories-container"></div>
-            </section>
-        </main>
-    </div>
-
-    <footer class="summary-footer">
-        <div class="summary-content">
-            <div class="summary-item"><span>Subtotal:</span><strong id="subtotalValue">R$ 0,00</strong></div>
-            <div class="summary-item">
-                <label for="discountValue">Desconto Geral (R$):</label>
-                <input type="number" id="discountValue" value="0" min="0">
-            </div>
-            <div class="summary-total">
-                <span>VALOR TOTAL:</span>
-                <strong id="totalValue">R$ 0,00</strong>
-            </div>
-        </div>
-    </footer>
-
-    <template id="category-template">
+<template id="category-template">
         <div class="category-block">
             <div class="category-header">
                 <h3 class="category-title"></h3>
@@ -75,9 +15,8 @@
                     <th style="width:35%;">Item</th>
                     <th>Data</th>
                     <th style="width:70px;">Qtde.</th>
-                    <th>Vlr. Unit.</th>
-                    <th style="width:100px;">Desc. (%)</th>
-                    <th>Vlr. Total</th>
+                    <th>Vlr. Unitário</th>
+                    <th style="width:100px;">Desc. (%)</th> <th>Vlr. Total</th>
                     <th style="width:80px;">Ações</th>
                 </tr></thead>
                 <tbody></tbody>
@@ -85,7 +24,7 @@
         </div>
     </template>
     
-    <div id="print-output" class="print-only"></div>
+    <div id="save-notification" class="notification"></div> <div id="print-output" class="print-only"></div>
     <script type="module" src="app.js"></script>
 </body>
 </html>
