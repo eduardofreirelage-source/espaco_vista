@@ -2,67 +2,87 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema de Orçamentos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Orçamentos Profissional</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="header-title"><h1>Gerador de Propostas</h1></div>
-            <a href="admin.html" target="_blank" class="btn btn-admin">⚙️ Administrar</a>
+            <div class="header-title">
+                <h1>Gerador de Propostas de Investimento</h1>
+                <p>Monte orçamentos detalhados para eventos multi-datas.</p>
+            </div>
+            <a href="admin.html" target="_blank" class="btn btn-admin">⚙️ Administrar Catálogo</a>
         </header>
 
         <main>
             <section class="card">
-                <h2>1. Dados Gerais do Evento</h2>
+                <h2>1. Dados Gerais da Proposta</h2>
                 <div class="form-group-wrapper">
-                    <div class="form-group"><label>Nº de Convidados:</label><input type="number" id="guestCount" value="100" min="1"></div>
-                    <div class="form-group"><label>Tabela de Preços:</label><select id="priceTableSelect"></select></div>
+                    <div class="form-group">
+                        <label for="guestCount">Nº de Convidados:</label>
+                        <input type="number" id="guestCount" value="100" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="priceTableSelect">Tabela de Preços:</label>
+                        <select id="priceTableSelect"></select>
+                    </div>
                 </div>
             </section>
             
             <section class="card">
                 <h2>2. Datas do Evento</h2>
-                <div id="event-dates-container"></div>
+                <div id="event-dates-container">
+                    </div>
                 <button id="add-date-btn" class="btn btn-primary">+ Adicionar Data</button>
             </section>
 
-            <section class="card">
-                <h2>3. Montagem do Orçamento</h2>
-                <div class="add-item-panel">
-                    <div class="form-group">
-                        <label>Adicionar item para a data:</label>
-                        <select id="date-target-select"></select>
-                    </div>
-                     <div class="form-group">
-                        <label>Categoria do Item:</label>
-                        <select id="category-filter-select">
-                            <option value="all">Todas as Categorias</option>
-                            <option value="Espaço">Espaço</option>
-                            <option value="Gastronomia">Gastronomia</option>
-                            <option value="Equipamentos">Equipamentos</option>
-                            <option value="Serviços / Outros">Serviços / Outros</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Item:</label>
-                        <select id="service-select"></select>
-                    </div>
-                    <button id="add-item-to-quote-btn" class="btn btn-success">Adicionar</button>
-                </div>
-            </section>
-            
-            <div id="quote-by-date-container">
+            <div id="quotes-container">
                 </div>
         </main>
         
         <aside class="summary-card">
-            <h2>Resumo da Proposta</h2>
+            <h2>Resumo Geral da Proposta</h2>
             <div id="summary-total">
+                <div class="total-line"><span>Subtotal:</span><span id="subtotalValue">R$ 0,00</span></div>
+                <div class="total-line"><span>Taxa de Serviço (10%):</span><span id="serviceFeeValue">R$ 0,00</span></div>
+                <div class="total-line">
+                    <label for="discountValue">Desconto (R$):</label>
+                    <input type="number" class="summary-input" id="discountValue" value="0" min="0" step="0.01">
                 </div>
+                <div class="total-line grand-total"><span>VALOR TOTAL:</span><span id="totalValue">R$ 0,00</span></div>
+            </div>
         </aside>
     </div>
+
+    <template id="date-section-template">
+        <section class="card date-card">
+            <h2 class="date-title">Orçamento para a data: </h2>
+            <div class="category-grid">
+                <div class="category-card">
+                    <div class="category-header"><h3>Espaço</h3><button class="btn btn-add" data-category="Espaço">+ Adicionar</button></div>
+                    <table class="quote-table"><thead><tr><th>Descrição</th><th>Valor</th><th>Detalhes</th><th></th></tr></thead><tbody></tbody></table>
+                </div>
+                <div class="category-card">
+                    <div class="category-header"><h3>Gastronomia</h3><button class="btn btn-add" data-category="Gastronomia">+ Adicionar</button></div>
+                    <table class="quote-table"><thead><tr><th>Descrição</th><th>Vlr. Unit.</th><th>Qtde.</th><th>Total</th><th>Detalhes</th><th></th></tr></thead><tbody></tbody></table>
+                </div>
+                <div class="category-card">
+                    <div class="category-header"><h3>Equipamentos</h3><button class="btn btn-add" data-category="Equipamentos">+ Adicionar</button></div>
+                    <table class="quote-table"><thead><tr><th>Descrição</th><th>Vlr. Unit.</th><th>Qtde.</th><th>Total</th><th>Detalhes</th><th></th></tr></thead><tbody></tbody></table>
+                </div>
+                <div class="category-card">
+                    <div class="category-header"><h3>Serviços / Outros</h3><button class="btn btn-add" data-category="Serviços / Outros">+ Adicionar</button></div>
+                    <table class="quote-table"><thead><tr><th>Descrição</th><th>Vlr. Unit.</th><th>Qtde.</th><th>Total</th><th>Detalhes</th><th></th></tr></thead><tbody></tbody></table>
+                </div>
+            </div>
+        </section>
+    </template>
     
+    <div id="addItemModal" class="modal">...</div>
+    <div id="detailsModal" class="modal">...</div>
+
     <script src="dados.js"></script>
     <script src="app.js"></script>
 </body>
