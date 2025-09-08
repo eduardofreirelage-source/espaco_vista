@@ -9,19 +9,47 @@
 <body>
     <div class="container">
         <header>
-            <h1>Área de Cadastro</h1>
-            <p>Gerencie suas tabelas de preços.</p>
+            <h1>Área de Cadastro e Administração</h1>
+            <p>Gerencie todos os dados do sistema de orçamentos.</p>
         </header>
+
+        <section class="card">
+            <h2><img src="https://img.icons8.com/ios-filled/24/8B0000/database.png" alt=""/> Backup dos Dados</h2>
+            <div class="backup-section">
+                <button id="exportButton" class="btn btn-primary">Exportar (Salvar Backup)</button>
+                <input type="file" id="importFile" accept=".json">
+                <label for="importFile" class="btn btn-success">Importar (Carregar Backup)</label>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2><img src="https://img.icons8.com/ios-filled/24/8B0000/add-shopping-cart.png" alt=""/> Cadastrar Novo Serviço</h2>
+            <form id="addServiceForm" class="form-grid">
+                <div class="form-group"><label for="serviceName">Nome do Serviço</label><input type="text" id="serviceName" required></div>
+                <div class="form-group"><label for="serviceCategory">Categoria</label><input type="text" id="serviceCategory" required></div>
+                <div class="form-group"><label for="serviceUnit">Unidade</label>
+                    <select id="serviceUnit"><option value="por_pessoa">por_pessoa</option><option value="unidade">unidade</option><option value="diaria">diaria</option></select>
+                </div>
+                <div class="form-group" style="align-self: end;"><button type="submit" class="btn btn-primary">Adicionar Serviço</button></div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2><img src="https://img.icons8.com/ios-filled/24/8B0000/price-tag.png" alt=""/> Cadastrar Nova Tabela de Preços</h2>
+            <form id="addPriceTableForm" class="form-grid">
+                 <div class="form-group"><label for="tableName">Nome da Tabela</label><input type="text" id="tableName" required></div>
+                 <div class="form-group"><label for="tableType">Tipo</label>
+                    <select id="tableType"><option value="base">Base</option><option value="derivada">Derivada</option></select>
+                </div>
+                <div class="form-group" id="baseTableGroup" style="display:none;"><label for="baseTable">Tabela Base</label><select id="baseTable"></select></div>
+                <div class="form-group" id="modifierGroup" style="display:none;"><label for="modifier">Modificador (%)</label><input type="number" id="modifier" value="10" step="1"></div>
+                <div class="form-group" style="align-self: end;"><button type="submit" class="btn btn-primary">Adicionar Tabela</button></div>
+            </form>
+        </section>
+
         <main id="admin-content">
             </main>
-        <aside>
-            <h2>Salvar Alterações</h2>
-            <p><strong>Importante:</strong> Como o sistema ainda não tem banco de dados, você precisa copiar o código gerado e colar no arquivo <strong>dados.js</strong> para salvar as alterações.</p>
-            <button id="exportButton">Gerar Código para Salvar</button>
-            <textarea id="exportData" readonly></textarea>
-        </aside>
     </div>
-    <script src="dados.js"></script>
-    <script src="admin.js"></script>
+    <script src="dados.js"></script> <script src="admin.js"></script>
 </body>
 </html>
