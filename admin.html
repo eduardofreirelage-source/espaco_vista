@@ -2,47 +2,66 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Cadastro de Preços</title>
+    <title>Admin - Sistema de Orçamentos</title>
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Área de Cadastro e Administração</h1>
-            <p>Gerencie o catálogo de serviços e as tabelas de preços.</p>
-        </header>
+        <header><h1>Painel de Administração</h1></header>
 
         <section class="card">
-            <h2><img src="https://img.icons8.com/ios-filled/24/8B0000/database.png" alt=""/> Backup dos Dados</h2>
+            <h2>Backup de Dados</h2>
             <div class="backup-section">
-                <button id="exportButton" class="btn btn-primary">Exportar (Salvar Backup)</button>
+                <button id="exportButton" class="btn btn-primary">Exportar Backup</button>
                 <input type="file" id="importFile" accept=".json">
-                <label for="importFile" class="btn btn-success">Importar (Carregar Backup)</label>
+                <label for="importFile" class="btn btn-success">Importar Backup</label>
             </div>
         </section>
 
-        <section class="card">
-            <h2><img src="https://img.icons8.com/ios-filled/24/8B0000/add-shopping-cart.png" alt=""/> Cadastrar Novo Item no Catálogo</h2>
-            <form id="addServiceForm" class="form-grid">
-                <div class="form-group"><label for="serviceName">Nome do Item</label><input type="text" id="serviceName" required></div>
-                <div class="form-group"><label for="serviceCategory">Categoria</label>
-                    <select id="serviceCategory">
-                        <option value="Espaço">Espaço</option>
-                        <option value="Gastronomia">Gastronomia</option>
-                        <option value="Equipamentos">Equipamentos</option>
-                        <option value="Serviços / Outros">Serviços / Outros</option>
-                    </select>
-                </div>
-                 <div class="form-group"><label for="serviceUnit">Unidade</label>
-                    <select id="serviceUnit"><option value="unidade">unidade</option><option value="diaria">diaria</option><option value="por_pessoa">por_pessoa</option></select>
-                </div>
-                <div class="form-group" style="align-self: end;"><button type="submit" class="btn btn-primary">Adicionar ao Catálogo</button></div>
-            </form>
-        </section>
+        <div class="admin-grid">
+            <section class="card">
+                <h2>Tabelas de Preços (Multiplicadores)</h2>
+                <table id="price-tables-table">
+                    <thead><tr><th>Nome da Tabela</th><th>Multiplicador</th><th>Ações</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <form id="addPriceTableForm">
+                    <h3>Adicionar Nova Tabela</h3>
+                    <div class="form-group"><input type="text" id="tableName" placeholder="Nome da Tabela (Ex: Parceiros)" required></div>
+                    <div class="form-group"><input type="number" id="modifier" placeholder="Multiplicador (Ex: 1.2 para +20%)" step="0.01" required></div>
+                    <button type="submit" class="btn btn-primary">Adicionar Tabela</button>
+                </form>
+            </section>
 
-        <main id="admin-content">
-            </main>
+            <section class="card">
+                <h2>Catálogo de Serviços e Produtos</h2>
+                <table id="services-table">
+                    <thead><tr><th>Nome</th><th>Categoria</th><th>Unidade</th><th>Preço Base (R$)</th><th>Ações</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                 <form id="addServiceForm">
+                    <h3>Adicionar Novo Serviço ao Catálogo</h3>
+                    <div class="form-group"><input type="text" id="serviceName" placeholder="Nome do Serviço" required></div>
+                    <div class="form-group">
+                        <select id="serviceCategory" required>
+                            <option value="" disabled selected>Selecione a Categoria</option>
+                            <option value="Espaço">Espaço</option>
+                            <option value="Gastronomia">Gastronomia</option>
+                            <option value="Equipamentos">Equipamentos</option>
+                            <option value="Serviços / Outros">Serviços / Outros</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select id="serviceUnit" required>
+                             <option value="" disabled selected>Selecione a Unidade</option>
+                            <option value="unidade">unidade</option><option value="diaria">diaria</option><option value="por_pessoa">por_pessoa</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><input type="number" id="serviceBasePrice" placeholder="Preço Base (R$)" step="0.01" required></div>
+                    <button type="submit" class="btn btn-primary">Adicionar Serviço</button>
+                </form>
+            </section>
+        </div>
     </div>
     <script src="dados.js"></script>
     <script src="admin.js"></script>
