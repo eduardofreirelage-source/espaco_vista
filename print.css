@@ -1,18 +1,15 @@
-/* print.css - Estilos para Impressão e PDF */
 @media print {
     @page { size: A4; margin: 1.5cm; }
     body, html { background: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 9pt; color: #333; }
     * { visibility: hidden; box-shadow: none !important; border-color: #ddd !important; }
     #print-output, #print-output * { visibility: visible; }
     #print-output { position: absolute; left: 0; top: 0; width: 100%; }
-
     .print-header { padding-bottom: 20px; margin-bottom: 30px; border-bottom: 2px solid #000; text-align: center; }
     .print-header h1 { font-size: 22pt; margin: 0; }
     .print-header p { font-size: 10pt; color: #555; margin: 5px 0 0; }
     .print-client-info { text-align: left; margin-bottom: 30px; font-size: 10pt; }
     .print-client-info p { margin: 4px 0; }
     .print-client-info strong { display: inline-block; width: 80px; }
-
     .print-category-title { font-size: 14pt; font-weight: 600; color: #8B0000; margin-top: 25px; border-bottom: 1px solid #8B0000; padding-bottom: 5px; }
     .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
     .print-table th, .print-table td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
@@ -20,7 +17,6 @@
     .print-table td { vertical-align: top; }
     .print-table .price, .print-table .center { text-align: center; }
     .print-item-obs { font-style: italic; color: #666; font-size: 8pt; padding-top: 4px; }
-    
     .print-summary { page-break-inside: avoid; margin-top: 40px; float: right; width: 45%; }
     .print-summary table { width: 100%; border-collapse: collapse; }
     .print-summary td { padding: 10px; border-bottom: 1px solid #eee; }
