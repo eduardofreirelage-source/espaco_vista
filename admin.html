@@ -2,8 +2,10 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Sistema de Orçamentos</title>
     <link rel="stylesheet" href="admin.css">
+    <script type="module" src="admin.js"></script>
 </head>
 <body>
     <div class="container">
@@ -11,6 +13,7 @@
 
         <section class="card">
             <h2>Backup de Dados</h2>
+            <p>Faça o backup dos seus dados do Supabase ou importe um arquivo para o banco de dados.</p>
             <div class="backup-section">
                 <button id="exportButton" class="btn btn-primary">Exportar Backup</button>
                 <input type="file" id="importFile" accept=".json">
@@ -63,7 +66,6 @@
             </section>
         </div>
     </div>
-    <script src="dados.js"></script>
-    <script src="admin.js"></script>
+    <div id="save-notification" class="notification"></div>
 </body>
 </html>
