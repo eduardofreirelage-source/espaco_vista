@@ -1,16 +1,15 @@
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ESTADO DA APLICAÇÃO ---
+    // ESTADO DA APLICAÇÃO
     let appData = { services: [], tabelas: {} };
     let quote = {
         general: { guestCount: 100, priceTable: '', discount: 0, dates: [] },
         items: []
     };
-
     const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
 
-    // --- ELEMENTOS DO DOM ---
+    // ELEMENTOS DO DOM
     const guestCountInput = document.getElementById('guestCount');
     const priceTableSelect = document.getElementById('priceTableSelect');
     const discountInput = document.getElementById('discountValue');
@@ -22,11 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await loadDataFromSupabase();
             populatePriceTables();
-            render();
             addEventListeners();
+            render();
         } catch (error) {
             console.error("Falha crítica na inicialização:", error);
-            alert("Não foi possível carregar os dados. Verifique o console para mais detalhes.");
+            alert("Não foi possível carregar os dados. Verifique o console.");
         }
     }
 
@@ -44,9 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function populatePriceTables() {
-        priceTableSelect.innerHTML = Object.keys(appData.tabelas)
-            .map(name => `<option value="${name}">${name}</option>`)
-            .join('');
+        priceTableSelect.innerHTML = Object.keys(appData.tabelas).map(name => `<option value="${name}">${name}</option>`).join('');
         if (priceTableSelect.options.length > 0) {
             quote.general.priceTable = priceTableSelect.value;
         }
@@ -112,12 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             row.dataset.index = itemIndex;
             row.innerHTML = `
-                <td style="width:40%;">${service.name}</td>
+                <td>${service.name}</td>
                 <td><select data-field="assignedDate"><option value="">Selecione</option>${dateOptions}</select></td>
-                <td style="width: 80px;"><input type="number" value="${quantity}" min="1" ${isPerPerson ? 'disabled' : ''} data-field="quantity"></td>
+                <td><input type="number" value="${quantity}" min="1" ${isPerPerson ? 'disabled' : ''} data-field="quantity"></td>
                 <td>R$ ${unitPrice.toFixed(2)}</td>
                 <td>R$ ${total.toFixed(2)}</td>
-                <td class="item-actions" style="width: 100px;">
+                <td class="item-actions">
                     <button class="btn-icon" data-action="toggleObs" title="Observações">💬</button>
                     <button class="btn-icon" data-action="duplicate" title="Duplicar Item">📋</button>
                     <button class="btn-icon" data-action="remove" title="Remover Item">&times;</button>
@@ -134,10 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- LÓGICA DE CÁLCULO ---
+    // --- LÓGICA DE CÁLCULO E EVENTOS ---
     function calculateTotal() {
         const prices = getCalculatedPrices();
         let subtotal = 0;
+        let gastronomySubtotal = 0; // Removido do cálculo do total, mas pode ser útil para taxas futuras
 
         quote.items.forEach(item => {
             const service = appData.services.find(s => s.id === item.id);
@@ -152,14 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = subtotal - discount;
 
         document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
-        // Removido o cálculo e exibição da taxa de serviço
-        const serviceFeeElement = document.getElementById('serviceFeeValue');
-        if(serviceFeeElement) serviceFeeElement.closest('.summary-item').style.display = 'none';
-
         document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
     }
 
-    // --- MANIPULADORES DE EVENTOS ---
     function addEventListeners() {
         addDateBtn.addEventListener('click', () => {
             quote.general.dates.push({ date: new Date().toISOString().split('T')[0], startTime: '19:00', endTime: '23:00', observations: '' });
@@ -174,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const { index, field } = e.target.dataset;
             if (e.target.closest('.date-entry')) {
                 updateDate(index, field, e.target.value);
-            } else if (e.target.closest('.quote-table') || e.target.closest('.observations-row')) {
+            } else if (e.target.closest('tr')) {
                 updateItem(index, field, e.target.value);
             }
         });
@@ -190,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- LÓGICA DO MENU MULTISELECT ---
     function setupMultiselects() {
         document.querySelectorAll('.multiselect-container').forEach(container => {
             const input = container.querySelector('.multiselect-input');
@@ -204,7 +196,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 list.innerHTML += `<div class="multiselect-list-item"><label><input type="checkbox" value="${service.id}"> ${service.name}</label></div>`;
             });
 
-            input.onclick = () => container.classList.toggle('open');
+            input.onclick = () => {
+                const wasOpen = container.classList.contains('open');
+                document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
+                if (!wasOpen) container.classList.add('open');
+            };
             
             addButton.onclick = () => {
                 const selected = list.querySelectorAll('input:checked');
@@ -221,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!e.target.closest('.multiselect-container')) {
                 document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
             }
-        });
+        }, true);
     }
     
     // --- FUNÇÕES DE MANIPULAÇÃO DO ORÇAMENTO ---
@@ -231,24 +227,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleObs(index) { const item = quote.items[parseInt(index)]; if(item) item.showObs = !item.showObs; render(); }
     function updateDate(index, field, value) { const date = quote.general.dates[parseInt(index)]; if (date) date[field] = value; render(); }
     function removeDate(index) { quote.general.dates.splice(parseInt(index), 1); render(); }
-
-    // --- FUNÇÕES AUXILIARES ---
+    function groupItemsByCategory() { return quote.items.reduce((acc, item) => { const service = appData.services.find(s => s.id === item.id); if (service) (acc[service.category] = acc[service.category] || []).push(item); return acc; }, {}); }
     function getCalculatedPrices() {
         const tableName = priceTableSelect.value;
         const table = appData.tabelas[tableName];
         if (!table) return {};
         const prices = {};
-        appData.services.forEach(service => {
-            prices[service.id] = (service.base_price || 0) * (table.modificador || 1);
-        });
+        appData.services.forEach(service => { prices[service.id] = (service.base_price || 0) * (table.modificador || 1); });
         return prices;
-    }
-    function groupItemsByCategory() {
-        return quote.items.reduce((acc, item) => {
-            const service = appData.services.find(s => s.id === item.id);
-            if (service) (acc[service.category] = acc[service.category] || []).push(item);
-            return acc;
-        }, {});
     }
     
     initialize();
