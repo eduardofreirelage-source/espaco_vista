@@ -92,3 +92,22 @@ tr.category-subtotal td:first-child { text-align: right; padding-right: 2rem; co
     .summary-total { text-align: center; border-top: 1px solid #555; width: 100%; padding-top: 1rem; margin-top: 1rem; } 
     .date-entry { grid-template-columns: 1fr; }
 }
+/* ... (O código CSS da última versão minimalista está ótimo, com as pequenas adições abaixo) ... */
+.category-header {
+    display: flex; /* Alinha título e botão na mesma linha */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0 1.5rem; /* Adicionado para alinhar com a tabela */
+}
+#quote-categories-container > .category-block {
+    padding: 0; /* Remove padding do bloco para a tabela ir de ponta a ponta */
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+#quote-categories-container > .category-block:first-child {
+    border-top: none;
+}
+.quote-table input[type="number"] {
+    width: 100%; /* Permite que a coluna defina a largura */
+}
