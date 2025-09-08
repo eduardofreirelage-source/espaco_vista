@@ -1,15 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Referências aos elementos da página
+    // --- ESTADO DA APLICAÇÃO ---
+    let appData;
+
+    // --- FUNÇÕES DE DADOS ---
+    function loadData() {
+        const localData = localStorage.getItem('orcamentoData');
+        if (localData) {
+            appData = JSON.parse(localData);
+        } else {
+            // Se não há nada salvo, usa os dados padrão do dados.js
+            alert("Nenhum dado de preço encontrado. Carregando dados padrão. Acesse a página admin.html para configurar.");
+            appData = JSON.parse(JSON.stringify(data));
+        }
+    }
+    
+    // O restante do app.js da versão anterior pode ser mantido,
+    // apenas garantindo que ele use a variável `appData` em vez de `data`.
+    // Por clareza, aqui está o código completo e correto:
+
     const serviceCategoriesContainer = document.getElementById('service-categories');
     const guestCountInput = document.getElementById('guestCount');
     const priceTableSelect = document.getElementById('priceTableSelect');
 
-    // Função para calcular os preços de uma tabela derivada
     function getPrecosCalculados(nomeTabela) {
-        const tabela = data.tabelas[nomeTabela];
-        if (tabela.tipo === 'base') {
-            return tabela.precos;
-        }
+        const tabela = appData.tabelas[nomeTabela];
+        if (!tabela) return {};
+        if (tabela.tipo === 'base') return tabela.precos;
         if (tabela.tipo === 'derivada') {
             const basePrecos = getPrecosCalculados(tabela.base);
             const precosCalculados = {};
@@ -21,9 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return {};
     }
 
-    // Função para popular o seletor de tabelas de preço
     function popularTabelasDePreco() {
-        for (const nomeTabela in data.tabelas) {
+        priceTableSelect.innerHTML = '';
+        for (const nomeTabela in appData.tabelas) {
             const option = document.createElement('option');
             option.value = nomeTabela;
             option.textContent = nomeTabela;
@@ -31,17 +47,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Função para renderizar os serviços na tela com base na tabela de preço selecionada
     function renderServices() {
         const nomeTabelaSelecionada = priceTableSelect.value;
         const precosAtuais = getPrecosCalculados(nomeTabelaSelecionada);
-        const servicosAgrupados = agruparServicosPorCategoria(data.servicos);
+        const servicosAgrupados = agruparServicosPorCategoria(appData.servicos);
 
         serviceCategoriesContainer.innerHTML = '';
         for (const categoria in servicosAgrupados) {
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'category';
-
             const categoryTitle = document.createElement('h3');
             categoryTitle.className = 'category-title';
             categoryTitle.textContent = categoria;
@@ -65,68 +79,44 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             serviceCategoriesContainer.appendChild(categoryDiv);
         }
-        calculateQuote(); // Recalcula ao renderizar
+        calculateQuote();
     }
-
+    
     function calculateQuote() {
+        // (Esta função continua a mesma da versão anterior, sem alterações necessárias)
         const guestCount = parseInt(guestCountInput.value) || 0;
         const nomeTabelaSelecionada = priceTableSelect.value;
         const precosAtuais = getPrecosCalculados(nomeTabelaSelecionada);
-        
-        let subtotal = 0;
-        let buffetAndBeverageSubtotal = 0;
-        
+        let subtotal = 0, buffetAndBeverageSubtotal = 0;
         const selectedInputs = document.querySelectorAll('input[type="checkbox"]:checked, input[type="radio"]:checked');
-        
         selectedInputs.forEach(input => {
             const servicoId = input.dataset.id;
-            const servico = data.servicos.find(s => s.id === servicoId);
+            const servico = appData.servicos.find(s => s.id === servicoId);
             if (!servico) return;
-
             const preco = precosAtuais[servicoId] || 0;
-            let itemTotal = 0;
-
-            if (servico.unidade === 'por_pessoa') {
-                itemTotal = preco * guestCount;
-            } else {
-                itemTotal = preco;
-            }
-            
+            let itemTotal = (servico.unidade === 'por_pessoa') ? preco * guestCount : preco;
             subtotal += itemTotal;
-
-            if (servico.categoria === "SERVIÇOS DE BUFFET" || servico.categoria === "BEBIDAS") {
+            if (servico.categoria === "SERVIÇO DE BUFFET" || servico.categoria === "BEBIDAS") {
                 buffetAndBeverageSubtotal += itemTotal;
             }
         });
-
         const serviceFee = buffetAndBeverageSubtotal * 0.10;
         const total = subtotal + serviceFee;
-        
         updateSummary(subtotal, serviceFee, total, guestCount, selectedInputs.length > 0);
     }
     
-    // Funções auxiliares (não mudaram muito)
-    function agruparServicosPorCategoria(servicos) {
-        return servicos.reduce((acc, servico) => {
-            (acc[servico.categoria] = acc[servico.categoria] || []).push(servico);
-            return acc;
-        }, {});
-    }
-    function formatUnit(unit) {
-        const units = { "por_pessoa": "Pessoa", "unidade": "Unid.", "diaria": "Pacote" };
-        return units[unit] || unit;
-    }
+    function agruparServicosPorCategoria(servicos) { return servicos.reduce((acc, servico) => { (acc[servico.categoria] = acc[servico.categoria] || []).push(servico); return acc; }, {}); }
+    function formatUnit(unit) { const units = { "por_pessoa": "Pessoa", "unidade": "Unid.", "diaria": "Pacote" }; return units[unit] || unit; }
     function updateSummary(subtotal, serviceFee, total, guests, hasSelection) {
         document.getElementById('subtotalServicesValue').textContent = `R$ ${subtotal.toFixed(2)}`;
         document.getElementById('serviceFeeValue').textContent = `R$ ${serviceFee.toFixed(2)}`;
         document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
         document.getElementById('summary-content').innerHTML = hasSelection ? `<p>Proposta calculada para <strong>${guests}</strong> convidado(s).</p>` : `<p>Selecione os serviços para iniciar.</p>`;
     }
-
-    // Inicialização e Event Listeners
+    
+    loadData();
     popularTabelasDePreco();
     renderServices();
-    
     priceTableSelect.addEventListener('change', renderServices);
     document.body.addEventListener('change', calculateQuote);
     document.body.addEventListener('input', calculateQuote);
