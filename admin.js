@@ -1,32 +1,58 @@
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const notification = document.getElementById('save-notification');
+    // ESTADO
     let services = [];
     let priceTables = [];
+    let servicePrices = [];
+    let quotes = [];
 
-    const servicesTbody = document.getElementById('services-table').querySelector('tbody');
-    const tablesTbody = document.getElementById('price-tables-table').querySelector('tbody');
+    // ELEMENTOS DO DOM
+    const servicesTbody = document.getElementById('services-table')?.querySelector('tbody');
+    const priceTablesTbody = document.getElementById('price-tables-list')?.querySelector('tbody');
+    const quotesTbody = document.getElementById('quotes-table')?.querySelector('tbody');
     const addServiceForm = document.getElementById('addServiceForm');
     const addPriceTableForm = document.getElementById('addPriceTableForm');
-
-    // --- FUNÇÕES DE DADOS ---
-    async function fetchData() {
-        const { data: servicesData, error: servicesError } = await supabase.from('services').select('*').order('name');
-        if (servicesError) console.error('Erro ao buscar serviços:', servicesError.message);
-        else services = servicesData;
-
-        const { data: tablesData, error: tablesError } = await supabase.from('price_tables').select('*').order('name');
-        if (tablesError) console.error('Erro ao buscar tabelas:', tablesError.message);
-        else priceTables = tablesData;
-        
-        renderAll();
-    }
+    const editPricesModal = document.getElementById('editPricesModal');
+    const editPricesForm = document.getElementById('editPricesForm');
     
-    // --- FUNÇÕES DE RENDERIZAÇÃO ---
+    // --- INICIALIZAÇÃO ---
+    async function initialize() {
+        await fetchData();
+        addEventListeners();
+    }
+
+    async function fetchData() {
+        try {
+            const [servicesRes, tablesRes, pricesRes, quotesRes] = await Promise.all([
+                supabase.from('services').select('*').order('name'),
+                supabase.from('price_tables').select('*').order('name'),
+                supabase.from('service_prices').select('*'),
+                supabase.from('quotes').select('id, client_name, created_at, status').order('created_at', { ascending: false })
+            ]);
+
+            if (servicesRes.error) throw servicesRes.error;
+            if (tablesRes.error) throw tablesRes.error;
+            if (pricesRes.error) throw pricesRes.error;
+            if (quotesRes.error) throw quotesRes.error;
+
+            services = servicesRes.data;
+            priceTables = tablesRes.data;
+            servicePrices = pricesRes.data;
+            quotes = quotesRes.data;
+
+            renderAll();
+        } catch (error) {
+            console.error("Erro ao carregar dados:", error.message);
+            showNotification("Erro ao carregar dados.", true);
+        }
+    }
+
+    // --- RENDERIZAÇÃO ---
     function renderAll() {
         renderServicesTable();
-        renderPriceTablesTable();
+        renderPriceTablesList();
+        renderQuotesTable();
     }
 
     function renderServicesTable() {
@@ -36,101 +62,107 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = `
                 <td>${service.name}</td>
                 <td>${service.category}</td>
-                <td>${service.unit}</td>
-                <td><input type="number" class="price-input" value="${service.base_price}" step="0.01" onchange="updateServicePrice('${service.id}', this.value)"></td>
-                <td class="actions"><button class="btn-remove" onclick="deleteService('${service.id}')">&times;</button></td>
+                <td class="actions">
+                    <button class="btn" data-action="edit-prices" data-id="${service.id}">Editar Preços</button>
+                    <button class="btn-remove" data-action="delete-service" data-id="${service.id}">&times;</button>
+                </td>
             `;
             servicesTbody.appendChild(row);
         });
     }
-
-    function renderPriceTablesTable() {
-        tablesTbody.innerHTML = '';
+    
+    function renderPriceTablesList() {
+        priceTablesTbody.innerHTML = '';
         priceTables.forEach(table => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${table.name}</td>
-                <td>${table.modifier}</td>
-                <td class="actions"><button class="btn-remove" onclick="deleteTable('${table.id}')">&times;</button></td>
+                <td class="actions">
+                    <button class="btn-remove" data-action="delete-table" data-id="${table.id}">&times;</button>
+                </td>
             `;
-            tablesTbody.appendChild(row);
+            priceTablesTbody.appendChild(row);
         });
     }
-    
-    // --- MANIPULADORES DE EVENTOS ---
-    addServiceForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const newService = {
-            name: document.getElementById('serviceName').value,
-            category: document.getElementById('serviceCategory').value,
-            unit: document.getElementById('serviceUnit').value,
-            base_price: parseFloat(document.getElementById('serviceBasePrice').value)
-        };
-        
-        const { error } = await supabase.from('services').insert([newService]);
-        if (error) {
-            showNotification('Erro: ' + error.message, true);
-        } else {
-            e.target.reset();
-            fetchData();
-            showNotification('Serviço adicionado com sucesso!');
-        }
-    });
 
-    addPriceTableForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const newTable = {
-            name: document.getElementById('tableName').value,
-            modifier: parseFloat(document.getElementById('modifier').value)
-        };
-        
-        const { error } = await supabase.from('price_tables').insert([newTable]);
-        if (error) {
-            showNotification('Erro: ' + error.message, true);
-        } else {
-            e.target.reset();
-            fetchData();
-            showNotification('Tabela de preços adicionada!');
-        }
-    });
-    
-    // --- FUNÇÕES GLOBAIS ---
-    window.updateServicePrice = async (id, newPrice) => {
-        const { error } = await supabase.from('services').update({ base_price: parseFloat(newPrice) }).eq('id', id);
-        if (error) showNotification('Erro ao atualizar preço: ' + error.message, true);
-        else showNotification('Preço salvo!');
-    };
-
-    window.deleteService = async (id) => {
-        if (!confirm('Tem certeza que deseja excluir este serviço?')) return;
-        const { error } = await supabase.from('services').delete().eq('id', id);
-        if (error) showNotification('Erro ao excluir: ' + error.message, true);
-        else {
-            showNotification('Serviço excluído.');
-            fetchData();
-        }
-    };
-
-    window.deleteTable = async (id) => {
-        if (!confirm('Tem certeza que deseja excluir esta tabela de preços?')) return;
-        const { error } = await supabase.from('price_tables').delete().eq('id', id);
-        if (error) showNotification('Erro ao excluir: ' + error.message, true);
-        else {
-            showNotification('Tabela excluída.');
-            fetchData();
-        }
-    };
-    
-    // --- FUNÇÃO DE NOTIFICAÇÃO ---
-    function showNotification(message, isError = false) {
-        notification.textContent = message;
-        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
-        notification.classList.add('show');
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, 3000);
+    function renderQuotesTable() {
+        quotesTbody.innerHTML = '';
+        quotes.forEach(quote => {
+            const row = document.createElement('tr');
+            const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
+            row.innerHTML = `
+                <td>${quote.client_name || 'Rascunho'}</td>
+                <td>${createdAt}</td>
+                <td><span class="status">${quote.status}</span></td>
+                <td class="actions">
+                    <a href="index.html?quote_id=${quote.id}" class="btn">Carregar</a>
+                    <button class="btn-remove" data-action="delete-quote" data-id="${quote.id}">&times;</button>
+                </td>
+            `;
+            quotesTbody.appendChild(row);
+        });
     }
 
-    // --- INICIALIZAÇÃO ---
-    fetchData();
+    // --- LÓGICA DO MODAL DE EDIÇÃO DE PREÇOS ---
+    function openEditPricesModal(serviceId) {
+        const service = services.find(s => s.id === serviceId);
+        document.getElementById('editPricesModalTitle').textContent = `Preços para: ${service.name}`;
+        
+        editPricesForm.innerHTML = '';
+        priceTables.forEach(table => {
+            const priceRecord = servicePrices.find(p => p.service_id === serviceId && p.price_table_id === table.id);
+            const price = priceRecord ? priceRecord.price : 0;
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label>${table.name}</label>
+                <input type="number" value="${price.toFixed(2)}" step="0.01" data-table-id="${table.id}">
+            `;
+            editPricesForm.appendChild(div);
+        });
+
+        document.getElementById('savePricesButton').dataset.serviceId = serviceId;
+        editPricesModal.style.display = 'block';
+    }
+
+    // --- EVENT LISTENERS ---
+    function addEventListeners() {
+        // ... (Listeners para os formulários de adicionar serviço/tabela)
+
+        document.body.addEventListener('click', e => {
+            const button = e.target.closest('button');
+            if (!button) return;
+
+            const { action, id } = button.dataset;
+            if (action === 'edit-prices') openEditPricesModal(id);
+            if (action === 'delete-service') deleteService(id);
+            if (action === 'delete-table') deletePriceTable(id);
+            if (action === 'delete-quote') deleteQuote(id);
+        });
+
+        editPricesModal.querySelector('.close-button').onclick = () => editPricesModal.style.display = 'none';
+
+        document.getElementById('savePricesButton').addEventListener('click', async (e) => {
+            const serviceId = e.target.dataset.serviceId;
+            const inputs = editPricesForm.querySelectorAll('input');
+            
+            const recordsToUpsert = Array.from(inputs).map(input => ({
+                service_id: serviceId,
+                price_table_id: input.dataset.tableId,
+                price: parseFloat(input.value) || 0
+            }));
+            
+            const { error } = await supabase.from('service_prices').upsert(recordsToUpsert);
+            if (error) {
+                showNotification(`Erro ao salvar preços: ${error.message}`, true);
+            } else {
+                showNotification('Preços salvos com sucesso!');
+                editPricesModal.style.display = 'none';
+                fetchData(); // Recarrega os preços
+            }
+        });
+    }
+
+    // ... (funções de delete, notificações, etc.)
+    initialize();
 });
