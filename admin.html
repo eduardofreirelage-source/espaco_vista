@@ -5,67 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Sistema de Orçamentos</title>
     <link rel="stylesheet" href="admin.css">
-    <script type="module" src="admin.js"></script>
 </head>
 <body>
     <div class="container">
-        <header><h1>Painel de Administração</h1></header>
+        <header>
+            <h1>Painel de Administração</h1>
+            <a href="index.html" target="_blank" class="btn">← Voltar para Orçamentos</a>
+        </header>
 
-        <section class="card">
-            <h2>Backup de Dados</h2>
-            <p>Faça o backup dos seus dados do Supabase ou importe um arquivo para o banco de dados.</p>
-            <div class="backup-section">
-                <button id="exportButton" class="btn btn-primary">Exportar Backup</button>
-                <input type="file" id="importFile" accept=".json">
-                <label for="importFile" class="btn btn-success">Importar Backup</label>
-            </div>
-        </section>
-
-        <div class="admin-grid">
+        <main>
             <section class="card">
                 <h2>Tabelas de Preços (Multiplicadores)</h2>
-                <table id="price-tables-table">
-                    <thead><tr><th>Nome da Tabela</th><th>Multiplicador</th><th>Ações</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-                <form id="addPriceTableForm">
-                    <h3>Adicionar Nova Tabela</h3>
-                    <div class="form-group"><input type="text" id="tableName" placeholder="Nome da Tabela (Ex: Parceiros)" required></div>
-                    <div class="form-group"><input type="number" id="modifier" placeholder="Multiplicador (Ex: 1.2 para +20%)" step="0.01" required></div>
-                    <button type="submit" class="btn btn-primary">Adicionar Tabela</button>
-                </form>
+                <div class="card-content">
+                    <table id="price-tables-table">
+                        <thead><tr><th>Nome da Tabela</th><th>Multiplicador</th><th>Ações</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                    <form id="addPriceTableForm" class="inline-form">
+                        <input type="text" id="tableName" placeholder="Nome da Tabela (Ex: Corporativo)" required>
+                        <input type="number" id="modifier" placeholder="Multiplicador (Ex: 1.2)" step="0.01" required>
+                        <button type="submit" class="btn">Adicionar Tabela</button>
+                    </form>
+                </div>
             </section>
 
             <section class="card">
                 <h2>Catálogo de Serviços e Produtos</h2>
-                <table id="services-table">
-                    <thead><tr><th>Nome</th><th>Categoria</th><th>Unidade</th><th>Preço Base (R$)</th><th>Ações</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-                 <form id="addServiceForm">
-                    <h3>Adicionar Novo Serviço ao Catálogo</h3>
-                    <div class="form-group"><input type="text" id="serviceName" placeholder="Nome do Serviço" required></div>
-                    <div class="form-group">
-                        <select id="serviceCategory" required>
-                            <option value="" disabled selected>Selecione a Categoria</option>
-                            <option value="Espaço">Espaço</option>
-                            <option value="Gastronomia">Gastronomia</option>
-                            <option value="Equipamentos">Equipamentos</option>
-                            <option value="Serviços / Outros">Serviços / Outros</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <select id="serviceUnit" required>
-                             <option value="" disabled selected>Selecione a Unidade</option>
-                            <option value="unidade">unidade</option><option value="diaria">diaria</option><option value="por_pessoa">por_pessoa</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><input type="number" id="serviceBasePrice" placeholder="Preço Base (R$)" step="0.01" required></div>
-                    <button type="submit" class="btn btn-primary">Adicionar Serviço</button>
-                </form>
+                <div class="card-content">
+                    <table id="services-table">
+                        <thead><tr><th>Nome</th><th>Categoria</th><th>Unidade</th><th>Preço Base (R$)</th><th>Ações</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                    <form id="addServiceForm" class="inline-form">
+                        <input type="text" id="serviceName" placeholder="Nome do Serviço" required>
+                        <select id="serviceCategory" required><option value="" disabled selected>Categoria</option><option>Espaço</option><option>Gastronomia</option><option>Equipamentos</option><option>Serviços / Outros</option></select>
+                        <select id="serviceUnit" required><option value="" disabled selected>Unidade</option><option>unidade</option><option>diaria</option><option>por_pessoa</option></select>
+                        <input type="number" id="serviceBasePrice" placeholder="Preço Base (R$)" step="0.01" required>
+                        <button type="submit" class="btn">Adicionar Serviço</button>
+                    </form>
+                </div>
             </section>
-        </div>
+        </main>
     </div>
     <div id="save-notification" class="notification"></div>
+    <script type="module" src="admin.js"></script>
 </body>
 </html>
