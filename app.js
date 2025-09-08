@@ -4,24 +4,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // ESTADO DA APLICAÇÃO
     let appData = { services: [], tabelas: {} };
     let quote = {
-        general: { 
-            clientName: '', clientCnpj: '', clientEmail: '', clientPhone: '',
-            guestCount: 100, priceTable: '', discount: 0, dates: [] 
-        },
+        general: { clientName: '', clientCnpj: '', clientEmail: '', clientPhone: '', guestCount: 100, priceTable: '', discount: 0, dates: [] },
         items: []
     };
     const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
 
     // ELEMENTOS DO DOM
-    const guestCountInput = document.getElementById('guestCount');
     const priceTableSelect = document.getElementById('priceTableSelect');
     const discountInput = document.getElementById('discountValue');
     const addDateBtn = document.getElementById('add-date-btn');
     const quoteCategoriesContainer = document.getElementById('quote-categories-container');
-    const generalDataFields = ['clientName', 'clientCnpj', 'clientEmail', 'clientPhone'];
+    const generalDataFields = ['clientName', 'clientCnpj', 'clientEmail', 'clientPhone', 'guestCount'];
     const saveBtn = document.getElementById('save-quote-btn');
     const loadBtn = document.getElementById('load-quote-btn');
     const printBtn = document.getElementById('print-btn');
+    const detailsModal = document.getElementById('detailsModal');
 
     // --- INICIALIZAÇÃO ---
     async function initialize() {
@@ -32,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         } catch (error) {
             console.error("Falha crítica na inicialização:", error);
-            alert("Não foi possível carregar os dados. Verifique o console para mais detalhes.");
+            alert("Não foi possível carregar os dados do banco de dados. Verifique sua conexão ou as configurações do Supabase e recarregue a página.");
         }
     }
 
@@ -50,9 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function populatePriceTables() {
-        priceTableSelect.innerHTML = Object.keys(appData.tabelas)
-            .map(name => `<option value="${name}">${name}</option>`)
-            .join('');
+        priceTableSelect.innerHTML = Object.keys(appData.tabelas).map(name => `<option value="${name}">${name}</option>`).join('');
         if (priceTableSelect.options.length > 0) {
             quote.general.priceTable = priceTableSelect.value;
         }
@@ -60,18 +55,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE RENDERIZAÇÃO ---
     function render() {
-        // Atualiza os campos de dados gerais na tela
-        generalDataFields.forEach(field => {
-            document.getElementById(field).value = quote.general[field] || '';
-        });
-        guestCountInput.value = quote.general.guestCount;
-        priceTableSelect.value = quote.general.priceTable;
-        discountInput.value = quote.general.discount;
-
+        renderGeneralData();
         renderDateManager();
         renderQuoteCategories();
         calculateTotal();
         setupMultiselects();
+    }
+
+    function renderGeneralData() {
+        generalDataFields.forEach(fieldId => {
+            document.getElementById(fieldId).value = quote.general[fieldId] || '';
+        });
+        priceTableSelect.value = quote.general.priceTable;
+        discountInput.value = quote.general.discount;
     }
     
     function renderDateManager() {
@@ -137,9 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>R$ ${unitPrice.toFixed(2)}</td>
                 <td>R$ ${total.toFixed(2)}</td>
                 <td class="item-actions" style="width: 100px;">
-                    <button class="btn-icon" data-action="toggleObs" title="Detalhes">💬</button>
-                    <button class="btn-icon" data-action="duplicate" title="Duplicar">📋</button>
-                    <button class="btn-icon" data-action="remove" title="Remover">&times;</button>
+                    <button class="btn-icon" data-action="toggleObs" data-index="${itemIndex}" title="Detalhes">💬</button>
+                    <button class="btn-icon" data-action="duplicate" data-index="${itemIndex}" title="Duplicar">📋</button>
+                    <button class="btn-icon" data-action="remove" data-index="${itemIndex}" title="Remover">&times;</button>
                 </td>
             `;
             tableBody.appendChild(row);
@@ -148,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const obsRow = document.createElement('tr');
                 obsRow.className = 'observations-row';
                 obsRow.innerHTML = `<td colspan="6">
-                    <div class="form-grid" style="padding: 0.5rem 0;">
+                    <div class="form-grid" style="padding: 0.5rem 0; grid-template-columns: 2fr 1fr;">
                         <div class="form-group">
                             <label>Observações</label>
                             <textarea data-field="observacoes" rows="2">${item.observacoes || ''}</textarea>
@@ -206,21 +202,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 quote.general[fieldId] = e.target.value;
             });
         });
-
-        guestCountInput.addEventListener('input', e => { quote.general.guestCount = parseInt(e.target.value) || 0; render(); });
         priceTableSelect.addEventListener('change', e => { quote.general.priceTable = e.target.value; render(); });
-        discountInput.addEventListener('input', calculateTotal);
+        discountInput.addEventListener('input', e => { quote.general.discount = parseFloat(e.target.value) || 0; calculateTotal(); });
 
-        printBtn.addEventListener('click', () => window.print());
+        printBtn.addEventListener('click', generatePrintableQuote);
         saveBtn.addEventListener('click', saveQuote);
         loadBtn.addEventListener('click', loadQuote);
         
         document.body.addEventListener('change', e => {
             const { index, field } = e.target.dataset;
-            if (e.target.closest('.date-entry')) {
-                updateDate(index, field, e.target.value);
-            } else if (e.target.closest('tr')) {
-                updateItem(index, field, e.target.value);
+            if (index && field) {
+                if (e.target.closest('.date-entry')) {
+                    updateDate(index, field, e.target.value);
+                } else if (e.target.closest('tr')) {
+                    updateItem(index, field, e.target.value);
+                }
             }
         });
 
@@ -253,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wasOpen = container.classList.contains('open');
                 document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
                 if (!wasOpen) container.classList.add('open');
-};
+            };
             
             addButton.onclick = () => {
                 const selected = list.querySelectorAll('input:checked');
@@ -273,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, true);
     }
     
-    // --- FUNÇÕES DE SALVAR/CARREGAR ---
+    // --- FUNÇÕES DE SALVAR/CARREGAR/IMPRIMIR ---
     function saveQuote() {
         localStorage.setItem('savedQuote', JSON.stringify(quote));
         alert('Cotação salva com sucesso no seu navegador!');
@@ -291,8 +287,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function generatePrintableQuote() {
+        const printArea = document.getElementById('print-output');
+        const prices = getCalculatedPrices();
+        const groupedItems = groupItemsByCategory();
+        
+        let html = `<div class="print-header"><h1>Proposta de Investimento</h1></div>`;
+        html += `<div class="print-client-info">
+                    <p><strong>Cliente:</strong> ${quote.general.clientName || 'Não informado'}</p>
+                    <p><strong>CNPJ/CPF:</strong> ${quote.general.clientCnpj || 'Não informado'}</p>
+                    <p><strong>Nº de Convidados:</strong> ${quote.general.guestCount}</p>
+                 </div>`;
+        
+        CATEGORY_ORDER.forEach(category => {
+            if (groupedItems[category] && groupedItems[category].length > 0) {
+                html += `<h2 class="print-category-title">${category}</h2>`;
+                html += `<table class="print-table"><thead><tr><th>Item</th><th>Data</th><th>Qtde</th><th>Vlr. Unit.</th><th>Subtotal</th></tr></thead><tbody>`;
+                groupedItems[category].forEach(item => {
+                    // Lógica de cálculo idêntica à da tela
+                    const service = appData.services.find(s => s.id === item.id);
+                    const unitPrice = prices[item.id] || 0;
+                    const quantity = item.quantity || 1;
+                    const itemDiscount = item.discount_percent || 0;
+                    const totalBeforeDiscount = unitPrice * quantity;
+                    const discountAmount = totalBeforeDiscount * (itemDiscount / 100);
+                    const total = totalBeforeDiscount - discountAmount;
+                    
+                    html += `<tr>
+                                <td>
+                                    ${service.name}
+                                    ${item.observacoes ? `<div class="print-item-obs">Obs: ${item.observacoes}</div>` : ''}
+                                    ${itemDiscount > 0 ? `<div class="print-item-obs">Desconto: ${itemDiscount}%</div>` : ''}
+                                </td>
+                                <td>${formatDateBR(item.assignedDate) || '-'}</td>
+                                <td>${quantity}</td>
+                                <td class="price">R$ ${unitPrice.toFixed(2)}</td>
+                                <td class="price">R$ ${total.toFixed(2)}</td>
+                             </tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+        });
+        
+        // Bloco de Totais
+        const subtotal = parseFloat(document.getElementById('subtotalValue').textContent.replace('R$ ', '').replace('.', '').replace(',', '.'));
+        const discount = parseFloat(discountInput.value) || 0;
+        const total = parseFloat(document.getElementById('totalValue').textContent.replace('R$ ', '').replace('.', '').replace(',', '.'));
+        
+        html += `<div class="print-summary">
+                    <table>
+                        <tr><td class="total-label">Subtotal</td><td class="price total-value">R$ ${subtotal.toFixed(2)}</td></tr>
+                        <tr><td class="total-label">Desconto Geral</td><td class="price total-value">- R$ ${discount.toFixed(2)}</td></tr>
+                        <tr class="grand-total"><td class="total-label">VALOR TOTAL</td><td class="price total-value">R$ ${total.toFixed(2)}</td></tr>
+                    </table>
+                 </div>`;
+
+        printArea.innerHTML = html;
+        window.print();
+    }
+    
     // --- FUNÇÕES DE MANIPULAÇÃO DO ORÇAMENTO ---
-    function updateItem(index, key, value) { const item = quote.items[parseInt(index)]; if(item) item[key] = (key === 'quantity' || key === 'discount_percent') ? parseFloat(value) : value; render(); }
+    function updateItem(index, key, value) { const item = quote.items[parseInt(index)]; if(item) item[key] = (key === 'quantity' || key === 'discount_percent') ? parseFloat(value) || 0 : value; render(); }
     function removeItem(index) { quote.items.splice(parseInt(index), 1); render(); }
     function duplicateItem(index) { const item = quote.items[parseInt(index)]; if(item) quote.items.splice(parseInt(index) + 1, 0, JSON.parse(JSON.stringify(item))); render(); }
     function toggleObs(index) { const item = quote.items[parseInt(index)]; if(item) item.showObs = !item.showObs; render(); }
