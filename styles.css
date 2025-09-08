@@ -268,3 +268,29 @@ h2 {
         text-align: center; 
     }
 }
+
+/* ... (todo o css da versão anterior) ... */
+
+/* Estilos para o botão de Detalhes (...) */
+.btn-details {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-color);
+    cursor: pointer;
+    font-weight: bold;
+    width: 28px;
+    height: 28px;
+    line-height: 26px;
+    text-align: center;
+}
+.btn-details:hover {
+    background-color: var(--secondary-color);
+}
+/* Detalhes do Modal de Detalhes */
+#detailsModalBody .form-group {
+    margin-bottom: 1rem;
+}
+#saveDetailsButton {
+    margin-top: 1rem;
+}
