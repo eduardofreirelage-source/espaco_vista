@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const addDateBtn = document.getElementById('add-date-btn');
     const quoteCategoriesContainer = document.getElementById('quote-categories-container');
     const generalDataFields = ['clientName', 'clientCnpj', 'clientEmail', 'clientPhone'];
+    const saveBtn = document.getElementById('save-quote-btn');
+    const loadBtn = document.getElementById('load-quote-btn');
+    const printBtn = document.getElementById('print-btn');
 
     // --- INICIALIZAÇÃO ---
     async function initialize() {
@@ -57,6 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE RENDERIZAÇÃO ---
     function render() {
+        // Atualiza os campos de dados gerais na tela
+        generalDataFields.forEach(field => {
+            document.getElementById(field).value = quote.general[field] || '';
+        });
+        guestCountInput.value = quote.general.guestCount;
+        priceTableSelect.value = quote.general.priceTable;
+        discountInput.value = quote.general.discount;
+
         renderDateManager();
         renderQuoteCategories();
         calculateTotal();
@@ -190,15 +201,19 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         });
         
-        generalDataFields.forEach(field => {
-            document.getElementById(field).addEventListener('input', e => {
-                quote.general[field] = e.target.value;
+        generalDataFields.forEach(fieldId => {
+            document.getElementById(fieldId).addEventListener('input', e => {
+                quote.general[fieldId] = e.target.value;
             });
         });
 
         guestCountInput.addEventListener('input', e => { quote.general.guestCount = parseInt(e.target.value) || 0; render(); });
         priceTableSelect.addEventListener('change', e => { quote.general.priceTable = e.target.value; render(); });
         discountInput.addEventListener('input', calculateTotal);
+
+        printBtn.addEventListener('click', () => window.print());
+        saveBtn.addEventListener('click', saveQuote);
+        loadBtn.addEventListener('click', loadQuote);
         
         document.body.addEventListener('change', e => {
             const { index, field } = e.target.dataset;
@@ -238,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wasOpen = container.classList.contains('open');
                 document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
                 if (!wasOpen) container.classList.add('open');
-            };
+};
             
             addButton.onclick = () => {
                 const selected = list.querySelectorAll('input:checked');
@@ -258,6 +273,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }, true);
     }
     
+    // --- FUNÇÕES DE SALVAR/CARREGAR ---
+    function saveQuote() {
+        localStorage.setItem('savedQuote', JSON.stringify(quote));
+        alert('Cotação salva com sucesso no seu navegador!');
+    }
+    
+    function loadQuote() {
+        const savedData = localStorage.getItem('savedQuote');
+        if (savedData) {
+            if (confirm('Isso irá substituir a cotação atual. Deseja continuar?')) {
+                quote = JSON.parse(savedData);
+                render();
+            }
+        } else {
+            alert('Nenhuma cotação salva foi encontrada.');
+        }
+    }
+
     // --- FUNÇÕES DE MANIPULAÇÃO DO ORÇAMENTO ---
     function updateItem(index, key, value) { const item = quote.items[parseInt(index)]; if(item) item[key] = (key === 'quantity' || key === 'discount_percent') ? parseFloat(value) : value; render(); }
     function removeItem(index) { quote.items.splice(parseInt(index), 1); render(); }
