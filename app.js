@@ -1,4 +1,160 @@
 document.addEventListener('DOMContentLoaded', () => {
+    let appData;
+    let currentQuote = {
+        espaco: {},
+        gastronomia: [],
+        equipamentos: [],
+        servicos: []
+    };
+
+    const guestCountInput = document.getElementById('guestCount');
+    const priceTableSelect = document.getElementById('priceTableSelect');
+    
+    function loadData() {
+        const localData = localStorage.getItem('orcamentoData');
+        appData = localData ? JSON.parse(localData) : JSON.parse(JSON.stringify(data));
+    }
+    
+    function populatePriceTables() {
+        priceTableSelect.innerHTML = '';
+        for (const tableName in appData.tabelas) {
+            priceTableSelect.innerHTML += `<option value="${tableName}">${tableName}</option>`;
+        }
+    }
+
+    function getCalculatedPrices(tableName) {
+        const table = appData.tabelas[tableName];
+        if (table.tipo === 'base') return table.precos;
+        if (table.tipo === 'derivada') {
+            const basePrices = getCalculatedPrices(table.base);
+            const calculatedPrices = {};
+            for (const serviceId in basePrices) {
+                calculatedPrices[serviceId] = basePrices[serviceId] * table.modificador;
+            }
+            return calculatedPrices;
+        }
+        return {};
+    }
+
+    function renderQuote() {
+        const guestCount = parseInt(guestCountInput.value) || 0;
+        
+        // Renderiza tabelas dinâmicas
+        renderTable('gastronomia', guestCount);
+        renderTable('equipamentos');
+        renderTable('servicos');
+
+        calculateTotal();
+    }
+    
+    function renderTable(categoryKey, lockedQuantity = null) {
+        const tableBody = document.getElementById(`${categoryKey}-table`).querySelector('tbody');
+        const items = currentQuote[categoryKey];
+        const prices = getCalculatedPrices(priceTableSelect.value);
+
+        tableBody.innerHTML = '';
+        items.forEach((item, index) => {
+            const service = appData.servicos.find(s => s.id === item.id);
+            const unitPrice = prices[item.id] || 0;
+            const quantity = lockedQuantity !== null ? lockedQuantity : item.quantity;
+            const total = unitPrice * quantity;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${service.nome}</td>
+                <td>R$ ${unitPrice.toFixed(2)}</td>
+                <td><input type="number" value="${quantity}" min="1" ${lockedQuantity !== null ? 'disabled' : ''} onchange="updateQuantity('${categoryKey}', ${index}, this.value)"></td>
+                <td>R$ ${total.toFixed(2)}</td>
+                <td><button class="btn-remove" onclick="removeItem('${categoryKey}', ${index})">&times;</button></td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    function calculateTotal() {
+        const guestCount = parseInt(guestCountInput.value) || 0;
+        const prices = getCalculatedPrices(priceTableSelect.value);
+        let subtotal = 0;
+        let gastronomySubtotal = 0;
+
+        // Soma Espaço
+        subtotal += parseFloat(document.getElementById('espacoValor').value) || 0;
+
+        // Soma Gastronomia
+        currentQuote.gastronomia.forEach(item => {
+            const price = prices[item.id] || 0;
+            const itemTotal = price * guestCount;
+            subtotal += itemTotal;
+            gastronomySubtotal += itemTotal;
+        });
+        
+        // Soma Equipamentos e Serviços
+        ['equipamentos', 'servicos'].forEach(categoryKey => {
+            currentQuote[categoryKey].forEach(item => {
+                const price = prices[item.id] || 0;
+                subtotal += price * item.quantity;
+            });
+        });
+
+        const serviceFee = gastronomySubtotal * 0.10;
+        const total = subtotal + serviceFee;
+        
+        document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
+        document.getElementById('serviceFeeValue').textContent = `R$ ${serviceFee.toFixed(2)}`;
+        document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
+    }
+
+    // --- Lógica do Modal ---
+    const modal = document.getElementById('addItemModal');
+    const closeButton = document.querySelector('.close-button');
+    let currentCategoryToAdd = '';
+
+    document.querySelectorAll('.btn-add').forEach(button => {
+        button.addEventListener('click', () => {
+            currentCategoryToAdd = button.dataset.category;
+            document.getElementById('modalCategoryTitle').textContent = currentCategoryToAdd;
+            const itemList = document.getElementById('modalItemList');
+            itemList.innerHTML = '';
+            appData.servicos
+                .filter(s => s.categoria === currentCategoryToAdd)
+                .forEach(service => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'modal-item';
+                    itemDiv.textContent = service.nome;
+                    itemDiv.onclick = () => addItemToQuote(service.id);
+                    itemList.appendChild(itemDiv);
+                });
+            modal.style.display = 'block';
+        });
+    });
+
+    closeButton.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => { if (event.target == modal) modal.style.display = 'none'; };
+
+    window.addItemToQuote = (serviceId) => {
+        const categoryKey = currentCategoryToAdd.toLowerCase().replace(' / ', '-').replace('ç', 'c').replace('õ', 'o'); // 'servicos-outros'
+        currentQuote[categoryKey].push({ id: serviceId, quantity: 1 });
+        modal.style.display = 'none';
+        renderQuote();
+    };
+    
+    window.removeItem = (categoryKey, index) => {
+        currentQuote[categoryKey].splice(index, 1);
+        renderQuote();
+    };
+
+    window.updateQuantity = (categoryKey, index, newQuantity) => {
+        currentQuote[categoryKey][index].quantity = parseInt(newQuantity);
+        renderQuote();
+    };
+
+    // --- Inicialização ---
+    loadData();
+    populatePriceTables();
+    renderQuote();
+    document.body.addEventListener('input', calculateTotal);
+    priceTableSelect.addEventListener('change', renderQuote);
+});document.addEventListener('DOMContentLoaded', () => {
     // --- ESTADO DA APLICAÇÃO ---
     let appData;
 
