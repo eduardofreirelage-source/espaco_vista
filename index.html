@@ -47,61 +47,38 @@
                 <h2>Itens do Orçamento</h2>
                 <div id="quote-categories-container"></div>
             </section>
-        </main>
+
+            <section class="card" id="summary-card">
+                <h2>Resumo da Proposta</h2>
+                <div class="card-content">
+                    <div class="summary-details">
+                        <div id="summary-categories-list">
+                            </div>
+                        <div class="summary-line summary-subtotal">
+                            <span>Subtotal</span>
+                            <strong id="summary-subtotal-value">R$ 0,00</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span>Consumação Inclusa</span>
+                            <strong id="summary-consumable-value">R$ 0,00</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span>Desconto Geral</span>
+                            <strong id="summary-discount-value">R$ 0,00</strong>
+                        </div>
+                        <div class="summary-line summary-grand-total">
+                            <span>Valor Total</span>
+                            <strong id="summary-total-value">R$ 0,00</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            </main>
     </div>
 
     <footer class="summary-footer">
-        <div class="summary-content">
-            <div class="summary-item"><span>Subtotal:</span><strong id="subtotalValue">R$ 0,00</strong></div>
-            <div class="summary-item"><span>Consumação:</span><strong id="consumableValue">R$ 0,00</strong></div>
-            <div class="summary-item">
-                <label for="discountValue">Desconto Geral (R$):</label>
-                <input type="number" id="discountValue" value="0" min="0">
-            </div>
-            <div class="summary-total">
-                <span>VALOR TOTAL:</span>
-                <strong id="totalValue">R$ 0,00</strong>
-            </div>
-        </div>
-    </footer>
+        </footer>
 
-    <template id="category-template">
-        <details class="category-accordion">
-            <summary class="category-header">
-                <h3 class="category-title"></h3>
-                <div class="multiselect-container">
-                    <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
-                    <div class="multiselect-dropdown">
-                        <input type="text" class="multiselect-search" placeholder="Buscar item...">
-                        <div class="multiselect-list"></div>
-                        <button class="btn btn-add-selected">Adicionar</button>
-                    </div>
-                </div>
-            </summary>
-            <div class="category-content">
-                <table class="quote-table">
-                    <colgroup>
-                        <col style="width: 38%;">
-                        <col style="width: 14%;">
-                        <col style="width: 8%;">
-                        <col style="width: 12%;">
-                        <col style="width: 8%;">
-                        <col style="width: 12%;">
-                        <col style="width: 8%;">
-                    </colgroup>
-                    <thead><tr>
-                        <th>Item</th><th>Data</th><th>Qtde.</th><th>Vlr. Unitário</th><th>Desc. (%)</th><th>Vlr. Total</th><th>Ações</th>
-                    </tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </details>
-    </template>
-    
-    <div id="save-notification" class="notification"></div>
-    <div id="print-output" class="print-only"></div>
-    <div id="obs-popover" class="obs-popover"></div>
-    
     <script type="module" src="app.js"></script>
 </body>
 </html>
