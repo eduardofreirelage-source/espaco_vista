@@ -222,18 +222,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (e.target.closest('tr')) updateItem(index, field, e.target.value);
             }
         });
+        
         document.body.addEventListener('click', e => {
             const target = e.target.closest('button, .multiselect-input, summary');
             if (!target) { closeAllPopups(); return; }
+
+            // **INÍCIO DA CORREÇÃO**
+            // Se o clique for no seletor de itens, abra/feche o dropdown
+            // mas impeça o navegador de fechar o acordeão.
             if (target.matches('.multiselect-input')) {
-                 e.stopPropagation();
+                e.preventDefault(); // Impede a ação padrão (fechar/abrir) do <summary>
+                e.stopPropagation(); // Impede que o evento suba para outros elementos
+                
                 const container = target.closest('.multiselect-container');
                 const wasOpen = container.classList.contains('open');
                 document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
                 if (!wasOpen) container.classList.add('open');
                 return;
             }
+            // **FIM DA CORREÇÃO**
 
+            // Para os botões de ação na tabela, apenas impeça a propagação
             const actionButton = e.target.closest('button[data-action]');
             if (actionButton) {
                  e.stopPropagation(); 
@@ -278,11 +287,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
             
-            // **INÍCIO DA CORREÇÃO**
             addButton.onclick = (e) => {
-                e.stopPropagation(); // Impede o clique de fechar o acordeão
-                // **FIM DA CORREÇÃO**
-
+                e.stopPropagation();
                 const selected = list.querySelectorAll('input:checked');
                 selected.forEach(checkbox => {
                     quote.items.push({ id: checkbox.value, quantity: 1, assignedDate: '', observacoes: '', discount_percent: 0 });
