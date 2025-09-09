@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pricesError) throw pricesError;
 
         appData.services = servicesData || [];
-        // Armazena nome e valor da consumação para cada tabela
         appData.tabelas = (tablesData || []).reduce((acc, table) => {
             acc[table.id] = { 
                 name: table.name,
@@ -77,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGeneralData();
         renderDateManager();
         renderQuoteCategories();
-        calculateTotal();
+        calculateAndRenderTotals();
         setupMultiselects();
         setDirty(isDirty);
     }
@@ -187,12 +186,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function calculateTotal() {
+    // --- NOVA LÓGICA DE CÁLCULO E RENDERIZAÇÃO DE TOTAIS ---
+    function calculateAndRenderTotals() {
         const prices = getCalculatedPrices();
         let subtotal = 0;
-        let consumableSubtotal = 0; // Subtotal apenas para categorias de consumação
+        let consumableSubtotal = 0;
+        const categorySubtotals = {};
 
-        // 1. Itera sobre os itens para calcular os subtotais
         quote.items.forEach(item => {
             const service = appData.services.find(s => s.id === item.id);
             if (!service) return;
@@ -204,28 +204,63 @@ document.addEventListener('DOMContentLoaded', () => {
             
             subtotal += itemTotal;
 
-            // 2. Acumula o valor se a categoria for Gastronomia ou Equipamentos
+            if (!categorySubtotals[service.category]) {
+                categorySubtotals[service.category] = 0;
+            }
+            categorySubtotals[service.category] += itemTotal;
+
             if (service.category === 'Gastronomia' || service.category === 'Equipamentos') {
                 consumableSubtotal += itemTotal;
             }
         });
 
-        // 3. Pega o crédito de consumação da tabela de preços selecionada
         const selectedTableId = priceTableSelect.value;
         const consumableCredit = appData.tabelas[selectedTableId]?.consumable_credit || 0;
-
-        // 4. Calcula a dedução real (o menor valor entre o crédito e o subtotal das categorias)
         const consumableDeduction = Math.min(consumableCredit, consumableSubtotal);
-
-        // 5. Calcula o total final
         const generalDiscount = parseFloat(discountInput.value) || 0;
         const total = subtotal - consumableDeduction - generalDiscount;
 
-        // 6. Atualiza a interface
-        document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
-        document.getElementById('consumableValue').textContent = `- R$ ${consumableDeduction.toFixed(2)}`;
-        document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
+        const totals = {
+            subtotal,
+            categorySubtotals,
+            consumableDeduction,
+            generalDiscount,
+            total
+        };
+
+        updateFooter(totals);
+        updateSummaryCard(totals);
     }
+
+    function updateFooter(totals) {
+        document.getElementById('subtotalValue').textContent = `R$ ${totals.subtotal.toFixed(2)}`;
+        document.getElementById('consumableValue').textContent = `- R$ ${totals.consumableDeduction.toFixed(2)}`;
+        document.getElementById('totalValue').textContent = `R$ ${totals.total.toFixed(2)}`;
+    }
+
+    function updateSummaryCard(totals) {
+        const container = document.getElementById('summary-categories-list');
+        container.innerHTML = '';
+
+        CATEGORY_ORDER.forEach(categoryName => {
+            const categoryTotal = totals.categorySubtotals[categoryName];
+            if (categoryTotal > 0) {
+                const div = document.createElement('div');
+                div.className = 'summary-line';
+                div.innerHTML = `
+                    <span>${categoryName}</span>
+                    <strong>R$ ${categoryTotal.toFixed(2)}</strong>
+                `;
+                container.appendChild(div);
+            }
+        });
+
+        document.getElementById('summary-subtotal-value').textContent = `R$ ${totals.subtotal.toFixed(2)}`;
+        document.getElementById('summary-consumable-value').textContent = `- R$ ${totals.consumableDeduction.toFixed(2)}`;
+        document.getElementById('summary-discount-value').textContent = `- R$ ${totals.generalDiscount.toFixed(2)}`;
+        document.getElementById('summary-total-value').textContent = `R$ ${totals.total.toFixed(2)}`;
+    }
+
 
     function addEventListeners() {
         if (addDateBtn) addDateBtn.addEventListener('click', () => {
@@ -236,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         generalDataFields.forEach(id => document.getElementById(id)?.addEventListener('input', e => { quote.general[id] = e.target.value; setDirty(true); }));
         if (priceTableSelect) priceTableSelect.addEventListener('change', e => { quote.general.priceTable = e.target.value; setDirty(true); render(); });
-        if (discountInput) discountInput.addEventListener('input', e => { quote.general.discount = parseFloat(e.target.value) || 0; setDirty(true); calculateTotal(); });
+        if (discountInput) discountInput.addEventListener('input', e => { quote.general.discount = parseFloat(e.target.value) || 0; setDirty(true); calculateAndRenderTotals(); });
 
         if (printBtn) printBtn.addEventListener('click', generatePrintableQuote);
         if (saveBtn) saveBtn.addEventListener('click', saveQuoteToSupabase);
@@ -332,6 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // ... O resto do arquivo (saveQuote, loadQuote, generatePrintable, etc.) permanece o mesmo ...
     async function saveQuoteToSupabase() {
         const clientName = quote.general.clientName || 'Orçamento sem nome';
         const dataToSave = { client_name: clientName, quote_data: quote };
@@ -369,7 +405,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function generatePrintableQuote() {
-        // Esta função precisará ser ajustada no futuro para refletir a consumação no PDF
         const printArea = document.getElementById('print-output');
         const prices = getCalculatedPrices();
         const groupedItems = groupItemsByCategory();
@@ -395,7 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Lógica de cálculo para o PDF (repetida para consistência)
         let subtotal = 0;
         let consumableSubtotal = 0;
         quote.items.forEach(item => {
