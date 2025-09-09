@@ -1,7 +1,7 @@
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ESTADO DA APLICAÇÃO ---
+    // ESTADO DA APLICAÇÃO
     let appData = { services: [], tabelas: {}, prices: {} };
     let quote = {
         id: null,
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDirty = false;
     let currentItemIndex = null;
 
-    // --- ELEMENTOS DO DOM ---
+    // ELEMENTOS DO DOM
     const priceTableSelect = document.getElementById('priceTableSelect');
     const discountInput = document.getElementById('discountValue');
     const addDateBtn = document.getElementById('add-date-btn');
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return acc;
         }, {});
     }
-
+    
     function populatePriceTables() {
         if (!priceTableSelect) return;
         priceTableSelect.innerHTML = Object.entries(appData.tabelas)
@@ -80,12 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderGeneralData() {
         generalDataFields.forEach(fieldId => {
             const element = document.getElementById(fieldId);
-            if (element) element.value = quote.general[fieldId] || '';
+            if(element) element.value = quote.general[fieldId] || '';
         });
         if (priceTableSelect) priceTableSelect.value = quote.general.priceTable;
         if (discountInput) discountInput.value = quote.general.discount;
     }
-
+    
     function renderDateManager() {
         const container = document.getElementById('event-dates-container');
         if (!container) return;
@@ -114,13 +114,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         CATEGORY_ORDER.forEach(categoryName => {
             const clone = template.content.cloneNode(true);
-            const categoryBlock = clone.querySelector('.category-block');
-            if (!categoryBlock) return;
+            const accordion = clone.querySelector('.category-accordion');
+            if (!accordion) return;
             
-            categoryBlock.dataset.category = categoryName;
-            clone.querySelector('.category-title').textContent = categoryName;
+            accordion.dataset.category = categoryName;
+            accordion.querySelector('.category-title').textContent = categoryName;
+            
             const tableBody = clone.querySelector('tbody');
             renderTableForCategory(tableBody, categoryName, groupedItems[categoryName] || []);
+
             quoteCategoriesContainer.appendChild(clone);
         });
     }
@@ -154,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><input type="number" value="${itemDiscount}" min="0" max="100" data-field="discount_percent"></td>
                 <td>R$ ${total.toFixed(2)}</td>
                 <td class="item-actions">
-                    <button class="btn-icon" data-action="showObs" data-index="${itemIndex}" title="Observações">💬</button>
                     <button class="btn-icon" data-action="duplicate" data-index="${itemIndex}" title="Duplicar">📋</button>
                     <button class="btn-icon" data-action="remove" data-index="${itemIndex}" title="Remover">&times;</button>
                 </td>
@@ -210,13 +211,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         document.body.addEventListener('click', e => {
-            const target = e.target.closest('button, .multiselect-input');
-            if (!target) { closeAllPopups(); return; }
-            const { action, index } = target.dataset;
-            if (action === 'removeDate') removeDate(index);
-            if (action === 'duplicate') duplicateItem(index);
-            if (action === 'remove') removeItem(index);
-            if (action === 'showObs') { e.stopPropagation(); openObsPopover(index, target); }
+            const button = e.target.closest('button');
+            if (button) {
+                const { action, index } = button.dataset;
+                if (action === 'removeDate') removeDate(index);
+                if (action === 'duplicate') duplicateItem(index);
+                if (action === 'remove') removeItem(index);
+            }
         });
     }
     
@@ -225,18 +226,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = container.querySelector('.multiselect-input');
             const list = container.querySelector('.multiselect-list');
             const addButton = container.querySelector('.btn-add-selected');
-            const category = container.closest('.category-block').dataset.category;
+            const category = container.closest('.category-accordion, .category-block').dataset.category;
 
             list.innerHTML = '';
             appData.services.filter(s => s.category === category).forEach(service => {
                 list.innerHTML += `<div class="multiselect-list-item"><label><input type="checkbox" value="${service.id}"> ${service.name}</label></div>`;
             });
+
             input.onclick = (e) => {
                 e.stopPropagation();
                 const wasOpen = container.classList.contains('open');
                 document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
                 if (!wasOpen) container.classList.add('open');
             };
+            
             addButton.onclick = () => {
                 const selected = list.querySelectorAll('input:checked');
                 selected.forEach(checkbox => {
@@ -328,37 +331,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateDate(index, field, value) { const date = quote.general.dates[parseInt(index)]; if (date) { date[field] = value; setDirty(true); render(); } }
     function removeDate(index) { quote.general.dates.splice(parseInt(index), 1); setDirty(true); render(); }
     
-    function openObsPopover(index, button) {
-        closeAllPopups();
-        const item = quote.items[parseInt(index)];
-        if (!item) return;
-        const popover = document.getElementById('obs-popover');
-        popover.innerHTML = `
-            <div class="form-group">
-                <label>Observações</label>
-                <textarea id="popover-obs-textarea">${item.observacoes || ''}</textarea>
-            </div>
-            <button id="popover-save-btn" class="btn">Salvar</button>
-        `;
-        button.parentElement.appendChild(popover);
-        popover.classList.add('show');
-
-        document.getElementById('popover-save-btn').onclick = () => {
-            const newObs = document.getElementById('popover-obs-textarea').value;
-            updateItem(index, 'observacoes', newObs);
-            closeAllPopups();
-        };
-    }
-
-    function closeAllPopups() {
-        const popover = document.getElementById('obs-popover');
-        if (popover) popover.classList.remove('show');
-    }
-    
     function getCalculatedPrices() {
         const tableId = priceTableSelect.value;
         const prices = {};
-        appData.services.forEach(service => { prices[service.id] = appData.prices[tableId]?.[service.id] || 0; });
+        if (appData.tabelas[tableId]) {
+            appData.services.forEach(service => {
+                prices[service.id] = appData.prices[tableId]?.[service.id] || 0;
+            });
+        }
         return prices;
     }
     function groupItemsByCategory() {
@@ -398,6 +378,37 @@ document.addEventListener('DOMContentLoaded', () => {
         value = value.replace(/\.(\d{3})(\d)/, ".$1/$2");
         value = value.replace(/(\d{4})(\d)/, "$1-$2");
         e.target.value = value.slice(0, 18);
+    }
+
+    function openObsPopover(index, button) {
+        closeAllPopups();
+        const item = quote.items[parseInt(index)];
+        if (!item) return;
+        const popover = document.getElementById('obs-popover');
+        popover.innerHTML = `
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="popover-obs-textarea">${item.observacoes || ''}</textarea>
+            </div>
+            <button id="popover-save-btn" class="btn">Salvar</button>
+        `;
+        button.parentElement.appendChild(popover);
+        popover.classList.add('show');
+
+        document.getElementById('popover-save-btn').onclick = () => {
+            const newObs = document.getElementById('popover-obs-textarea').value;
+            updateItem(index, 'observacoes', newObs);
+            closeAllPopups();
+        };
+    }
+
+    function closeAllPopups() {
+        const popover = document.getElementById('obs-popover');
+        if (popover) {
+            popover.classList.remove('show');
+            // Move it back to the body to prevent it from being removed with a table row
+            document.body.appendChild(popover);
+        }
     }
     
     initialize();
