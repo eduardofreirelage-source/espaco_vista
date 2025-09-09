@@ -17,7 +17,7 @@ body {
     font-family: 'Inter', sans-serif; 
     background-color: var(--secondary-color); 
     color: var(--text-color); 
-    line-height: 1.6; 
+    line-height: 1.5; 
     font-size: 13px;
     padding-bottom: 70px; /* Espaço para o rodapé fixo */
 }
@@ -26,9 +26,9 @@ body {
 header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
 .header-actions { display: flex; gap: 0.8rem; }
-
 .card { background-color: var(--card-bg); border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 1.5rem; }
-.card > h2 { color: var(--primary-color); font-size: 1rem; font-weight: 600; padding: 1rem 1.2rem; margin: 0; border-bottom: 1px solid var(--border-color); }
+h2 { color: var(--primary-color); font-size: 1rem; font-weight: 600; padding: 0; margin: 0; border: none; }
+.card > h2 { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border-color); }
 
 .card-content { padding: 1rem 1.2rem; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
@@ -49,13 +49,15 @@ header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
 
 #quote-categories-container { padding: 0; }
 
-/* LAYOUT ACCORDION ESTÁVEL */
+/* LAYOUT ACCORDION CORRIGIDO */
 .data-accordion, .category-accordion { border-top: 1px solid var(--border-color); }
-.card > .data-accordion:first-of-type, #quote-card > .category-accordion:first-child { border-top: none; }
-.category-accordion summary, .data-accordion summary { display: flex; justify-content: space-between; align-items: center; cursor: pointer; list-style: none; padding: 1rem 1.2rem; transition: background-color 0.2s; }
-.category-accordion summary::-webkit-details-marker, .data-accordion summary::-webkit-details-marker { display: none; }
-.category-accordion:hover > summary, .data-accordion:hover > summary { background-color: #fdfdfd; }
-.category-title, .data-accordion h2 { color: var(--primary-color); font-size: 1.1rem; font-weight: 600; margin: 0; display: flex; align-items: center; user-select: none; flex-grow: 1; }
+#quote-card > .category-accordion:first-child, .card > .data-accordion:first-child { border-top: none; }
+.data-accordion summary, .category-accordion summary { display: block; cursor: pointer; list-style: none; padding: 0; }
+.data-accordion summary::-webkit-details-marker, .category-accordion summary::-webkit-details-marker { display: none; }
+.category-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.2rem; transition: background-color 0.2s; }
+.category-header:hover { background-color: #fdfdfd; }
+.category-title { color: var(--primary-color); font-size: 1.1rem; font-weight: 600; margin: 0; display: flex; align-items: center; user-select: none; flex-grow: 1; /* Garante que o título empurre o botão para a direita */ }
+.data-accordion summary > h2 { flex-grow: 1; display: flex; align-items: center; }
 summary::before { content: '▸'; font-size: 1rem; margin-right: 0.8rem; transition: transform 0.2s; color: #999; }
 details[open] > summary::before { transform: rotate(90deg); }
 .category-content { padding: 0 1.2rem 1.2rem; }
@@ -94,4 +96,11 @@ tr.category-subtotal td { font-weight: bold; text-align: right; background-color
 
 .notification { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: white; padding: 1rem 1.5rem; border-radius: 5px; box-shadow: var(--shadow); font-weight: 500; opacity: 0; visibility: hidden; transition: all 0.5s; transform: translateY(20px); z-index: 2000; }
 .notification.show { opacity: 1; visibility: visible; transform: translateY(0); }
-@media (max-width: 900px) { /* ... (estilos responsivos) ... */ }
+
+@media (max-width: 900px) { 
+    header, .summary-footer, .summary-content { flex-direction: column; gap: 1rem; text-align: center; } 
+    .header-actions { flex-direction: column; }
+    .summary-footer { padding: 1rem; } 
+    .summary-total { text-align: center; border-left: none; border-top: 1px solid #555; width: 100%; padding-top: 1rem; margin-top: 1rem; } 
+    .date-entry { grid-template-columns: 1fr; }
+}
