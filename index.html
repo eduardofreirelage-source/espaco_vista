@@ -19,7 +19,7 @@
         </header>
 
         <main>
-            <details class="card data-accordion" open>
+            <details class="card data-accordion">
                 <summary><h2>Dados do Cliente</h2></summary>
                 <div class="card-content">
                     <div class="form-grid">
@@ -31,7 +31,7 @@
                 </div>
             </details>
             
-            <details class="card data-accordion" open>
+            <details class="card data-accordion">
                 <summary><h2>Dados do Evento</h2></summary>
                 <div class="card-content">
                     <div class="form-grid">
@@ -65,16 +65,14 @@
     </footer>
 
     <template id="category-template">
-        <details class="category-accordion" open>
-            <summary>
-                <div class="category-header">
-                    <h3 class="category-title"></h3>
-                    <div class="multiselect-container">
-                        <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
-                        <div class="multiselect-dropdown">
-                            <div class="multiselect-list"></div>
-                            <button class="btn btn-add-selected">Adicionar</button>
-                        </div>
+        <details class="category-accordion">
+            <summary class="category-header">
+                <h3 class="category-title"></h3>
+                <div class="multiselect-container">
+                    <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
+                    <div class="multiselect-dropdown">
+                        <div class="multiselect-list"></div>
+                        <button class="btn btn-add-selected">Adicionar</button>
                     </div>
                 </div>
             </summary>
