@@ -48,16 +48,17 @@ h2 { color: var(--primary-color); font-size: 1rem; font-weight: 600; padding: 0;
 
 #quote-categories-container { padding: 0; }
 
-/* LAYOUT ACCORDION MINIMALISTA */
+/* LAYOUT ACCORDION CORRIGIDO */
 .data-accordion, .category-accordion { border-top: 1px solid var(--border-color); }
-.card > .data-accordion:first-child, #quote-card > .category-accordion:first-child { border-top: none; }
-.data-accordion summary, .category-accordion summary { display: flex; justify-content: space-between; align-items: center; cursor: pointer; list-style: none; padding: 1rem 1.2rem; transition: background-color 0.2s; }
+#quote-card > .category-accordion:first-child, .card > .data-accordion:first-child { border-top: none; }
+.data-accordion summary, .category-accordion summary { display: block; /* Garante que o conteúdo flua corretamente */ cursor: pointer; list-style: none; padding: 0; }
 .data-accordion summary::-webkit-details-marker, .category-accordion summary::-webkit-details-marker { display: none; }
-.data-accordion:hover > summary, .category-accordion:hover > summary { background-color: #fdfdfd; }
 
-.category-title, .data-accordion h2 { color: var(--primary-color); font-size: 1.1rem; font-weight: 600; margin: 0; padding: 0; border: none; display: flex; align-items: center; user-select: none; flex-grow: 1; }
-summary::before { content: '▸'; font-size: 1rem; margin-right: 0.8rem; transition: transform 0.2s; color: #999; }
-details[open] > summary::before { transform: rotate(90deg); }
+.category-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.2rem; transition: background-color 0.2s; }
+.category-header:hover { background-color: #fdfdfd; }
+.category-title { color: var(--primary-color); font-size: 1.1rem; font-weight: 600; margin: 0; display: flex; align-items: center; user-select: none; flex-grow: 1; }
+details > summary .category-title::before { content: '▸'; font-size: 1rem; margin-right: 0.8rem; transition: transform 0.2s; color: #999; }
+details[open] > summary .category-title::before { transform: rotate(90deg); }
 .category-content { padding: 0 1.2rem 1.2rem; }
 
 .quote-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
