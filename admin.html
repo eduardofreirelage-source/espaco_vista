@@ -29,11 +29,12 @@
                     <h2>Listas de Preços</h2>
                     <div class="card-content">
                         <table id="price-tables-list">
-                            <thead><tr><th>Nome da Lista</th><th>Ações</th></tr></thead>
+                            <thead><tr><th>Nome da Lista</th><th>Consumação</th><th>Ações</th></tr></thead>
                             <tbody></tbody>
                         </table>
                         <form id="addPriceTableForm" class="inline-form">
                             <input type="text" id="tableName" placeholder="Nome da nova lista" required>
+                            <input type="number" id="tableConsumable" placeholder="Valor consumação" step="0.01" min="0" required>
                             <button type="submit" class="btn">Adicionar</button>
                         </form>
                     </div>
