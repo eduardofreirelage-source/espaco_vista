@@ -107,6 +107,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderQuoteCategories() {
         if (!quoteCategoriesContainer) return;
+
+        // **INÍCIO DA CORREÇÃO: Salvar estado dos acordeões abertos**
+        const openCategories = new Set();
+        quoteCategoriesContainer.querySelectorAll('details[open]').forEach(details => {
+            openCategories.add(details.dataset.category);
+        });
+        // **FIM DA CORREÇÃO**
+
         quoteCategoriesContainer.innerHTML = '';
         const template = document.getElementById('category-template');
         if (!template) return;
@@ -120,6 +128,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             accordion.dataset.category = categoryName;
             accordion.querySelector('.category-title').textContent = categoryName;
+            
+            // **INÍCIO DA CORREÇÃO: Restaurar estado dos acordeões**
+            if (openCategories.has(categoryName)) {
+                accordion.open = true;
+            }
+            // **FIM DA CORREÇÃO**
             
             const tableBody = clone.querySelector('tbody');
             renderTableForCategory(tableBody, categoryName, groupedItems[categoryName] || []);
@@ -215,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('click', e => {
             const target = e.target.closest('button, .multiselect-input, summary');
             if (!target) { closeAllPopups(); return; }
-            if (target.matches('.multiselect-input')) { // Logic for multiselect
+            if (target.matches('.multiselect-input')) {
                  e.stopPropagation();
                 const container = target.closest('.multiselect-container');
                 const wasOpen = container.classList.contains('open');
@@ -224,11 +238,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // **INÍCIO DA CORREÇÃO: Adicionar stopPropagation para evitar fechar o acordeão**
+            const actionButton = e.target.closest('button[data-action]');
+            if (actionButton) {
+                 e.stopPropagation(); 
+            }
+            // **FIM DA CORREÇÃO**
+
             const { action, index } = target.dataset;
             if (action === 'removeDate') removeDate(index);
             if (action === 'duplicate') duplicateItem(index);
             if (action === 'remove') removeItem(index);
-            if (action === 'showObs') { e.stopPropagation(); openObsPopover(index, target); }
+            if (action === 'showObs') { openObsPopover(index, target); }
         });
     }
     
@@ -236,13 +257,36 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.multiselect-container').forEach(container => {
             const list = container.querySelector('.multiselect-list');
             const addButton = container.querySelector('.btn-add-selected');
+            // **INÍCIO DA MELHORIA: Lógica de busca**
+            const searchInput = container.querySelector('.multiselect-search');
+            // **FIM DA MELHORIA**
             const category = container.closest('.category-accordion, .category-block')?.dataset.category;
             if (!category) return;
 
             list.innerHTML = '';
-            appData.services.filter(s => s.category === category).forEach(service => {
-                list.innerHTML += `<div class="multiselect-list-item"><label><input type="checkbox" value="${service.id}"> ${service.name}</label></div>`;
+            const servicesForCategory = appData.services.filter(s => s.category === category);
+            
+            servicesForCategory.forEach(service => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'multiselect-list-item';
+                itemDiv.innerHTML = `<label><input type="checkbox" value="${service.id}"> ${service.name}</label>`;
+                list.appendChild(itemDiv);
             });
+            
+             // **INÍCIO DA MELHORIA: Event listener da busca**
+            searchInput.addEventListener('input', () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                list.querySelectorAll('.multiselect-list-item').forEach(item => {
+                    const label = item.querySelector('label');
+                    const itemName = label.textContent.trim().toLowerCase();
+                    if (itemName.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            // **FIM DA MELHORIA**
             
             addButton.onclick = () => {
                 const selected = list.querySelectorAll('input:checked');
@@ -250,6 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     quote.items.push({ id: checkbox.value, quantity: 1, assignedDate: '', observacoes: '', discount_percent: 0 });
                     checkbox.checked = false;
                 });
+                // **INÍCIO DA MELHORIA: Limpar busca após adicionar**
+                searchInput.value = '';
+                list.querySelectorAll('.multiselect-list-item').forEach(item => item.style.display = 'block');
+                 // **FIM DA MELHORIA**
                 container.classList.remove('open');
                 setDirty(true);
                 render();
@@ -278,6 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.data && response.data.length > 0) quote.id = response.data[0].id;
             setDirty(false);
             showNotification(`Orçamento para "${clientName}" salvo com sucesso!`);
+            // Atualiza a URL para incluir o ID do novo orçamento, sem recarregar a página
+            const newUrl = `${window.location.pathname}?quote_id=${quote.id}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
         }
     }
     
@@ -285,10 +336,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
         const quoteId = params.get('quote_id');
         if (quoteId) {
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // Não limpa mais a URL, para permitir recarregamento
+            // window.history.replaceState({}, document.title, window.location.pathname);
             const { data, error } = await supabase.from('quotes').select('id, quote_data').eq('id', quoteId).single();
             if (error) {
                 alert('Não foi possível carregar o orçamento solicitado.');
+                // Limpa a URL se o ID for inválido para evitar loops de erro
+                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 quote = data.quote_data;
                 quote.id = data.id;
@@ -347,7 +401,15 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <button id="popover-save-btn" class="btn">Salvar</button>
         `;
-        button.parentElement.appendChild(obsPopover);
+        // Anexa o popover ao elemento correto para melhor posicionamento
+        const actionCell = button.closest('.item-actions');
+        if (actionCell) {
+            actionCell.style.position = 'relative';
+            actionCell.appendChild(obsPopover);
+        } else {
+             button.parentElement.appendChild(obsPopover);
+        }
+        
         obsPopover.classList.add('show');
 
         document.getElementById('popover-save-btn').onclick = () => {
@@ -358,7 +420,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeAllPopups() {
-        if (obsPopover) obsPopover.classList.remove('show');
+        if (obsPopover && obsPopover.classList.contains('show')) {
+             obsPopover.classList.remove('show');
+             // Desanexa o popover para evitar que ele fique 'preso' no DOM
+             if (obsPopover.parentElement) {
+                 obsPopover.parentElement.style.position = '';
+                 obsPopover.parentElement.removeChild(obsPopover);
+             }
+        }
     }
     
     function getCalculatedPrices() {
