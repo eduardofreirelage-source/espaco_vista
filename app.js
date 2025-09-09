@@ -495,8 +495,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const saveObsBtn = document.getElementById('popover-save-btn');
         if(saveObsBtn) saveObsBtn.onclick = () => {
-            const newObs = document.getElementById('popover-obs-textarea').value;
-            updateItem(index, 'observacoes', newObs);
+            const newObsEl = document.getElementById('popover-obs-textarea');
+            if (newObsEl) {
+                const newObs = newObsEl.value;
+                updateItem(index, 'observacoes', newObs);
+            }
             closeAllPopups();
         };
     }
@@ -513,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function getCalculatedPrices() {
         const priceTableSelect = document.getElementById('priceTableSelect');
-        if (!priceTableSelect) return {};
+        if (!priceTableSelect?.value) return {};
 
         const tableId = priceTableSelect.value;
         const prices = {};
