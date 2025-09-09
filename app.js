@@ -10,17 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
     let isDirty = false;
-    let currentItemIndex = null;
 
-    // ELEMENTOS DO DOM
-    const priceTableSelect = document.getElementById('priceTableSelect');
-    const discountInput = document.getElementById('discountValue');
-    const addDateBtn = document.getElementById('add-date-btn');
+    // ELEMENTOS DO DOM (Apenas os que não mudam. Os outros serão buscados dentro das funções)
     const quoteCategoriesContainer = document.getElementById('quote-categories-container');
     const generalDataFields = ['clientName', 'clientCnpj', 'clientEmail', 'clientPhone', 'guestCount'];
     const saveBtn = document.getElementById('save-quote-btn');
     const printBtn = document.getElementById('print-btn');
-    const notification = document.getElementById('save-notification');
     const clientCnpjInput = document.getElementById('clientCnpj');
     const obsPopover = document.getElementById('obs-popover');
 
@@ -34,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         } catch (error) {
             console.error("Falha crítica na inicialização:", error);
-            // Removido o alert para não interromper o usuário, o erro já está no console.
         }
     }
 
@@ -62,7 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function populatePriceTables() {
+        const priceTableSelect = document.getElementById('priceTableSelect');
         if (!priceTableSelect) return;
+
         priceTableSelect.innerHTML = Object.entries(appData.tabelas)
             .map(([id, table]) => `<option value="${id}">${table.name}</option>`)
             .join('');
@@ -86,7 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const element = document.getElementById(fieldId);
             if(element) element.value = quote.general[fieldId] || '';
         });
+        const priceTableSelect = document.getElementById('priceTableSelect');
         if (priceTableSelect) priceTableSelect.value = quote.general.priceTable;
+        
+        const discountInput = document.getElementById('discountValue');
         if (discountInput) discountInput.value = quote.general.discount;
     }
     
@@ -110,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderQuoteCategories() {
         if (!quoteCategoriesContainer) return;
-
         const openCategories = new Set();
         quoteCategoriesContainer.querySelectorAll('details[open]').forEach(details => {
             openCategories.add(details.dataset.category);
@@ -121,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!template) return;
         
         const groupedItems = groupItemsByCategory();
-
         CATEGORY_ORDER.forEach(categoryName => {
             const clone = template.content.cloneNode(true);
             const accordion = clone.querySelector('.category-accordion');
@@ -130,9 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             accordion.dataset.category = categoryName;
             accordion.querySelector('.category-title').textContent = categoryName;
             
-            if (openCategories.has(categoryName)) {
-                accordion.open = true;
-            }
+            if (openCategories.has(categoryName)) accordion.open = true;
             
             const tableBody = clone.querySelector('tbody');
             renderTableForCategory(tableBody, categoryName, groupedItems[categoryName] || []);
@@ -187,13 +182,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateAndRenderTotals() {
-        // **INÍCIO DA CORREÇÃO**
-        // Adiciona uma verificação para garantir que os elementos existem antes de prosseguir.
+        const priceTableSelect = document.getElementById('priceTableSelect');
+        const discountInput = document.getElementById('discountValue');
+
         if (!priceTableSelect || !discountInput) {
             console.warn("Elementos de cálculo (priceTableSelect ou discountInput) não encontrados. O cálculo será ignorado.");
             return;
         }
-        // **FIM DA CORREÇÃO**
 
         const prices = getCalculatedPrices();
         let subtotal = 0;
@@ -210,12 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemTotal = (unitPrice * quantity) * (1 - itemDiscount / 100);
             
             subtotal += itemTotal;
-
-            if (!categorySubtotals[service.category]) {
-                categorySubtotals[service.category] = 0;
-            }
+            if (!categorySubtotals[service.category]) categorySubtotals[service.category] = 0;
             categorySubtotals[service.category] += itemTotal;
-
             if (service.category === 'Gastronomia' || service.category === 'Equipamentos') {
                 consumableSubtotal += itemTotal;
             }
@@ -227,27 +218,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const generalDiscount = parseFloat(discountInput.value) || 0;
         const total = subtotal - consumableDeduction - generalDiscount;
 
-        const totals = {
-            subtotal,
-            categorySubtotals,
-            consumableDeduction,
-            generalDiscount,
-            total
-        };
-
+        const totals = { subtotal, categorySubtotals, consumableDeduction, generalDiscount, total };
         updateFooter(totals);
         updateSummaryCard(totals);
     }
 
     function updateFooter(totals) {
-        document.getElementById('subtotalValue').textContent = `R$ ${totals.subtotal.toFixed(2)}`;
-        document.getElementById('consumableValue').textContent = `- R$ ${totals.consumableDeduction.toFixed(2)}`;
-        document.getElementById('totalValue').textContent = `R$ ${totals.total.toFixed(2)}`;
+        const subtotalValueEl = document.getElementById('subtotalValue');
+        const consumableValueEl = document.getElementById('consumableValue');
+        const totalValueEl = document.getElementById('totalValue');
+
+        if(subtotalValueEl) subtotalValueEl.textContent = `R$ ${totals.subtotal.toFixed(2)}`;
+        if(consumableValueEl) consumableValueEl.textContent = `- R$ ${totals.consumableDeduction.toFixed(2)}`;
+        if(totalValueEl) totalValueEl.textContent = `R$ ${totals.total.toFixed(2)}`;
     }
 
     function updateSummaryCard(totals) {
         const container = document.getElementById('summary-categories-list');
-        if (!container) return; // Adiciona verificação para o container do resumo
+        if (!container) return;
         container.innerHTML = '';
 
         CATEGORY_ORDER.forEach(categoryName => {
@@ -255,10 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (categoryTotal > 0) {
                 const div = document.createElement('div');
                 div.className = 'summary-line';
-                div.innerHTML = `
-                    <span>${categoryName}</span>
-                    <strong>R$ ${categoryTotal.toFixed(2)}</strong>
-                `;
+                div.innerHTML = `<span>${categoryName}</span><strong>R$ ${categoryTotal.toFixed(2)}</strong>`;
                 container.appendChild(div);
             }
         });
@@ -270,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addEventListeners() {
+        const addDateBtn = document.getElementById('add-date-btn');
         if (addDateBtn) addDateBtn.addEventListener('click', () => {
             quote.general.dates.push({ date: new Date().toISOString().split('T')[0], startTime: '19:00', endTime: '23:00', observations: '' });
             setDirty(true);
@@ -286,7 +272,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        const priceTableSelect = document.getElementById('priceTableSelect');
         if (priceTableSelect) priceTableSelect.addEventListener('change', e => { quote.general.priceTable = e.target.value; setDirty(true); render(); });
+        
+        const discountInput = document.getElementById('discountValue');
         if (discountInput) discountInput.addEventListener('input', e => { quote.general.discount = parseFloat(e.target.value) || 0; setDirty(true); calculateAndRenderTotals(); });
 
         if (printBtn) printBtn.addEventListener('click', generatePrintableQuote);
@@ -317,15 +306,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const actionButton = e.target.closest('button[data-action]');
-            if (actionButton) {
-                 e.stopPropagation(); 
-            }
+            if (actionButton) e.stopPropagation(); 
 
             const { action, index } = target.dataset;
             if (action === 'removeDate') removeDate(index);
             if (action === 'duplicate') duplicateItem(index);
             if (action === 'remove') removeItem(index);
-            if (action === 'showObs') { openObsPopover(index, target); }
+            if (action === 'showObs') openObsPopover(index, target);
         });
     }
     
@@ -335,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const addButton = container.querySelector('.btn-add-selected');
             const searchInput = container.querySelector('.multiselect-search');
             const category = container.closest('.category-accordion, .category-block')?.dataset.category;
-            if (!category || !addButton) return;
+            if (!category || !addButton || !list) return;
 
             list.innerHTML = '';
             const servicesForCategory = appData.services.filter(s => s.category === category);
@@ -352,12 +339,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const searchTerm = searchInput.value.toLowerCase();
                     list.querySelectorAll('.multiselect-list-item').forEach(item => {
                         const label = item.querySelector('label');
+                        if (!label) return;
                         const itemName = label.textContent.trim().toLowerCase();
-                        if (itemName.includes(searchTerm)) {
-                            item.style.display = 'block';
-                        } else {
-                            item.style.display = 'none';
-                        }
+                        item.style.display = itemName.includes(searchTerm) ? 'block' : 'none';
                     });
                 });
             }
@@ -437,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `<table class="print-table"><thead><tr><th>Item</th><th>Data</th><th>Qtde</th><th>Vlr. Unit.</th><th>Subtotal</th></tr></thead><tbody>`;
                 groupedItems[category].forEach(item => {
                     const service = appData.services.find(s => s.id === item.id);
+                    if (!service) return;
                     const unitPrice = prices[item.id] || 0;
                     const quantity = item.quantity || 1;
                     const itemDiscount = item.discount_percent || 0;
@@ -447,6 +432,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        const priceTableSelect = document.getElementById('priceTableSelect');
+        const discountInput = document.getElementById('discountValue');
+        if (!priceTableSelect || !discountInput) return; // Guard for safety
+
         let subtotal = 0;
         let consumableSubtotal = 0;
         quote.items.forEach(item => {
@@ -467,14 +456,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const generalDiscount = parseFloat(discountInput.value) || 0;
         const total = subtotal - consumableDeduction - generalDiscount;
 
-        html += `<div class="print-summary">
-                    <table>
+        html += `<div class="print-summary"><table>
                         <tr><td class="total-label">Subtotal</td><td class="price total-value">R$ ${subtotal.toFixed(2)}</td></tr>
                         <tr><td class="total-label">Consumação Inclusa</td><td class="price total-value">- R$ ${consumableDeduction.toFixed(2)}</td></tr>
                         <tr><td class="total-label">Desconto Geral</td><td class="price total-value">- R$ ${generalDiscount.toFixed(2)}</td></tr>
                         <tr class="grand-total"><td class="total-label">VALOR TOTAL</td><td class="price total-value">R$ ${total.toFixed(2)}</td></tr>
-                    </table>
-                 </div>`;
+                    </table></div>`;
         printArea.innerHTML = html;
         window.print();
     }
@@ -488,15 +475,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function openObsPopover(index, button) {
         closeAllPopups();
         const item = quote.items[parseInt(index)];
-        if (!item) return;
+        if (!item || !obsPopover) return;
         
-        obsPopover.innerHTML = `
-            <div class="form-group">
+        obsPopover.innerHTML = `<div class="form-group">
                 <label>Observações</label>
                 <textarea id="popover-obs-textarea">${item.observacoes || ''}</textarea>
             </div>
-            <button id="popover-save-btn" class="btn">Salvar</button>
-        `;
+            <button id="popover-save-btn" class="btn">Salvar</button>`;
+
         const actionCell = button.closest('.item-actions');
         if (actionCell) {
             actionCell.style.position = 'relative';
@@ -507,7 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         obsPopover.classList.add('show');
 
-        document.getElementById('popover-save-btn').onclick = () => {
+        const saveObsBtn = document.getElementById('popover-save-btn');
+        if(saveObsBtn) saveObsBtn.onclick = () => {
             const newObs = document.getElementById('popover-obs-textarea').value;
             updateItem(index, 'observacoes', newObs);
             closeAllPopups();
@@ -525,6 +512,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function getCalculatedPrices() {
+        const priceTableSelect = document.getElementById('priceTableSelect');
+        if (!priceTableSelect) return {};
+
         const tableId = priceTableSelect.value;
         const prices = {};
         if (appData.tabelas[tableId]) {
@@ -534,6 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return prices;
     }
+
     function groupItemsByCategory() {
         return quote.items.reduce((acc, item) => {
             const service = appData.services.find(s => s.id === item.id);
@@ -541,9 +532,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return acc;
         }, {});
     }
+
     function formatDateBR(dateString) { if (!dateString) return null; const [year, month, day] = dateString.split('-'); return `${day}/${month}/${year}`; }
     
     function showNotification(message, isError = false) {
+        const notification = document.getElementById('save-notification');
         if (!notification) return;
         notification.textContent = message;
         notification.style.backgroundColor = isError ? 'var(--danger-color)' : '#28a745';
@@ -554,13 +547,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function setDirty(state) {
         isDirty = state;
         if (saveBtn) {
-            if (isDirty) {
-                saveBtn.classList.add('dirty');
-                saveBtn.textContent = 'Salvar Alterações';
-            } else {
-                saveBtn.classList.remove('dirty');
-                saveBtn.textContent = 'Salvo';
-            }
+            saveBtn.classList.toggle('dirty', isDirty);
+            saveBtn.textContent = isDirty ? 'Salvar Alterações' : 'Salvo';
         }
     }
     
