@@ -19,12 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INICIALIZAÇÃO ---
     async function initialize() {
         try {
-            addEventListeners(); // Adiciona os listeners primeiro
+            addEventListeners();
             await loadDataFromSupabase();
             populatePriceTables();
             await loadQuoteFromURL();
 
-            // Renderiza o estado inicial de forma segura
             renderAllComponents();
             calculateAndRenderTotals();
 
@@ -73,9 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- LÓGICA DE RENDERIZAÇÃO (Dividida e mais segura) ---
-
-    // Função principal que redesenha tudo que precisa ser atualizado
+    // --- LÓGICA DE RENDERIZAÇÃO ---
     function renderAllComponents() {
         renderGeneralData();
         renderDateManager();
@@ -92,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .map(([id, table]) => `<option value="${id}">${table.name}</option>`)
             .join('');
         
-        // Garante que o estado do orçamento reflita a seleção inicial
         if (priceTableSelect.options.length > 0) {
             if (!quote.general.priceTable) {
                 quote.general.priceTable = priceTableSelect.value;
@@ -258,7 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('summary-total-value').textContent = `R$ ${totals.total.toFixed(2)}`;
     }
     
-    // --- MANIPULADORES DE EVENTOS ---
     function addEventListeners() {
         document.getElementById('add-date-btn')?.addEventListener('click', () => {
             quote.general.dates.push({ date: new Date().toISOString().split('T')[0], startTime: '19:00', endTime: '23:00', observations: '' });
@@ -277,8 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('priceTableSelect')?.addEventListener('change', e => { 
             quote.general.priceTable = e.target.value; 
             setDirty(true); 
-            renderQuoteCategories(); // Apenas redesenha as tabelas que podem ter preços diferentes
-            calculateAndRenderTotals(); // E recalcula
+            renderQuoteCategories();
+            calculateAndRenderTotals();
         });
         
         document.getElementById('discountValue')?.addEventListener('input', e => { 
@@ -291,13 +286,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('save-quote-btn')?.addEventListener('click', saveQuoteToSupabase);
         document.getElementById('clientCnpj')?.addEventListener('input', handleCnpjMask);
         
-        document.body.addEventListener('change', e => {
+        const itemChangeOrInputHandler = e => {
             const { index, field } = e.target.dataset;
             if (index && field) {
-                if (e.target.closest('.date-entry')) updateDate(index, field, e.target.value);
-                else if (e.target.closest('tr')) updateItem(index, field, e.target.value);
+                if (e.target.closest('tr')) {
+                    updateItem(index, field, e.target.value);
+                } else if (e.target.closest('.date-entry')) {
+                     updateDate(index, field, e.target.value);
+                }
             }
-        });
+        };
+
+        // **INÍCIO DA CORREÇÃO (DESCONTO POR ITEM)**
+        // Usamos 'input' para tempo real, e 'change' como fallback
+        document.body.addEventListener('change', itemChangeOrInputHandler);
+        document.body.addEventListener('input', itemChangeOrInputHandler);
+        // **FIM DA CORREÇÃO**
         
         document.body.addEventListener('click', e => {
             const target = e.target.closest('button, .multiselect-input, summary');
@@ -306,7 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target.matches('.multiselect-input')) {
                 e.preventDefault(); 
                 e.stopPropagation();
-                
                 const container = target.closest('.multiselect-container');
                 if(!container) return;
                 const wasOpen = container.classList.contains('open');
@@ -326,7 +329,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- LÓGICAS AUXILIARES ---
     function setupMultoselects() {
         document.querySelectorAll('.multiselect-container').forEach(container => {
             const list = container.querySelector('.multiselect-list');
@@ -361,7 +363,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
                 const selected = list.querySelectorAll('input:checked');
                 selected.forEach(checkbox => {
-                    quote.items.push({ id: checkbox.value, quantity: 1, assignedDate: '', observacoes: '', discount_percent: 0 });
+                    const serviceId = checkbox.value;
+                    const service = appData.services.find(s => s.id === serviceId);
+                    
+                    // **INÍCIO DA MELHORIA (CONVIDADOS NA GASTRONOMIA)**
+                    let defaultQuantity = 1;
+                    if (service && service.category === 'Gastronomia') {
+                        // Converte para número para garantir que é um valor numérico
+                        defaultQuantity = Number(quote.general.guestCount) || 1;
+                    }
+                    // **FIM DA MELHORIA**
+
+                    quote.items.push({ 
+                        id: serviceId, 
+                        quantity: defaultQuantity, 
+                        assignedDate: '', 
+                        observacoes: '', 
+                        discount_percent: 0 
+                    });
                     checkbox.checked = false;
                 });
                 
@@ -386,7 +405,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if(item) { 
             item[key] = (key === 'quantity' || key === 'discount_percent') ? parseFloat(value) || 0 : value; 
             setDirty(true); 
-            renderQuoteCategories();
+            
+            // Lógica mais eficiente: não redesenha a tabela inteira, apenas recalcula.
+            // A atualização visual do campo de input já acontece naturalmente.
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            if (row) {
+                 const prices = getCalculatedPrices();
+                 const unitPrice = prices[item.id] || 0;
+                 const quantity = item.quantity || 1;
+                 const itemDiscount = item.discount_percent || 0;
+                 const total = (unitPrice * quantity) * (1 - itemDiscount / 100);
+                 const totalCell = row.querySelector('td:nth-child(6)');
+                 if(totalCell) totalCell.textContent = `R$ ${total.toFixed(2)}`;
+            }
+
             calculateAndRenderTotals();
         } 
     }
@@ -410,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (date) { 
             date[field] = value; 
             setDirty(true); 
-            renderDateManager(); 
+            // Não precisa de render completo, o input já atualizou
         } 
     }
     function removeDate(index) { 
@@ -419,7 +451,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDateManager(); 
     }
 
-    // O resto das funções (save, load, print, helpers) permanece o mesmo...
     async function saveQuoteToSupabase() {
         const clientName = quote.general.clientName || 'Orçamento sem nome';
         const dataToSave = { client_name: clientName, quote_data: quote };
@@ -566,6 +597,5 @@ document.addEventListener('DOMContentLoaded', () => {
         e.target.value = value.slice(0, 18);
     }
     
-    // Inicia a aplicação
     initialize();
 });
