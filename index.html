@@ -19,33 +19,29 @@
         </header>
 
         <main>
-            <div class="card accordion">
-                <div class="accordion-header"><h2>Dados do Cliente</h2></div>
-                <div class="accordion-content">
-                    <div class="card-content">
-                        <div class="form-grid">
-                            <div class="form-group"><label for="clientName">Nome</label><input type="text" id="clientName"></div>
-                            <div class="form-group"><label for="clientCnpj">CNPJ</label><input type="text" id="clientCnpj" maxlength="18"></div>
-                            <div class="form-group"><label for="clientEmail">E-mail</label><input type="email" id="clientEmail"></div>
-                            <div class="form-group"><label for="clientPhone">Telefone</label><input type="tel" id="clientPhone"></div>
-                        </div>
+            <details class="card data-accordion" open>
+                <summary><h2>Dados do Cliente</h2></summary>
+                <div class="card-content">
+                    <div class="form-grid">
+                        <div class="form-group"><label for="clientName">Nome</label><input type="text" id="clientName"></div>
+                        <div class="form-group"><label for="clientCnpj">CNPJ</label><input type="text" id="clientCnpj" maxlength="18"></div>
+                        <div class="form-group"><label for="clientEmail">E-mail</label><input type="email" id="clientEmail"></div>
+                        <div class="form-group"><label for="clientPhone">Telefone</label><input type="tel" id="clientPhone"></div>
                     </div>
                 </div>
-            </div>
+            </details>
             
-            <div class="card accordion">
-                <div class="accordion-header"><h2>Dados do Evento</h2></div>
-                <div class="accordion-content">
-                    <div class="card-content">
-                        <div class="form-grid">
-                            <div class="form-group"><label for="guestCount">Nº de Convidados</label><input type="number" id="guestCount" value="100" min="1"></div>
-                            <div class="form-group"><label for="priceTableSelect">Tabela de Preços</label><select id="priceTableSelect"></select></div>
-                        </div>
-                        <div id="event-dates-container"></div>
-                        <button id="add-date-btn" class="btn">+ Adicionar Data</button>
+            <details class="card data-accordion" open>
+                <summary><h2>Dados do Evento</h2></summary>
+                <div class="card-content">
+                    <div class="form-grid">
+                        <div class="form-group"><label for="guestCount">Nº de Convidados</label><input type="number" id="guestCount" value="100" min="1"></div>
+                        <div class="form-group"><label for="priceTableSelect">Tabela de Preços</label><select id="priceTableSelect"></select></div>
                     </div>
+                    <div id="event-dates-container"></div>
+                    <button id="add-date-btn" class="btn">+ Adicionar Data</button>
                 </div>
-            </div>
+            </details>
 
             <section class="card" id="quote-card">
                 <h2>Itens do Orçamento</h2>
@@ -57,33 +53,49 @@
     <footer class="summary-footer">
         <div class="summary-content">
             <div class="summary-item"><span>Subtotal:</span><strong id="subtotalValue">R$ 0,00</strong></div>
-            <div class="summary-item"><label for="discountValue">Desconto Geral (R$):</label><input type="number" id="discountValue" value="0" min="0"></div>
-            <div class="summary-total"><span>VALOR TOTAL:</span><strong id="totalValue">R$ 0,00</strong></div>
+            <div class="summary-item">
+                <label for="discountValue">Desconto Geral (R$):</label>
+                <input type="number" id="discountValue" value="0" min="0">
+            </div>
+            <div class="summary-total">
+                <span>VALOR TOTAL:</span>
+                <strong id="totalValue">R$ 0,00</strong>
+            </div>
         </div>
     </footer>
 
     <template id="category-template">
-        <div class="category-accordion accordion">
-            <div class="accordion-header category-header">
-                <h3 class="category-title"></h3>
-                <div class="multiselect-container">
-                    <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
-                    <div class="multiselect-dropdown">
-                        <div class="multiselect-list"></div>
-                        <button class="btn btn-add-selected">Adicionar</button>
+        <details class="category-accordion" open>
+            <summary>
+                <div class="category-header">
+                    <h3 class="category-title"></h3>
+                    <div class="multiselect-container">
+                        <div class="multiselect-input" tabindex="0">Adicionar itens...</div>
+                        <div class="multiselect-dropdown">
+                            <div class="multiselect-list"></div>
+                            <button class="btn btn-add-selected">Adicionar</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="accordion-content category-content">
+            </summary>
+            <div class="category-content">
                 <table class="quote-table">
                     <colgroup>
-                        <col style="width: 38%;"><col style="width: 14%;"><col style="width: 8%;"><col style="width: 12%;"><col style="width: 8%;"><col style="width: 12%;"><col style="width: 8%;">
+                        <col style="width: 38%;">
+                        <col style="width: 14%;">
+                        <col style="width: 8%;">
+                        <col style="width: 12%;">
+                        <col style="width: 8%;">
+                        <col style="width: 12%;">
+                        <col style="width: 8%;">
                     </colgroup>
-                    <thead><tr><th>Item</th><th>Data</th><th>Qtde.</th><th>Vlr. Unitário</th><th>Desc. (%)</th><th>Vlr. Total</th><th>Ações</th></tr></thead>
+                    <thead><tr>
+                        <th>Item</th><th>Data</th><th>Qtde.</th><th>Vlr. Unitário</th><th>Desc. (%)</th><th>Vlr. Total</th><th>Ações</th>
+                    </tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
-        </div>
+        </details>
     </template>
     
     <div id="save-notification" class="notification"></div>
