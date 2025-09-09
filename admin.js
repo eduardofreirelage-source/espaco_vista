@@ -76,8 +76,10 @@ document.addEventListener('DOMContentLoaded', () => {
         priceTablesTbody.innerHTML = '';
         priceTables.forEach(table => {
             const row = document.createElement('tr');
+            const consumable = table.consumable_credit || 0;
             row.innerHTML = `
                 <td>${table.name}</td>
+                <td>R$ ${consumable.toFixed(2)}</td>
                 <td class="actions">
                     <button class="btn-remove" data-action="delete-table" data-id="${table.id}" title="Excluir Lista">&times;</button>
                 </td>
@@ -143,7 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         addPriceTableForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const newTable = { name: document.getElementById('tableName').value };
+            const newTable = { 
+                name: document.getElementById('tableName').value,
+                consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0
+            };
             const { error } = await supabase.from('price_tables').insert([newTable]);
             if(error) { showNotification(`Erro: ${error.message}`, true); } 
             else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
