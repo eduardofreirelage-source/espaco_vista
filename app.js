@@ -108,12 +108,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderQuoteCategories() {
         if (!quoteCategoriesContainer) return;
 
-        // **INÍCIO DA CORREÇÃO: Salvar estado dos acordeões abertos**
         const openCategories = new Set();
         quoteCategoriesContainer.querySelectorAll('details[open]').forEach(details => {
             openCategories.add(details.dataset.category);
         });
-        // **FIM DA CORREÇÃO**
 
         quoteCategoriesContainer.innerHTML = '';
         const template = document.getElementById('category-template');
@@ -129,11 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
             accordion.dataset.category = categoryName;
             accordion.querySelector('.category-title').textContent = categoryName;
             
-            // **INÍCIO DA CORREÇÃO: Restaurar estado dos acordeões**
             if (openCategories.has(categoryName)) {
                 accordion.open = true;
             }
-            // **FIM DA CORREÇÃO**
             
             const tableBody = clone.querySelector('tbody');
             renderTableForCategory(tableBody, categoryName, groupedItems[categoryName] || []);
@@ -238,12 +234,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // **INÍCIO DA CORREÇÃO: Adicionar stopPropagation para evitar fechar o acordeão**
             const actionButton = e.target.closest('button[data-action]');
             if (actionButton) {
                  e.stopPropagation(); 
             }
-            // **FIM DA CORREÇÃO**
 
             const { action, index } = target.dataset;
             if (action === 'removeDate') removeDate(index);
@@ -257,9 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.multiselect-container').forEach(container => {
             const list = container.querySelector('.multiselect-list');
             const addButton = container.querySelector('.btn-add-selected');
-            // **INÍCIO DA MELHORIA: Lógica de busca**
             const searchInput = container.querySelector('.multiselect-search');
-            // **FIM DA MELHORIA**
             const category = container.closest('.category-accordion, .category-block')?.dataset.category;
             if (!category) return;
 
@@ -273,7 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 list.appendChild(itemDiv);
             });
             
-             // **INÍCIO DA MELHORIA: Event listener da busca**
             searchInput.addEventListener('input', () => {
                 const searchTerm = searchInput.value.toLowerCase();
                 list.querySelectorAll('.multiselect-list-item').forEach(item => {
@@ -286,18 +277,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             });
-            // **FIM DA MELHORIA**
             
-            addButton.onclick = () => {
+            // **INÍCIO DA CORREÇÃO**
+            addButton.onclick = (e) => {
+                e.stopPropagation(); // Impede o clique de fechar o acordeão
+                // **FIM DA CORREÇÃO**
+
                 const selected = list.querySelectorAll('input:checked');
                 selected.forEach(checkbox => {
                     quote.items.push({ id: checkbox.value, quantity: 1, assignedDate: '', observacoes: '', discount_percent: 0 });
                     checkbox.checked = false;
                 });
-                // **INÍCIO DA MELHORIA: Limpar busca após adicionar**
+                
                 searchInput.value = '';
                 list.querySelectorAll('.multiselect-list-item').forEach(item => item.style.display = 'block');
-                 // **FIM DA MELHORIA**
+                
                 container.classList.remove('open');
                 setDirty(true);
                 render();
@@ -326,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.data && response.data.length > 0) quote.id = response.data[0].id;
             setDirty(false);
             showNotification(`Orçamento para "${clientName}" salvo com sucesso!`);
-            // Atualiza a URL para incluir o ID do novo orçamento, sem recarregar a página
             const newUrl = `${window.location.pathname}?quote_id=${quote.id}`;
             window.history.pushState({ path: newUrl }, '', newUrl);
         }
@@ -336,12 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
         const quoteId = params.get('quote_id');
         if (quoteId) {
-            // Não limpa mais a URL, para permitir recarregamento
-            // window.history.replaceState({}, document.title, window.location.pathname);
             const { data, error } = await supabase.from('quotes').select('id, quote_data').eq('id', quoteId).single();
             if (error) {
                 alert('Não foi possível carregar o orçamento solicitado.');
-                // Limpa a URL se o ID for inválido para evitar loops de erro
                  window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 quote = data.quote_data;
@@ -401,7 +391,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <button id="popover-save-btn" class="btn">Salvar</button>
         `;
-        // Anexa o popover ao elemento correto para melhor posicionamento
         const actionCell = button.closest('.item-actions');
         if (actionCell) {
             actionCell.style.position = 'relative';
@@ -422,7 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeAllPopups() {
         if (obsPopover && obsPopover.classList.contains('show')) {
              obsPopover.classList.remove('show');
-             // Desanexa o popover para evitar que ele fique 'preso' no DOM
              if (obsPopover.parentElement) {
                  obsPopover.parentElement.style.position = '';
                  obsPopover.parentElement.removeChild(obsPopover);
