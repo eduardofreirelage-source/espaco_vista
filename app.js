@@ -2,8 +2,6 @@ import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- GUARDA PRINCIPAL ---
-    // Verifica se estamos na página de orçamentos. Se não, o script não faz nada.
-    // Isso evita que o script quebre se for carregado em outra página (como a de admin).
     if (!document.getElementById('quote-card')) {
         return;
     }
@@ -25,7 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
             populatePriceTables();
             addEventListeners();
             await loadQuoteFromURL();
-            render();
+            
+            // **INÍCIO DA CORREÇÃO ESTRUTURAL**
+            // Atrasamos a primeira renderização para o final da fila de eventos do navegador,
+            // garantindo que o DOM estará 100% pronto.
+            setTimeout(render, 0);
+            // **FIM DA CORREÇÃO ESTRUTURAL**
+
         } catch (error) {
             console.error("Falha crítica na inicialização:", error);
         }
