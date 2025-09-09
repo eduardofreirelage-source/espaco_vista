@@ -299,4 +299,228 @@ document.addEventListener('DOMContentLoaded', () => {
             searchInput.addEventListener('input', () => {
                 const searchTerm = searchInput.value.toLowerCase();
                 list.querySelectorAll('.multiselect-list-item').forEach(item => {
-                    const label = item.querySelector
+                    const label = item.querySelector('label');
+                    const itemName = label.textContent.trim().toLowerCase();
+                    if (itemName.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            addButton.onclick = (e) => {
+                e.stopPropagation();
+                const selected = list.querySelectorAll('input:checked');
+                selected.forEach(checkbox => {
+                    quote.items.push({ id: checkbox.value, quantity: 1, assignedDate: '', observacoes: '', discount_percent: 0 });
+                    checkbox.checked = false;
+                });
+                
+                searchInput.value = '';
+                list.querySelectorAll('.multiselect-list-item').forEach(item => item.style.display = 'block');
+                
+                container.classList.remove('open');
+                setDirty(true);
+                render();
+            };
+        });
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.multiselect-container')) {
+                document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
+            }
+        });
+    }
+    
+    async function saveQuoteToSupabase() {
+        const clientName = quote.general.clientName || 'Orçamento sem nome';
+        const dataToSave = { client_name: clientName, quote_data: quote };
+        let response;
+        if (quote.id) {
+            response = await supabase.from('quotes').update(dataToSave).eq('id', quote.id).select();
+        } else {
+            response = await supabase.from('quotes').insert([dataToSave]).select();
+        }
+        if (response.error) {
+            console.error('Erro ao salvar no Supabase:', response.error);
+            showNotification('Erro ao salvar o orçamento.', true);
+        } else {
+            if (response.data && response.data.length > 0) quote.id = response.data[0].id;
+            setDirty(false);
+            showNotification(`Orçamento para "${clientName}" salvo com sucesso!`);
+            const newUrl = `${window.location.pathname}?quote_id=${quote.id}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+        }
+    }
+    
+    async function loadQuoteFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        const quoteId = params.get('quote_id');
+        if (quoteId) {
+            const { data, error } = await supabase.from('quotes').select('id, quote_data').eq('id', quoteId).single();
+            if (error) {
+                alert('Não foi possível carregar o orçamento solicitado.');
+                 window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                quote = data.quote_data;
+                quote.id = data.id;
+            }
+        }
+    }
+    
+    function generatePrintableQuote() {
+        // Esta função precisará ser ajustada no futuro para refletir a consumação no PDF
+        const printArea = document.getElementById('print-output');
+        const prices = getCalculatedPrices();
+        const groupedItems = groupItemsByCategory();
+        let html = `<div class="print-header"><h1>Proposta de Investimento</h1></div>`;
+        html += `<div class="print-client-info">
+                    <p><strong>Cliente:</strong> ${quote.general.clientName || ''}</p>
+                    <p><strong>CNPJ/CPF:</strong> ${quote.general.clientCnpj || ''}</p>
+                    <p><strong>Nº de Convidados:</strong> ${quote.general.guestCount}</p>
+                 </div>`;
+        CATEGORY_ORDER.forEach(category => {
+            if (groupedItems[category] && groupedItems[category].length > 0) {
+                html += `<h2 class="print-category-title">${category}</h2>`;
+                html += `<table class="print-table"><thead><tr><th>Item</th><th>Data</th><th>Qtde</th><th>Vlr. Unit.</th><th>Subtotal</th></tr></thead><tbody>`;
+                groupedItems[category].forEach(item => {
+                    const service = appData.services.find(s => s.id === item.id);
+                    const unitPrice = prices[item.id] || 0;
+                    const quantity = item.quantity || 1;
+                    const itemDiscount = item.discount_percent || 0;
+                    const total = (unitPrice * quantity) * (1 - itemDiscount / 100);
+                    html += `<tr><td>${service.name}${item.observacoes ? `<div class="print-item-obs">Obs: ${item.observacoes}</div>` : ''}${itemDiscount > 0 ? `<div class="print-item-obs">Desconto: ${itemDiscount}%</div>` : ''}</td><td>${formatDateBR(item.assignedDate) || '-'}</td><td class="center">${quantity}</td><td class="price">R$ ${unitPrice.toFixed(2)}</td><td class="price">R$ ${total.toFixed(2)}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+        });
+        
+        // Lógica de cálculo para o PDF (repetida para consistência)
+        let subtotal = 0;
+        let consumableSubtotal = 0;
+        quote.items.forEach(item => {
+            const service = appData.services.find(s => s.id === item.id);
+            if (!service) return;
+            const unitPrice = prices[item.id] || 0;
+            const quantity = (item.quantity || 1);
+            const itemDiscount = item.discount_percent || 0;
+            const itemTotal = (unitPrice * quantity) * (1 - itemDiscount / 100);
+            subtotal += itemTotal;
+            if (service.category === 'Gastronomia' || service.category === 'Equipamentos') {
+                consumableSubtotal += itemTotal;
+            }
+        });
+        const selectedTableId = priceTableSelect.value;
+        const consumableCredit = appData.tabelas[selectedTableId]?.consumable_credit || 0;
+        const consumableDeduction = Math.min(consumableCredit, consumableSubtotal);
+        const generalDiscount = parseFloat(discountInput.value) || 0;
+        const total = subtotal - consumableDeduction - generalDiscount;
+
+        html += `<div class="print-summary">
+                    <table>
+                        <tr><td class="total-label">Subtotal</td><td class="price total-value">R$ ${subtotal.toFixed(2)}</td></tr>
+                        <tr><td class="total-label">Consumação Inclusa</td><td class="price total-value">- R$ ${consumableDeduction.toFixed(2)}</td></tr>
+                        <tr><td class="total-label">Desconto Geral</td><td class="price total-value">- R$ ${generalDiscount.toFixed(2)}</td></tr>
+                        <tr class="grand-total"><td class="total-label">VALOR TOTAL</td><td class="price total-value">R$ ${total.toFixed(2)}</td></tr>
+                    </table>
+                 </div>`;
+        printArea.innerHTML = html;
+        window.print();
+    }
+    
+    function updateItem(index, key, value) { const item = quote.items[parseInt(index)]; if(item) { item[key] = (key === 'quantity' || key === 'discount_percent') ? parseFloat(value) || 0 : value; setDirty(true); render(); } }
+    function removeItem(index) { quote.items.splice(parseInt(index), 1); setDirty(true); render(); }
+    function duplicateItem(index) { const item = quote.items[parseInt(index)]; if(item) { quote.items.splice(parseInt(index) + 1, 0, JSON.parse(JSON.stringify(item))); setDirty(true); render(); } }
+    function updateDate(index, field, value) { const date = quote.general.dates[parseInt(index)]; if (date) { date[field] = value; setDirty(true); render(); } }
+    function removeDate(index) { quote.general.dates.splice(parseInt(index), 1); setDirty(true); render(); }
+    
+    function openObsPopover(index, button) {
+        closeAllPopups();
+        const item = quote.items[parseInt(index)];
+        if (!item) return;
+        
+        obsPopover.innerHTML = `
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="popover-obs-textarea">${item.observacoes || ''}</textarea>
+            </div>
+            <button id="popover-save-btn" class="btn">Salvar</button>
+        `;
+        const actionCell = button.closest('.item-actions');
+        if (actionCell) {
+            actionCell.style.position = 'relative';
+            actionCell.appendChild(obsPopover);
+        } else {
+             button.parentElement.appendChild(obsPopover);
+        }
+        
+        obsPopover.classList.add('show');
+
+        document.getElementById('popover-save-btn').onclick = () => {
+            const newObs = document.getElementById('popover-obs-textarea').value;
+            updateItem(index, 'observacoes', newObs);
+            closeAllPopups();
+        };
+    }
+
+    function closeAllPopups() {
+        if (obsPopover && obsPopover.classList.contains('show')) {
+             obsPopover.classList.remove('show');
+             if (obsPopover.parentElement) {
+                 obsPopover.parentElement.style.position = '';
+                 obsPopover.parentElement.removeChild(obsPopover);
+             }
+        }
+    }
+    
+    function getCalculatedPrices() {
+        const tableId = priceTableSelect.value;
+        const prices = {};
+        if (appData.tabelas[tableId]) {
+            appData.services.forEach(service => {
+                prices[service.id] = appData.prices[tableId]?.[service.id] || 0;
+            });
+        }
+        return prices;
+    }
+    function groupItemsByCategory() {
+        return quote.items.reduce((acc, item) => {
+            const service = appData.services.find(s => s.id === item.id);
+            if (service) (acc[service.category] = acc[service.category] || []).push(item);
+            return acc;
+        }, {});
+    }
+    function formatDateBR(dateString) { if (!dateString) return null; const [year, month, day] = dateString.split('-'); return `${day}/${month}/${year}`; }
+    
+    function showNotification(message, isError = false) {
+        if (!notification) return;
+        notification.textContent = message;
+        notification.style.backgroundColor = isError ? 'var(--danger-color)' : '#28a745';
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 3000);
+    }
+    
+    function setDirty(state) {
+        isDirty = state;
+        if (saveBtn) {
+            if (isDirty) {
+                saveBtn.classList.add('dirty');
+                saveBtn.textContent = 'Salvar Alterações';
+            } else {
+                saveBtn.classList.remove('dirty');
+                saveBtn.textContent = 'Salvo';
+            }
+        }
+    }
+    
+    function handleCnpjMask(e) {
+        let value = e.target.value.replace(/\D/g, "");
+        value = value.replace(/^(\d{2})(\d)/, "$1.$2");
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+        value = value.replace(/\.(\d{3})(\d)/, ".$1/$2");
+        value = value.replace(/(\d{4})(\d)/, "$1-$2");
+        e.target.value = value.slice(0, 18);
+    }
+    
+    initialize();
+});
