@@ -1,7 +1,14 @@
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ESTADO DA APLICAÇÃO
+    // --- GUARDA PRINCIPAL ---
+    // Verifica se estamos na página de orçamentos. Se não, o script não faz nada.
+    // Isso evita que o script quebre se for carregado em outra página (como a de admin).
+    if (!document.getElementById('quote-card')) {
+        return;
+    }
+
+    // --- ESTADO DA APLICAÇÃO ---
     let appData = { services: [], tabelas: {}, prices: {} };
     let quote = {
         id: null,
@@ -10,14 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
     let isDirty = false;
-
-    // ELEMENTOS DO DOM (Apenas os que não mudam. Os outros serão buscados dentro das funções)
-    const quoteCategoriesContainer = document.getElementById('quote-categories-container');
-    const generalDataFields = ['clientName', 'clientCnpj', 'clientEmail', 'clientPhone', 'guestCount'];
-    const saveBtn = document.getElementById('save-quote-btn');
-    const printBtn = document.getElementById('print-btn');
-    const clientCnpjInput = document.getElementById('clientCnpj');
-    const obsPopover = document.getElementById('obs-popover');
 
     // --- INICIALIZAÇÃO ---
     async function initialize() {
@@ -73,11 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDateManager();
         renderQuoteCategories();
         calculateAndRenderTotals();
-        setupMultiselects();
+        setupMultoselects();
         setDirty(isDirty);
     }
 
     function renderGeneralData() {
+        const generalDataFields = ['clientName', 'clientCnpj', 'clientEmail', 'clientPhone', 'guestCount'];
         generalDataFields.forEach(fieldId => {
             const element = document.getElementById(fieldId);
             if(element) element.value = quote.general[fieldId] || '';
@@ -108,7 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderQuoteCategories() {
+        const quoteCategoriesContainer = document.getElementById('quote-categories-container');
         if (!quoteCategoriesContainer) return;
+
         const openCategories = new Set();
         quoteCategoriesContainer.querySelectorAll('details[open]').forEach(details => {
             openCategories.add(details.dataset.category);
@@ -186,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const discountInput = document.getElementById('discountValue');
 
         if (!priceTableSelect || !discountInput) {
-            console.warn("Elementos de cálculo (priceTableSelect ou discountInput) não encontrados. O cálculo será ignorado.");
+            console.error("ERRO CRÍTICO: Elementos de cálculo não encontrados na página. Verifique o HTML.");
             return;
         }
 
@@ -262,6 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         });
         
+        const generalDataFields = ['clientName', 'clientCnpj', 'clientEmail', 'clientPhone', 'guestCount'];
         generalDataFields.forEach(id => {
             const element = document.getElementById(id);
             if (element) {
@@ -278,8 +281,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const discountInput = document.getElementById('discountValue');
         if (discountInput) discountInput.addEventListener('input', e => { quote.general.discount = parseFloat(e.target.value) || 0; setDirty(true); calculateAndRenderTotals(); });
 
+        const printBtn = document.getElementById('print-btn');
         if (printBtn) printBtn.addEventListener('click', generatePrintableQuote);
+        
+        const saveBtn = document.getElementById('save-quote-btn');
         if (saveBtn) saveBtn.addEventListener('click', saveQuoteToSupabase);
+        
+        const clientCnpjInput = document.getElementById('clientCnpj');
         if (clientCnpjInput) clientCnpjInput.addEventListener('input', handleCnpjMask);
         
         document.body.addEventListener('change', e => {
@@ -299,6 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
                 
                 const container = target.closest('.multiselect-container');
+                if(!container) return;
                 const wasOpen = container.classList.contains('open');
                 document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
                 if (!wasOpen) container.classList.add('open');
@@ -316,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    function setupMultiselects() {
+    function setupMultoselects() {
         document.querySelectorAll('.multiselect-container').forEach(container => {
             const list = container.querySelector('.multiselect-list');
             const addButton = container.querySelector('.btn-add-selected');
@@ -407,6 +416,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function generatePrintableQuote() {
         const printArea = document.getElementById('print-output');
+        const priceTableSelect = document.getElementById('priceTableSelect');
+        const discountInput = document.getElementById('discountValue');
+        if (!printArea || !priceTableSelect || !discountInput) return;
+
         const prices = getCalculatedPrices();
         const groupedItems = groupItemsByCategory();
         let html = `<div class="print-header"><h1>Proposta de Investimento</h1></div>`;
@@ -432,10 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        const priceTableSelect = document.getElementById('priceTableSelect');
-        const discountInput = document.getElementById('discountValue');
-        if (!priceTableSelect || !discountInput) return; // Guard for safety
-
         let subtotal = 0;
         let consumableSubtotal = 0;
         quote.items.forEach(item => {
@@ -475,6 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function openObsPopover(index, button) {
         closeAllPopups();
         const item = quote.items[parseInt(index)];
+        const obsPopover = document.getElementById('obs-popover');
         if (!item || !obsPopover) return;
         
         obsPopover.innerHTML = `<div class="form-group">
@@ -505,6 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeAllPopups() {
+        const obsPopover = document.getElementById('obs-popover');
         if (obsPopover && obsPopover.classList.contains('show')) {
              obsPopover.classList.remove('show');
              if (obsPopover.parentElement) {
@@ -549,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function setDirty(state) {
         isDirty = state;
+        const saveBtn = document.getElementById('save-quote-btn');
         if (saveBtn) {
             saveBtn.classList.toggle('dirty', isDirty);
             saveBtn.textContent = isDirty ? 'Salvar Alterações' : 'Salvo';
@@ -564,5 +576,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.target.value = value.slice(0, 18);
     }
     
+    // Inicia a aplicação
     initialize();
 });
