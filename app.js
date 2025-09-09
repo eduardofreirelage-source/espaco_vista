@@ -1,7 +1,3 @@
-// O código app.js da última versão funcional está correto
-// e não precisa de nenhuma alteração para suportar o novo layout.
-// Envio novamente para garantir a regra de enviar arquivos completos.
-
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,8 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
     let isDirty = false;
-    let currentItemIndex = null;
-
+    
     // ELEMENTOS DO DOM
     const priceTableSelect = document.getElementById('priceTableSelect');
     const discountInput = document.getElementById('discountValue');
@@ -38,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         } catch (error) {
             console.error("Falha crítica na inicialização:", error);
-            alert("Não foi possível carregar os dados. Verifique o console.");
+            alert("Não foi possível carregar os dados. Verifique o console para mais detalhes.");
         }
     }
 
@@ -73,10 +68,127 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LÓGICA DE RENDERIZAÇÃO ---
-    function render() { /* ... (funções de renderização completas) ... */ }
-    function calculateTotal() { /* ... (funções de cálculo completas) ... */ }
+    function render() {
+        renderGeneralData();
+        renderDateManager();
+        renderQuoteCategories();
+        calculateTotal();
+        setupMultiselects();
+        setDirty(isDirty);
+    }
 
-    // --- MANIPULADORES DE EVENTOS ---
+    function renderGeneralData() {
+        generalDataFields.forEach(fieldId => {
+            const element = document.getElementById(fieldId);
+            if(element) element.value = quote.general[fieldId] || '';
+        });
+        if (priceTableSelect) priceTableSelect.value = quote.general.priceTable;
+        if (discountInput) discountInput.value = quote.general.discount;
+    }
+    
+    function renderDateManager() {
+        const container = document.getElementById('event-dates-container');
+        if (!container) return;
+        container.innerHTML = '';
+        quote.general.dates.forEach((dateObj, index) => {
+            const div = document.createElement('div');
+            div.className = 'date-entry';
+            div.innerHTML = `
+                <input type="date" value="${dateObj.date}" data-index="${index}" data-field="date" title="Data">
+                <input type="time" value="${dateObj.startTime}" data-index="${index}" data-field="startTime" title="Horário de Início">
+                <input type="time" value="${dateObj.endTime}" data-index="${index}" data-field="endTime" title="Horário de Término">
+                <input type="text" placeholder="Observações da data..." value="${dateObj.observations || ''}" data-index="${index}" data-field="observations">
+                <button class="btn-icon" data-action="removeDate" data-index="${index}">&times;</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderQuoteCategories() {
+        if (!quoteCategoriesContainer) return;
+        quoteCategoriesContainer.innerHTML = '';
+        const template = document.getElementById('category-template');
+        if (!template) return;
+        
+        const groupedItems = groupItemsByCategory();
+
+        CATEGORY_ORDER.forEach(categoryName => {
+            const clone = template.content.cloneNode(true);
+            const accordion = clone.querySelector('.category-accordion');
+            if (!accordion) return;
+            
+            accordion.dataset.category = categoryName;
+            accordion.querySelector('.category-title').textContent = categoryName;
+            
+            const tableBody = clone.querySelector('tbody');
+            renderTableForCategory(tableBody, categoryName, groupedItems[categoryName] || []);
+
+            quoteCategoriesContainer.appendChild(clone);
+        });
+    }
+
+    function renderTableForCategory(tableBody, category, items) {
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        const prices = getCalculatedPrices();
+        let categorySubtotal = 0;
+        
+        items.forEach(item => {
+            const itemIndex = quote.items.indexOf(item);
+            const service = appData.services.find(s => s.id === item.id);
+            if (!service) return;
+
+            const unitPrice = prices[item.id] || 0;
+            const quantity = item.quantity || 1;
+            const itemDiscount = item.discount_percent || 0;
+            const total = (unitPrice * quantity) * (1 - itemDiscount / 100);
+            categorySubtotal += total;
+
+            const dateOptions = quote.general.dates.map((d, i) => `<option value="${d.date}" ${d.date === item.assignedDate ? 'selected' : ''}>Data ${i + 1} (${formatDateBR(d.date) || 'N/D'})</option>`).join('');
+
+            const row = document.createElement('tr');
+            row.dataset.index = itemIndex;
+            row.innerHTML = `
+                <td>${service.name}</td>
+                <td><select data-field="assignedDate"><option value="">Selecione</option>${dateOptions}</select></td>
+                <td><input type="number" value="${quantity}" min="1" data-field="quantity"></td>
+                <td>R$ ${unitPrice.toFixed(2)}</td>
+                <td><input type="number" value="${itemDiscount}" min="0" max="100" data-field="discount_percent"></td>
+                <td>R$ ${total.toFixed(2)}</td>
+                <td class="item-actions">
+                    <button class="btn-icon" data-action="showObs" data-index="${itemIndex}" title="Observações">💬</button>
+                    <button class="btn-icon" data-action="duplicate" data-index="${itemIndex}" title="Duplicar">📋</button>
+                    <button class="btn-icon" data-action="remove" data-index="${itemIndex}" title="Remover">&times;</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        if (items.length > 0) {
+            const subtotalRow = document.createElement('tr');
+            subtotalRow.className = 'category-subtotal';
+            subtotalRow.innerHTML = `<td colspan="5">Subtotal ${category}</td><td>R$ ${categorySubtotal.toFixed(2)}</td><td></td>`;
+            tableBody.appendChild(subtotalRow);
+        }
+    }
+
+    function calculateTotal() {
+        const prices = getCalculatedPrices();
+        let subtotal = 0;
+        quote.items.forEach(item => {
+            const service = appData.services.find(s => s.id === item.id);
+            if (!service) return;
+            const unitPrice = prices[item.id] || 0;
+            const quantity = (item.quantity || 1);
+            const itemDiscount = item.discount_percent || 0;
+            subtotal += (unitPrice * quantity) * (1 - itemDiscount / 100);
+        });
+        const discount = parseFloat(discountInput.value) || 0;
+        const total = subtotal - discount;
+        document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
+        document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
+    }
+
     function addEventListeners() {
         if (addDateBtn) addDateBtn.addEventListener('click', () => {
             quote.general.dates.push({ date: new Date().toISOString().split('T')[0], startTime: '19:00', endTime: '23:00', observations: '' });
@@ -99,46 +211,203 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (e.target.closest('tr')) updateItem(index, field, e.target.value);
             }
         });
-
         document.body.addEventListener('click', e => {
-            const button = e.target.closest('button');
-            if (!button || button.closest('.obs-popover')) { // Ignora cliques dentro do popover
-                if (!e.target.closest('.obs-popover') && !e.target.dataset.action === 'showObs') {
-                    closeAllPopups();
-                }
-                return;
-            }
-            const { action, index } = button.dataset;
+            const target = e.target.closest('button, .multiselect-input');
+            if (!target) { closeAllPopups(); return; }
+            const { action, index } = target.dataset;
             if (action === 'removeDate') removeDate(index);
             if (action === 'duplicate') duplicateItem(index);
             if (action === 'remove') removeItem(index);
-            if (action === 'showObs') { e.stopPropagation(); openObsPopover(index, button); }
+            if (action === 'showObs') { e.stopPropagation(); openObsPopover(index, target); }
         });
     }
     
-    function setupMultiselects() { /* ... */ }
+    function setupMultiselects() {
+        document.querySelectorAll('.multiselect-container').forEach(container => {
+            const input = container.querySelector('.multiselect-input');
+            const list = container.querySelector('.multiselect-list');
+            const addButton = container.querySelector('.btn-add-selected');
+            const category = container.closest('.category-accordion, .category-block').dataset.category;
+
+            list.innerHTML = '';
+            appData.services.filter(s => s.category === category).forEach(service => {
+                list.innerHTML += `<div class="multiselect-list-item"><label><input type="checkbox" value="${service.id}"> ${service.name}</label></div>`;
+            });
+            input.onclick = (e) => {
+                e.stopPropagation();
+                const wasOpen = container.classList.contains('open');
+                document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
+                if (!wasOpen) container.classList.add('open');
+            };
+            addButton.onclick = () => {
+                const selected = list.querySelectorAll('input:checked');
+                selected.forEach(checkbox => {
+                    quote.items.push({ id: checkbox.value, quantity: 1, assignedDate: '', observacoes: '', discount_percent: 0 });
+                    checkbox.checked = false;
+                });
+                container.classList.remove('open');
+                setDirty(true);
+                render();
+            };
+        });
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.multiselect-container')) {
+                document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
+            }
+        });
+    }
     
-    // --- FUNÇÕES DE SALVAR/CARREGAR/IMPRIMIR ---
-    async function saveQuoteToSupabase() { /* ... */ }
-    async function loadQuoteFromURL() { /* ... */ }
-    function generatePrintableQuote() { /* ... */ }
+    async function saveQuoteToSupabase() {
+        const clientName = quote.general.clientName || 'Orçamento sem nome';
+        const dataToSave = { client_name: clientName, quote_data: quote };
+        let response;
+        if (quote.id) {
+            response = await supabase.from('quotes').update(dataToSave).eq('id', quote.id).select();
+        } else {
+            response = await supabase.from('quotes').insert([dataToSave]).select();
+        }
+        if (response.error) {
+            console.error('Erro ao salvar no Supabase:', response.error);
+            showNotification('Erro ao salvar o orçamento.', true);
+        } else {
+            quote.id = response.data[0].id;
+            setDirty(false);
+            showNotification(`Orçamento para "${clientName}" salvo com sucesso!`);
+        }
+    }
     
-    // --- FUNÇÕES DE MANIPULAÇÃO DO ORÇAMENTO ---
-    function updateItem(index, key, value) { /* ... */ }
-    function removeItem(index) { /* ... */ }
-    function duplicateItem(index) { /* ... */ }
-    function updateDate(index, field, value) { /* ... */ }
-    function removeDate(index) { /* ... */ }
-    function openObsPopover(index, button) { /* ... */ }
-    function closeAllPopups() { /* ... */ }
+    async function loadQuoteFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        const quoteId = params.get('quote_id');
+        if (quoteId) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            const { data, error } = await supabase.from('quotes').select('id, quote_data').eq('id', quoteId).single();
+            if (error) {
+                alert('Não foi possível carregar o orçamento solicitado.');
+            } else {
+                quote = data.quote_data;
+                quote.id = data.id;
+            }
+        }
+    }
     
-    // --- FUNÇÕES AUXILIARES ---
-    function getCalculatedPrices() { /* ... */ }
-    function groupItemsByCategory() { /* ... */ }
-    function formatDateBR(dateString) { /* ... */ }
-    function showNotification(message, isError = false) { /* ... */ }
-    function setDirty(state) { /* ... */ }
-    function handleCnpjMask(e) { /* ... */ }
+    function generatePrintableQuote() {
+        const printArea = document.getElementById('print-output');
+        const prices = getCalculatedPrices();
+        const groupedItems = groupItemsByCategory();
+        let html = `<div class="print-header"><h1>Proposta de Investimento</h1></div>`;
+        html += `<div class="print-client-info">
+                    <p><strong>Cliente:</strong> ${quote.general.clientName || ''}</p>
+                    <p><strong>CNPJ/CPF:</strong> ${quote.general.clientCnpj || ''}</p>
+                    <p><strong>Nº de Convidados:</strong> ${quote.general.guestCount}</p>
+                 </div>`;
+        CATEGORY_ORDER.forEach(category => {
+            if (groupedItems[category] && groupedItems[category].length > 0) {
+                html += `<h2 class="print-category-title">${category}</h2>`;
+                html += `<table class="print-table"><thead><tr><th>Item</th><th>Data</th><th>Qtde</th><th>Vlr. Unit.</th><th>Subtotal</th></tr></thead><tbody>`;
+                groupedItems[category].forEach(item => {
+                    const service = appData.services.find(s => s.id === item.id);
+                    const unitPrice = prices[item.id] || 0;
+                    const quantity = item.quantity || 1;
+                    const itemDiscount = item.discount_percent || 0;
+                    const total = (unitPrice * quantity) * (1 - itemDiscount / 100);
+                    html += `<tr><td>${service.name}${item.observacoes ? `<div class="print-item-obs">Obs: ${item.observacoes}</div>` : ''}${itemDiscount > 0 ? `<div class="print-item-obs">Desconto: ${itemDiscount}%</div>` : ''}</td><td>${formatDateBR(item.assignedDate) || '-'}</td><td class="center">${quantity}</td><td class="price">R$ ${unitPrice.toFixed(2)}</td><td class="price">R$ ${total.toFixed(2)}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+        });
+        const subtotal = quote.items.reduce((acc, item) => { const service = appData.services.find(s => s.id === item.id); if (!service) return acc; const unitPrice = prices[item.id] || 0; const quantity = (item.quantity || 1); const itemDiscount = item.discount_percent || 0; return acc + (unitPrice * quantity) * (1 - itemDiscount / 100); }, 0);
+        const discount = parseFloat(discountInput.value) || 0;
+        const total = subtotal - discount;
+        html += `<div class="print-summary"><table><tr><td class="total-label">Subtotal</td><td class="price total-value">R$ ${subtotal.toFixed(2)}</td></tr><tr><td class="total-label">Desconto Geral</td><td class="price total-value">- R$ ${discount.toFixed(2)}</td></tr><tr class="grand-total"><td class="total-label">VALOR TOTAL</td><td class="price total-value">R$ ${total.toFixed(2)}</td></tr></table></div>`;
+        printArea.innerHTML = html;
+        window.print();
+    }
+    
+    function updateItem(index, key, value) { const item = quote.items[parseInt(index)]; if(item) { item[key] = (key === 'quantity' || key === 'discount_percent') ? parseFloat(value) || 0 : value; setDirty(true); render(); } }
+    function removeItem(index) { quote.items.splice(parseInt(index), 1); setDirty(true); render(); }
+    function duplicateItem(index) { const item = quote.items[parseInt(index)]; if(item) { quote.items.splice(parseInt(index) + 1, 0, JSON.parse(JSON.stringify(item))); setDirty(true); render(); } }
+    function updateDate(index, field, value) { const date = quote.general.dates[parseInt(index)]; if (date) { date[field] = value; setDirty(true); render(); } }
+    function removeDate(index) { quote.general.dates.splice(parseInt(index), 1); setDirty(true); render(); }
+    
+    function openObsPopover(index, button) {
+        closeAllPopups();
+        const item = quote.items[parseInt(index)];
+        if (!item) return;
+        const popover = document.getElementById('obs-popover');
+        popover.innerHTML = `
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="popover-obs-textarea">${item.observacoes || ''}</textarea>
+            </div>
+            <button id="popover-save-btn" class="btn">Salvar</button>
+        `;
+        button.parentElement.appendChild(popover);
+        popover.classList.add('show');
+
+        document.getElementById('popover-save-btn').onclick = () => {
+            const newObs = document.getElementById('popover-obs-textarea').value;
+            updateItem(index, 'observacoes', newObs);
+            closeAllPopups();
+        };
+    }
+
+    function closeAllPopups() {
+        const popover = document.getElementById('obs-popover');
+        if (popover) {
+            popover.classList.remove('show');
+            document.body.appendChild(popover);
+        }
+    }
+    
+    function getCalculatedPrices() {
+        const tableId = priceTableSelect.value;
+        const prices = {};
+        if (appData.tabelas[tableId]) {
+            appData.services.forEach(service => {
+                prices[service.id] = appData.prices[tableId]?.[service.id] || 0;
+            });
+        }
+        return prices;
+    }
+    function groupItemsByCategory() {
+        return quote.items.reduce((acc, item) => {
+            const service = appData.services.find(s => s.id === item.id);
+            if (service) (acc[service.category] = acc[service.category] || []).push(item);
+            return acc;
+        }, {});
+    }
+    function formatDateBR(dateString) { if (!dateString) return null; const [year, month, day] = dateString.split('-'); return `${day}/${month}/${year}`; }
+    
+    function showNotification(message, isError = false) {
+        if (!notification) return;
+        notification.textContent = message;
+        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 3000);
+    }
+    
+    function setDirty(state) {
+        isDirty = state;
+        if (saveBtn) {
+            if (isDirty) {
+                saveBtn.classList.add('dirty');
+                saveBtn.textContent = 'Salvar Alterações';
+            } else {
+                saveBtn.classList.remove('dirty');
+                saveBtn.textContent = 'Salvo';
+            }
+        }
+    }
+    
+    function handleCnpjMask(e) {
+        let value = e.target.value.replace(/\D/g, "");
+        value = value.replace(/^(\d{2})(\d)/, "$1.$2");
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+        value = value.replace(/\.(\d{3})(\d)/, ".$1/$2");
+        value = value.replace(/(\d{4})(\d)/, "$1-$2");
+        e.target.value = value.slice(0, 18);
+    }
     
     initialize();
 });
