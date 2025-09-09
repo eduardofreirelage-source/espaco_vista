@@ -16,9 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const priceTableSelect = document.getElementById('priceTableSelect');
     const discountInput = document.getElementById('discountValue');
     const addDateBtn = document.getElementById('add-date-btn');
-    const quoteTableBody = document.getElementById('quote-table-body');
-    const serviceSearchInput = document.getElementById('service-search');
-    const searchResultsContainer = document.getElementById('service-search-results');
+    const quoteCategoriesContainer = document.getElementById('quote-categories-container');
     const generalDataFields = ['clientName', 'clientCnpj', 'clientEmail', 'clientPhone', 'guestCount'];
     const saveBtn = document.getElementById('save-quote-btn');
     const printBtn = document.getElementById('print-btn');
@@ -74,8 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function render() {
         renderGeneralData();
         renderDateManager();
-        renderQuoteTable();
+        renderQuoteCategories();
         calculateTotal();
+        setupMultiselects();
         setDirty(isDirty);
     }
 
@@ -106,56 +105,72 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderQuoteTable() {
-        if (!quoteTableBody) return;
-        quoteTableBody.innerHTML = '';
-        const prices = getCalculatedPrices();
+    function renderQuoteCategories() {
+        if (!quoteCategoriesContainer) return;
+        quoteCategoriesContainer.innerHTML = '';
+        const template = document.getElementById('category-template');
+        if (!template) return;
+        
         const groupedItems = groupItemsByCategory();
 
-        CATEGORY_ORDER.forEach(category => {
-            if (!groupedItems[category] || groupedItems[category].length === 0) return;
-
-            const headerRow = document.createElement('tr');
-            headerRow.className = 'category-subheader';
-            headerRow.innerHTML = `<td colspan="7">${category}</td>`;
-            quoteTableBody.appendChild(headerRow);
+        CATEGORY_ORDER.forEach(categoryName => {
+            const clone = template.content.cloneNode(true);
+            const accordion = clone.querySelector('.category-accordion');
+            if (!accordion) return;
             
-            let categorySubtotal = 0;
+            accordion.dataset.category = categoryName;
+            accordion.querySelector('.category-title').textContent = categoryName;
+            
+            const tableBody = clone.querySelector('tbody');
+            renderTableForCategory(tableBody, categoryName, groupedItems[categoryName] || []);
 
-            groupedItems[category].forEach(item => {
-                const itemIndex = quote.items.indexOf(item);
-                const service = appData.services.find(s => s.id === item.id);
-                const unitPrice = prices[item.id] || 0;
-                const quantity = item.quantity || 1;
-                const itemDiscount = item.discount_percent || 0;
-                const total = (unitPrice * quantity) * (1 - itemDiscount / 100);
-                categorySubtotal += total;
+            quoteCategoriesContainer.appendChild(clone);
+        });
+    }
 
-                const dateOptions = quote.general.dates.map((d, i) => `<option value="${d.date}" ${d.date === item.assignedDate ? 'selected' : ''}>Data ${i + 1} (${formatDateBR(d.date) || 'N/D'})</option>`).join('');
+    function renderTableForCategory(tableBody, category, items) {
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        const prices = getCalculatedPrices();
+        let categorySubtotal = 0;
+        
+        items.forEach(item => {
+            const itemIndex = quote.items.indexOf(item);
+            const service = appData.services.find(s => s.id === item.id);
+            if (!service) return;
 
-                const row = document.createElement('tr');
-                row.dataset.index = itemIndex;
-                row.innerHTML = `
-                    <td><span class="category-badge">${service.category}</span> ${service.name}</td>
-                    <td><select data-field="assignedDate"><option value="">Selecione</option>${dateOptions}</select></td>
-                    <td><input type="number" value="${quantity}" min="1" data-field="quantity"></td>
-                    <td>R$ ${unitPrice.toFixed(2)}</td>
-                    <td><input type="number" value="${itemDiscount}" min="0" max="100" data-field="discount_percent"></td>
-                    <td>R$ ${total.toFixed(2)}</td>
-                    <td class="item-actions">
-                        <button class="btn-icon" data-action="showObs" data-index="${itemIndex}" title="Observações">💬</button>
-                        <button class="btn-icon" data-action="duplicate" data-index="${itemIndex}" title="Duplicar">📋</button>
-                        <button class="btn-icon" data-action="remove" data-index="${itemIndex}" title="Remover">&times;</button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
+            const unitPrice = prices[item.id] || 0;
+            const quantity = item.quantity || 1;
+            const itemDiscount = item.discount_percent || 0;
+            const total = (unitPrice * quantity) * (1 - itemDiscount / 100);
+            categorySubtotal += total;
 
+            const dateOptions = quote.general.dates.map((d, i) => `<option value="${d.date}" ${d.date === item.assignedDate ? 'selected' : ''}>Data ${i + 1} (${formatDateBR(d.date) || 'N/D'})</option>`).join('');
+
+            const row = document.createElement('tr');
+            row.dataset.index = itemIndex;
+            row.innerHTML = `
+                <td>${service.name}</td>
+                <td><select data-field="assignedDate"><option value="">Selecione</option>${dateOptions}</select></td>
+                <td><input type="number" value="${quantity}" min="1" data-field="quantity"></td>
+                <td>R$ ${unitPrice.toFixed(2)}</td>
+                <td><input type="number" value="${itemDiscount}" min="0" max="100" data-field="discount_percent"></td>
+                <td>R$ ${total.toFixed(2)}</td>
+                <td class="item-actions">
+                    <button class="btn-icon" data-action="showObs" data-index="${itemIndex}" title="Observações">💬</button>
+                    <button class="btn-icon" data-action="duplicate" data-index="${itemIndex}" title="Duplicar">📋</button>
+                    <button class="btn-icon" data-action="remove" data-index="${itemIndex}" title="Remover">&times;</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        if (items.length > 0) {
             const subtotalRow = document.createElement('tr');
             subtotalRow.className = 'category-subtotal';
-            subtotalRow.innerHTML = `<td colspan="6">Subtotal ${category}</td><td>R$ ${categorySubtotal.toFixed(2)}</td>`;
-            quoteTableBody.appendChild(subtotalRow);
-        });
+            subtotalRow.innerHTML = `<td colspan="5">Subtotal ${category}</td><td>R$ ${categorySubtotal.toFixed(2)}</td><td></td>`;
+            tableBody.appendChild(subtotalRow);
+        }
     }
 
     function calculateTotal() {
@@ -190,11 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saveBtn) saveBtn.addEventListener('click', saveQuoteToSupabase);
         if (clientCnpjInput) clientCnpjInput.addEventListener('input', handleCnpjMask);
         
-        if(serviceSearchInput) {
-            serviceSearchInput.addEventListener('keyup', handleServiceSearch);
-            serviceSearchInput.addEventListener('focus', handleServiceSearch);
-        }
-        
         document.body.addEventListener('change', e => {
             const { index, field } = e.target.dataset;
             if (index && field) {
@@ -203,44 +213,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         document.body.addEventListener('click', e => {
-            const target = e.target;
-            if (!target.closest('.item-actions') && !target.closest('.date-entry') && !target.closest('.header-actions')) {
-                 closeAllPopups();
+            const target = e.target.closest('button, .multiselect-input, summary');
+            if (!target) { closeAllPopups(); return; }
+            if (target.matches('.multiselect-input')) { // Logic for multiselect
+                 e.stopPropagation();
+                const container = target.closest('.multiselect-container');
+                const wasOpen = container.classList.contains('open');
+                document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
+                if (!wasOpen) container.classList.add('open');
+                return;
             }
-            const button = target.closest('button');
-            if (button) {
-                const { action, index } = button.dataset;
-                if (action === 'removeDate') removeDate(index);
-                if (action === 'duplicate') duplicateItem(index);
-                if (action === 'remove') removeItem(index);
-                if (action === 'showObs') { e.stopPropagation(); openObsPopover(index, button); }
-            }
+
+            const { action, index } = target.dataset;
+            if (action === 'removeDate') removeDate(index);
+            if (action === 'duplicate') duplicateItem(index);
+            if (action === 'remove') removeItem(index);
+            if (action === 'showObs') { e.stopPropagation(); openObsPopover(index, target); }
         });
     }
     
-    function handleServiceSearch(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        searchResultsContainer.style.display = 'none';
-        if (searchTerm.length < 1) return;
-        
-        const filteredServices = appData.services.filter(s => s.name.toLowerCase().includes(searchTerm));
-        searchResultsContainer.innerHTML = '';
-        if (filteredServices.length > 0) {
-            filteredServices.forEach(service => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'search-result-item';
-                itemDiv.textContent = `${service.name} (${service.category})`;
-                itemDiv.onclick = () => {
-                    quote.items.push({ id: service.id, quantity: 1, assignedDate: '', observacoes: '', discount_percent: 0 });
-                    serviceSearchInput.value = '';
-                    searchResultsContainer.style.display = 'none';
-                    setDirty(true);
-                    render();
-                };
-                searchResultsContainer.appendChild(itemDiv);
+    function setupMultiselects() {
+        document.querySelectorAll('.multiselect-container').forEach(container => {
+            const list = container.querySelector('.multiselect-list');
+            const addButton = container.querySelector('.btn-add-selected');
+            const category = container.closest('.category-accordion, .category-block')?.dataset.category;
+            if (!category) return;
+
+            list.innerHTML = '';
+            appData.services.filter(s => s.category === category).forEach(service => {
+                list.innerHTML += `<div class="multiselect-list-item"><label><input type="checkbox" value="${service.id}"> ${service.name}</label></div>`;
             });
-            searchResultsContainer.style.display = 'block';
-        }
+            
+            addButton.onclick = () => {
+                const selected = list.querySelectorAll('input:checked');
+                selected.forEach(checkbox => {
+                    quote.items.push({ id: checkbox.value, quantity: 1, assignedDate: '', observacoes: '', discount_percent: 0 });
+                    checkbox.checked = false;
+                });
+                container.classList.remove('open');
+                setDirty(true);
+                render();
+            };
+        });
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.multiselect-container')) {
+                document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
+            }
+        });
     }
     
     async function saveQuoteToSupabase() {
@@ -278,7 +297,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function generatePrintableQuote() {
-        // ... (lógica de impressão)
+        const printArea = document.getElementById('print-output');
+        const prices = getCalculatedPrices();
+        const groupedItems = groupItemsByCategory();
+        let html = `<div class="print-header"><h1>Proposta de Investimento</h1></div>`;
+        html += `<div class="print-client-info">
+                    <p><strong>Cliente:</strong> ${quote.general.clientName || ''}</p>
+                    <p><strong>CNPJ/CPF:</strong> ${quote.general.clientCnpj || ''}</p>
+                    <p><strong>Nº de Convidados:</strong> ${quote.general.guestCount}</p>
+                 </div>`;
+        CATEGORY_ORDER.forEach(category => {
+            if (groupedItems[category] && groupedItems[category].length > 0) {
+                html += `<h2 class="print-category-title">${category}</h2>`;
+                html += `<table class="print-table"><thead><tr><th>Item</th><th>Data</th><th>Qtde</th><th>Vlr. Unit.</th><th>Subtotal</th></tr></thead><tbody>`;
+                groupedItems[category].forEach(item => {
+                    const service = appData.services.find(s => s.id === item.id);
+                    const unitPrice = prices[item.id] || 0;
+                    const quantity = item.quantity || 1;
+                    const itemDiscount = item.discount_percent || 0;
+                    const total = (unitPrice * quantity) * (1 - itemDiscount / 100);
+                    html += `<tr><td>${service.name}${item.observacoes ? `<div class="print-item-obs">Obs: ${item.observacoes}</div>` : ''}${itemDiscount > 0 ? `<div class="print-item-obs">Desconto: ${itemDiscount}%</div>` : ''}</td><td>${formatDateBR(item.assignedDate) || '-'}</td><td class="center">${quantity}</td><td class="price">R$ ${unitPrice.toFixed(2)}</td><td class="price">R$ ${total.toFixed(2)}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+        });
+        const subtotal = quote.items.reduce((acc, item) => { const service = appData.services.find(s => s.id === item.id); if (!service) return acc; const unitPrice = prices[item.id] || 0; const quantity = (item.quantity || 1); const itemDiscount = item.discount_percent || 0; return acc + (unitPrice * quantity) * (1 - itemDiscount / 100); }, 0);
+        const discount = parseFloat(discountInput.value) || 0;
+        const total = subtotal - discount;
+        html += `<div class="print-summary"><table><tr><td class="total-label">Subtotal</td><td class="price total-value">R$ ${subtotal.toFixed(2)}</td></tr><tr><td class="total-label">Desconto Geral</td><td class="price total-value">- R$ ${discount.toFixed(2)}</td></tr><tr class="grand-total"><td class="total-label">VALOR TOTAL</td><td class="price total-value">R$ ${total.toFixed(2)}</td></tr></table></div>`;
+        printArea.innerHTML = html;
+        window.print();
     }
     
     function updateItem(index, key, value) { const item = quote.items[parseInt(index)]; if(item) { item[key] = (key === 'quantity' || key === 'discount_percent') ? parseFloat(value) || 0 : value; setDirty(true); render(); } }
@@ -323,7 +371,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return prices;
     }
-
     function groupItemsByCategory() {
         return quote.items.reduce((acc, item) => {
             const service = appData.services.find(s => s.id === item.id);
@@ -331,13 +378,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return acc;
         }, {});
     }
-
     function formatDateBR(dateString) { if (!dateString) return null; const [year, month, day] = dateString.split('-'); return `${day}/${month}/${year}`; }
     
     function showNotification(message, isError = false) {
         if (!notification) return;
         notification.textContent = message;
-        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        notification.style.backgroundColor = isError ? 'var(--danger-color)' : '#28a745';
         notification.classList.add('show');
         setTimeout(() => notification.classList.remove('show'), 3000);
     }
