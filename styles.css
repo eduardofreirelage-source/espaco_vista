@@ -122,4 +122,53 @@ tr.category-subtotal td { font-weight: bold; text-align: right; background-color
 
 .notification { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: white; padding: 1rem 1.5rem; border-radius: 5px; box-shadow: var(--shadow); font-weight: 500; opacity: 0; visibility: hidden; transition: all 0.5s; transform: translateY(20px); z-index: 2000; }
 .notification.show { opacity: 1; visibility: visible; transform: translateY(0); }
+
 @media (max-width: 900px) { /* ... (estilos responsivos) ... */ }
+
+/* ESTILOS PARA O NOVO CARD DE RESUMO */
+#summary-card .card-content {
+    padding: 0;
+}
+
+.summary-details {
+    padding: 1.2rem;
+}
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.summary-line:last-child {
+    border-bottom: none;
+}
+
+#summary-categories-list .summary-line {
+    padding-left: 1rem; /* Indenta as categorias */
+    color: var(--subtle-text-color);
+    font-size: 0.9rem;
+}
+
+#summary-categories-list .summary-line strong {
+    font-weight: 500;
+}
+
+.summary-subtotal {
+    border-top: 2px solid var(--border-color);
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    font-weight: 600;
+}
+
+.summary-grand-total {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.summary-grand-total strong {
+    font-weight: 700;
+}
