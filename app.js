@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
     let isDirty = false;
-
+    
     // ELEMENTOS DO DOM
     const priceTableSelect = document.getElementById('priceTableSelect');
     const discountInput = document.getElementById('discountValue');
@@ -156,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><input type="number" value="${itemDiscount}" min="0" max="100" data-field="discount_percent"></td>
                 <td>R$ ${total.toFixed(2)}</td>
                 <td class="item-actions">
+                    <button class="btn-icon" data-action="showObs" data-index="${itemIndex}" title="Observações">💬</button>
                     <button class="btn-icon" data-action="duplicate" data-index="${itemIndex}" title="Duplicar">📋</button>
                     <button class="btn-icon" data-action="remove" data-index="${itemIndex}" title="Remover">&times;</button>
                 </td>
@@ -210,23 +212,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (e.target.closest('tr')) updateItem(index, field, e.target.value);
             }
         });
-
         document.body.addEventListener('click', e => {
-            const button = e.target.closest('button');
-            if (button) {
-                const { action, index } = button.dataset;
-                if (action === 'removeDate') removeDate(index);
-                if (action === 'duplicate') duplicateItem(index);
-                if (action === 'remove') removeItem(index);
-            }
-            // Logic for accordion toggle
-            const header = e.target.closest('.accordion-header');
-            if (header) {
-                const accordion = header.closest('.accordion');
-                if (accordion) {
-                    accordion.classList.toggle('open');
-                }
-            }
+            const target = e.target.closest('button, .multiselect-input');
+            if (!target) { closeAllPopups(); return; }
+            const { action, index } = target.dataset;
+            if (action === 'removeDate') removeDate(index);
+            if (action === 'duplicate') duplicateItem(index);
+            if (action === 'remove') removeItem(index);
+            if (action === 'showObs') { e.stopPropagation(); openObsPopover(index, target); }
         });
     }
     
@@ -235,22 +228,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = container.querySelector('.multiselect-input');
             const list = container.querySelector('.multiselect-list');
             const addButton = container.querySelector('.btn-add-selected');
-            const category = container.closest('.category-accordion')?.dataset.category;
-
-            if (!category) return;
+            const category = container.closest('.category-accordion, .category-block').dataset.category;
 
             list.innerHTML = '';
             appData.services.filter(s => s.category === category).forEach(service => {
                 list.innerHTML += `<div class="multiselect-list-item"><label><input type="checkbox" value="${service.id}"> ${service.name}</label></div>`;
             });
-
             input.onclick = (e) => {
                 e.stopPropagation();
                 const wasOpen = container.classList.contains('open');
                 document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
                 if (!wasOpen) container.classList.add('open');
             };
-            
             addButton.onclick = () => {
                 const selected = list.querySelectorAll('input:checked');
                 selected.forEach(checkbox => {
@@ -282,9 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Erro ao salvar no Supabase:', response.error);
             showNotification('Erro ao salvar o orçamento.', true);
         } else {
-            if (response.data && response.data.length > 0) {
-                quote.id = response.data[0].id;
-            }
+            quote.id = response.data[0].id;
             setDirty(false);
             showNotification(`Orçamento para "${clientName}" salvo com sucesso!`);
         }
@@ -344,6 +331,36 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateDate(index, field, value) { const date = quote.general.dates[parseInt(index)]; if (date) { date[field] = value; setDirty(true); render(); } }
     function removeDate(index) { quote.general.dates.splice(parseInt(index), 1); setDirty(true); render(); }
     
+    function openObsPopover(index, button) {
+        closeAllPopups();
+        const item = quote.items[parseInt(index)];
+        if (!item) return;
+        const popover = document.getElementById('obs-popover');
+        popover.innerHTML = `
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="popover-obs-textarea">${item.observacoes || ''}</textarea>
+            </div>
+            <button id="popover-save-btn" class="btn">Salvar</button>
+        `;
+        button.parentElement.appendChild(popover);
+        popover.classList.add('show');
+
+        document.getElementById('popover-save-btn').onclick = () => {
+            const newObs = document.getElementById('popover-obs-textarea').value;
+            updateItem(index, 'observacoes', newObs);
+            closeAllPopups();
+        };
+    }
+
+    function closeAllPopups() {
+        const popover = document.getElementById('obs-popover');
+        if (popover) {
+            popover.classList.remove('show');
+            document.body.appendChild(popover);
+        }
+    }
+    
     function getCalculatedPrices() {
         const tableId = priceTableSelect.value;
         const prices = {};
@@ -354,7 +371,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return prices;
     }
-
     function groupItemsByCategory() {
         return quote.items.reduce((acc, item) => {
             const service = appData.services.find(s => s.id === item.id);
@@ -362,7 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return acc;
         }, {});
     }
-
     function formatDateBR(dateString) { if (!dateString) return null; const [year, month, day] = dateString.split('-'); return `${day}/${month}/${year}`; }
     
     function showNotification(message, isError = false) {
