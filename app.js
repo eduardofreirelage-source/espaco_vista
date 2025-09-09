@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         } catch (error) {
             console.error("Falha crítica na inicialização:", error);
-            alert("Não foi possível carregar os dados. Verifique o console para mais detalhes.");
+            // Removido o alert para não interromper o usuário, o erro já está no console.
         }
     }
 
@@ -186,8 +186,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- NOVA LÓGICA DE CÁLCULO E RENDERIZAÇÃO DE TOTAIS ---
     function calculateAndRenderTotals() {
+        // **INÍCIO DA CORREÇÃO**
+        // Adiciona uma verificação para garantir que os elementos existem antes de prosseguir.
+        if (!priceTableSelect || !discountInput) {
+            console.warn("Elementos de cálculo (priceTableSelect ou discountInput) não encontrados. O cálculo será ignorado.");
+            return;
+        }
+        // **FIM DA CORREÇÃO**
+
         const prices = getCalculatedPrices();
         let subtotal = 0;
         let consumableSubtotal = 0;
@@ -240,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateSummaryCard(totals) {
         const container = document.getElementById('summary-categories-list');
+        if (!container) return; // Adiciona verificação para o container do resumo
         container.innerHTML = '';
 
         CATEGORY_ORDER.forEach(categoryName => {
@@ -261,7 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('summary-total-value').textContent = `R$ ${totals.total.toFixed(2)}`;
     }
 
-
     function addEventListeners() {
         if (addDateBtn) addDateBtn.addEventListener('click', () => {
             quote.general.dates.push({ date: new Date().toISOString().split('T')[0], startTime: '19:00', endTime: '23:00', observations: '' });
@@ -269,7 +276,16 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         });
         
-        generalDataFields.forEach(id => document.getElementById(id)?.addEventListener('input', e => { quote.general[id] = e.target.value; setDirty(true); }));
+        generalDataFields.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', e => { 
+                    quote.general[id] = e.target.value; 
+                    setDirty(true); 
+                });
+            }
+        });
+        
         if (priceTableSelect) priceTableSelect.addEventListener('change', e => { quote.general.priceTable = e.target.value; setDirty(true); render(); });
         if (discountInput) discountInput.addEventListener('input', e => { quote.general.discount = parseFloat(e.target.value) || 0; setDirty(true); calculateAndRenderTotals(); });
 
@@ -319,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const addButton = container.querySelector('.btn-add-selected');
             const searchInput = container.querySelector('.multiselect-search');
             const category = container.closest('.category-accordion, .category-block')?.dataset.category;
-            if (!category) return;
+            if (!category || !addButton) return;
 
             list.innerHTML = '';
             const servicesForCategory = appData.services.filter(s => s.category === category);
@@ -331,18 +347,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 list.appendChild(itemDiv);
             });
             
-            searchInput.addEventListener('input', () => {
-                const searchTerm = searchInput.value.toLowerCase();
-                list.querySelectorAll('.multiselect-list-item').forEach(item => {
-                    const label = item.querySelector('label');
-                    const itemName = label.textContent.trim().toLowerCase();
-                    if (itemName.includes(searchTerm)) {
-                        item.style.display = 'block';
-                    } else {
-                        item.style.display = 'none';
-                    }
+            if(searchInput) {
+                searchInput.addEventListener('input', () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    list.querySelectorAll('.multiselect-list-item').forEach(item => {
+                        const label = item.querySelector('label');
+                        const itemName = label.textContent.trim().toLowerCase();
+                        if (itemName.includes(searchTerm)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
                 });
-            });
+            }
             
             addButton.onclick = (e) => {
                 e.stopPropagation();
@@ -352,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkbox.checked = false;
                 });
                 
-                searchInput.value = '';
+                if(searchInput) searchInput.value = '';
                 list.querySelectorAll('.multiselect-list-item').forEach(item => item.style.display = 'block');
                 
                 container.classList.remove('open');
@@ -367,7 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // ... O resto do arquivo (saveQuote, loadQuote, generatePrintable, etc.) permanece o mesmo ...
     async function saveQuoteToSupabase() {
         const clientName = quote.general.clientName || 'Orçamento sem nome';
         const dataToSave = { client_name: clientName, quote_data: quote };
