@@ -1,6 +1,28 @@
+// Importando o Supabase SDK diretamente do CDN via ESM
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-const supabaseUrl = 'https://wadbknlbrzixuadpuuoz.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhZGJrbmxicnppeHVhZHB1dW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNDk3OTgsImV4cCI6MjA3MjkyNTc5OH0.KUu1jUgbhJxUuiZjJmeSViLbf73oNVqhVr7QMj6TPos';
+// Credenciais extraídas do código fornecido.
+const SUPABASE_URL = "https://msmyfxgrnuusnvoqyeuo.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbXlmeGdybnV1c252b3F5ZXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2NTYzMTEsImV4cCI6MjA3MjIzMjMxMX0.21NV7RdrdXLqA9-PIG9TP2aZMgIseW7_qM1LDZzkO7U";
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/**
+ * Verifica a sessão do usuário e determina o papel.
+ * Usuário autenticado = admin; Usuário anônimo = client.
+ */
+export async function getSession() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+        console.error("Erro ao obter sessão:", error);
+        return { user: null, role: 'client' };
+    }
+
+    if (!session) {
+        return { user: null, role: 'client' };
+    }
+
+    // Se estiver autenticado, é administrador.
+    return { user: session.user, role: 'admin' };
+}
