@@ -4,9 +4,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loginForm = document.getElementById('loginForm');
     const errorMessage = document.getElementById('errorMessage');
 
-    // Se estiver na página de login
+    // Se estiver na página de login (verifica se o formulário existe)
     if (loginForm) {
-        // Verifica se já está logado e redireciona
+        // Verifica se já está logado e redireciona imediatamente
         const { role } = await getSession();
         if (role === 'admin') {
             window.location.href = 'admin.html';
@@ -15,17 +15,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            errorMessage.textContent = '';
+            errorMessage.textContent = 'Entrando...';
 
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
+            // Tenta fazer o login com o Supabase Auth
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
 
             if (error) {
+                // Exibe o erro (ex: "Invalid login credentials")
                 errorMessage.textContent = `Erro ao fazer login: ${error.message}`;
             } else {
                 // Redireciona para o painel de administração após o login bem-sucedido
