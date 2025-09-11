@@ -1,8 +1,10 @@
 // Importando o Supabase SDK diretamente do CDN via ESM
+// Certifique-se de que seus arquivos HTML carregam os scripts como type="module"
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 // Credenciais extraídas do código fornecido.
 const SUPABASE_URL = "https://msmyfxgrnuusnvoqyeuo.supabase.co";
+// IMPORTANTE: Use a sua chave ANNON real aqui. A chave abaixo é um exemplo baseado no que você forneceu anteriormente.
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbXlmeGdybnV1c252b3F5ZXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2NTYzMTEsImV4cCI6MjA3MjIzMjMxMX0.21NV7RdrdXLqA9-PIG9TP2aZMgIseW7_qM1LDZzkO7U";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -20,6 +22,7 @@ export async function getSession() {
     }
 
     if (!session) {
+        // Se não houver sessão, é um cliente (acesso anônimo)
         return { user: null, role: 'client' };
     }
 
