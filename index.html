@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sistema de Orçamentos Profissional</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="print.css" media="print">
@@ -10,16 +10,19 @@
 <body>
     <div class="container">
         <header>
-            <h1>Gerador de Propostas</h1>
+            <h1 id="main-title">Gerador de Propostas</h1>
             <div class="header-actions">
                 <button id="save-quote-btn" class="btn btn-save">Salvar</button>
-                <a href="admin.html" target="_blank" class="btn">⚙️ Gerenciar</a>
+                <a href="admin.html" id="admin-link" class="btn" style="display: none;">⚙️ Gerenciar</a>
+                <button id="logout-btn" class="btn" style="display: none; background-color: #6c757d;">Sair</button>
+                <a href="login.html" id="login-link" class="btn" style="display: none;">Login Admin</a>
+
                 <button id="print-btn" class="btn">Exportar PDF</button>
             </div>
         </header>
 
         <main>
-            <details class="card data-accordion" open>
+             <details class="card data-accordion" open>
                 <summary><h2>Dados do Cliente</h2></summary>
                 <div class="card-content">
                     <div class="form-grid">
@@ -30,7 +33,7 @@
                     </div>
                 </div>
             </details>
-            
+
             <details class="card data-accordion" open>
                 <summary><h2>Dados do Evento</h2></summary>
                 <div class="card-content">
@@ -76,7 +79,7 @@
     </div>
 
     <footer class="summary-footer">
-        <div class="summary-content">
+         <div class="summary-content">
             <div class="summary-item"><span>Subtotal:</span><strong id="subtotalValue">R$ 0,00</strong></div>
             <div class="summary-item"><span>Consumação:</span><strong id="consumableValue">R$ 0,00</strong></div>
             <div class="summary-item">
@@ -106,21 +109,34 @@
             <div class="category-content">
                 <table class="quote-table">
                     <colgroup>
-                        <col style="width: 38%;"><col style="width: 14%;"><col style="width: 8%;"><col style="width: 12%;"><col style="width: 8%;"><col style="width: 12%;"><col style="width: 8%;">
+                        <col style="width: 38%;" class="col-item">
+                        <col style="width: 14%;" class="col-date">
+                        <col style="width: 8%;" class="col-qty">
+                        <col style="width: 12%;" class="col-unit-price">
+                        <col style="width: 8%;" class="col-discount">
+                        <col style="width: 12%;" class="col-total-price">
+                        <col style="width: 8%;" class="col-actions">
                     </colgroup>
                     <thead><tr>
-                        <th>Item</th><th>Data</th><th>Qtde.</th><th>Vlr. Unitário</th><th>Desc. (%)</th><th>Vlr. Total</th><th>Ações</th>
+                        <th class="col-item">Item</th>
+                        <th class="col-date">Data</th>
+                        <th class="col-qty">Qtde.</th>
+                        <th class="col-unit-price">Vlr. Unitário</th>
+                        <th class="col-discount">Desc. (%)</th>
+                        <th class="col-total-price">Vlr. Total</th>
+                        <th class="col-actions">Ações</th>
                     </tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
         </details>
     </template>
-    
+
     <div id="save-notification" class="notification"></div>
     <div id="print-output" class="print-only"></div>
     <div id="obs-popover" class="obs-popover"></div>
-    
+
+    <script type="module" src="auth.js"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>
