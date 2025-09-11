@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
     async function initialize() {
         await checkUserRole();
-        await fetchData(); // Agora adaptado para buscar baseado no role
+        await fetchData(); // Busca dados baseado no role
         populatePriceTables();
         setupEventListeners();
         
@@ -62,29 +62,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (userRole === 'admin') {
             // Visão Admin (Completa)
             document.body.classList.remove('client-view');
-            adminLink.style.display = 'inline-block';
-            logoutBtn.style.display = 'inline-block';
-            loginLink.style.display = 'none';
-            mainTitle.textContent = 'Gerador de Propostas (Admin)';
+            if(adminLink) adminLink.style.display = 'inline-block';
+            if(logoutBtn) logoutBtn.style.display = 'inline-block';
+            if(loginLink) loginLink.style.display = 'none';
+            if(mainTitle) mainTitle.textContent = 'Gerador de Propostas (Admin)';
         } else {
             // Visão Cliente (Restrita)
             document.body.classList.add('client-view');
-            adminLink.style.display = 'none';
-            logoutBtn.style.display = 'none';
-            loginLink.style.display = 'inline-block';
-            mainTitle.textContent = 'Solicitação de Orçamento (Cliente)';
-            saveBtn.textContent = 'Enviar Solicitação';
+            if(adminLink) adminLink.style.display = 'none';
+            if(logoutBtn) logoutBtn.style.display = 'none';
+            if(loginLink) loginLink.style.display = 'inline-block';
+            if(mainTitle) mainTitle.textContent = 'Solicitação de Orçamento (Cliente)';
+            if(saveBtn) saveBtn.textContent = 'Enviar Solicitação';
             currentQuote.status = 'Solicitado'; // Muda o status padrão para cliente
         }
     }
 
-    // Função CORRIGIDA para respeitar as permissões (RLS)
+    // Função CORRIGIDA para respeitar as permissões (RLS) do banco de dados
     async function fetchData() {
         try {
             // 1. Sempre buscar o catálogo de serviços (Clientes e Admins precisam disso)
-            // A política RLS permite leitura pública desta tabela.
+            // A política RLS deve permitir leitura pública desta tabela.
             const servicesRes = await supabase.from('services').select('*').order('category').order('name');
+            
+            // Este é o erro que você está vendo (404 / PGRST205) - significa que a tabela 'services' não existe.
             if (servicesRes.error) throw servicesRes.error;
+            
             services = servicesRes.data;
 
             // 2. Buscar dados de preços APENAS se for Admin
@@ -109,12 +112,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
             // Mostra notificação de erro
-            showNotification("Erro ao carregar dados iniciais. Verifique a estrutura do banco.", true);
+            showNotification("Erro ao carregar dados iniciais. A estrutura do banco de dados pode estar ausente.", true);
         }
     }
 
     // =================================================================
-    // FUNÇÕES UTILITÁRIAS
+    // FUNÇÕES UTILITÁRIAS (setDirty, updateSaveButtonState, showNotification, formatCurrency)
+    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
     // =================================================================
     
     function setDirty(state) {
@@ -124,6 +128,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateSaveButtonState() {
         const saveBtn = document.getElementById('save-quote-btn');
+        if (!saveBtn) return;
+
         if (userRole === 'admin') {
             if (isDirty) {
                 saveBtn.classList.add('dirty');
@@ -133,16 +139,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 saveBtn.textContent = 'Salvo';
             }
         }
-        // Para cliente, o botão é sempre "Enviar Solicitação"
     }
 
     function showNotification(message, isError = false) {
         if (!notification) return;
         notification.textContent = message;
-        // Usa as variáveis CSS definidas no styles.css
         notification.style.backgroundColor = isError ? 'var(--danger-color, #dc3545)' : 'var(--success-color, #28a745)';
         notification.classList.add('show');
-        setTimeout(() => notification.classList.remove('show'), 3000);
+        setTimeout(() => notification.classList.remove('show'), 4000);
     }
 
     function formatCurrency(value) {
@@ -150,13 +154,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // GERENCIAMENTO DE DADOS DO CLIENTE E EVENTO
+    // GERENCIAMENTO DE DADOS DO CLIENTE E EVENTO (populatePriceTables, syncClientData, syncEventDates, addDateEntry, updateDateInputs)
+    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
     // =================================================================
 
     function populatePriceTables() {
         const select = document.getElementById('priceTableSelect');
+        if (!select) return;
         select.innerHTML = '<option value="">Selecione uma tabela</option>';
-        // Embora o cliente não veja este seletor, o admin precisa dele populado
         priceTables.forEach(table => {
             const option = document.createElement('option');
             option.value = table.id;
@@ -165,17 +170,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Funções syncClientData, syncEventDates, addDateEntry, updateDateInputs (Mantidas como na versão anterior)
-    // ... (Código omitido para brevidade, idêntico à resposta anterior) ...
     function syncClientData() {
-        currentQuote.client_name = document.getElementById('clientName').value;
-        currentQuote.client_cnpj = document.getElementById('clientCnpj').value;
-        currentQuote.client_email = document.getElementById('clientEmail').value;
-        currentQuote.client_phone = document.getElementById('clientPhone').value;
-        currentQuote.guest_count = parseInt(document.getElementById('guestCount').value) || 0;
-        // Apenas o admin define a tabela de preços no estado
+        currentQuote.client_name = document.getElementById('clientName')?.value || '';
+        currentQuote.client_cnpj = document.getElementById('clientCnpj')?.value || '';
+        currentQuote.client_email = document.getElementById('clientEmail')?.value || '';
+        currentQuote.client_phone = document.getElementById('clientPhone')?.value || '';
+        currentQuote.guest_count = parseInt(document.getElementById('guestCount')?.value) || 0;
+        
         if (userRole === 'admin') {
-            currentQuote.price_table_id = document.getElementById('priceTableSelect').value || null;
+            currentQuote.price_table_id = document.getElementById('priceTableSelect')?.value || null;
         }
         syncEventDates();
         setDirty(true);
@@ -183,6 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function syncEventDates() {
         const container = document.getElementById('event-dates-container');
+        if (!container) return;
         const entries = container.querySelectorAll('.date-entry');
         currentQuote.event_dates = [];
         entries.forEach(entry => {
@@ -197,6 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function addDateEntry(data = {}) {
         const container = document.getElementById('event-dates-container');
+        if (!container) return;
         const div = document.createElement('div');
         div.className = 'date-entry';
         div.innerHTML = `
@@ -219,9 +224,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-
     // =================================================================
-    // LÓGICA DE CÁLCULO DO ORÇAMENTO (Ajustada para Roles)
+    // LÓGICA DE CÁLCULO DO ORÇAMENTO (calculateQuote)
+    // (Omitida para brevidade, idêntica à fornecida na interação anterior)
     // =================================================================
 
     function calculateQuote() {
@@ -233,24 +238,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             const service = services.find(s => s.id === item.service_id);
             if (!service) return;
 
-            // 1. Determinar Preço Base (APENAS SE FOR ADMIN E UMA TABELA ESTIVER SELECIONADA)
+            // 1. Determinar Preço Base (APENAS ADMIN)
             let basePrice = 0;
             if (userRole === 'admin' && priceTableId) {
                 const priceRecord = servicePrices.find(p => p.service_id === item.service_id && p.price_table_id === priceTableId);
                 basePrice = priceRecord ? parseFloat(priceRecord.price) : 0;
             }
             
-            // 2. Ajustar Quantidade se for 'por_pessoa'
+            // 2. Ajustar Quantidade
             let quantity = item.quantity;
             if (service.unit === 'por_pessoa') {
                 quantity = guestCount;
-                item.quantity = quantity; // Atualiza o estado para refletir no UI
+                item.quantity = quantity;
             }
 
-            // 3. Calcular Custo do Item
+            // 3. Calcular Custo
             const cost = basePrice * quantity;
 
-            // 4. Aplicar Desconto (APENAS SE FOR ADMIN)
+            // 4. Aplicar Desconto (APENAS ADMIN)
             const discountRate = (userRole === 'admin' ? (parseFloat(item.discount_percent) || 0) : 0) / 100;
             const total = cost * (1 - discountRate);
 
@@ -259,7 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             subtotal += total;
         });
 
-        // Descontos e Consumação (APENAS SE FOR ADMIN)
+        // Descontos e Consumação (APENAS ADMIN)
         const discountGeneral = userRole === 'admin' ? (parseFloat(currentQuote.discount_general) || 0) : 0;
         
         let consumableCredit = 0;
@@ -274,11 +279,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // RENDERIZAÇÃO DO ORÇAMENTO
+    // RENDERIZAÇÃO DO ORÇAMENTO (renderQuote, renderCategories, renderItems, renderDateSelect, renderSummary)
+    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
     // =================================================================
 
-    // Funções de Renderização (renderQuote, renderCategories, renderItems, renderDateSelect, renderSummary)
-    // ... (Código omitido para brevidade, idêntico à resposta anterior) ...
     function renderQuote() {
         const calculation = calculateQuote();
         renderCategories(calculation);
@@ -287,10 +291,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderCategories(calculation) {
         const container = document.getElementById('quote-categories-container');
-        // Pega todas as categorias existentes no catálogo de serviços
+        if (!container) return;
+
         const categories = [...new Set(services.map(s => s.category))];
         
-        // Limpa categorias antigas que possam não existir mais no catálogo
         container.querySelectorAll('.category-accordion').forEach(accordion => {
             const categoryName = accordion.dataset.category;
             if (!categories.includes(categoryName)) {
@@ -300,7 +304,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         categories.forEach(category => {
             let accordion = container.querySelector(`details[data-category="${category}"]`);
-            // Cria o acordeão se ele ainda não existir na página
             if (!accordion) {
                 const template = document.getElementById('category-template').content.cloneNode(true);
                 accordion = template.querySelector('details');
@@ -309,7 +312,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 container.appendChild(accordion);
                 setupMultiselect(accordion, category);
             }
-            // Renderiza os itens dentro do acordeão
             renderItems(accordion, category);
         });
     }
@@ -317,7 +319,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderItems(accordion, category) {
         const tbody = accordion.querySelector('tbody');
         tbody.innerHTML = '';
-        // Filtra os itens do orçamento atual que pertencem a esta categoria
         const items = currentQuote.items.filter(item => {
             const service = services.find(s => s.id === item.service_id);
             return service && service.category === category;
@@ -330,8 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const isPerPerson = service.unit === 'por_pessoa';
 
-            // Renderiza a linha da tabela. As classes CSS (.col-xyz, .price-input) são usadas
-            // para controlar a visibilidade baseada no role (ver styles.css .client-view)
+            // Classes CSS controlam a visibilidade baseada no role (ver styles.css .client-view)
             row.innerHTML = `
                 <td class="col-item">${service.name}</td>
                 <td class="col-date">${renderDateSelect(item)}</td>
@@ -356,7 +356,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentQuote.event_dates.length === 0) return 'N/A';
         
         let options = currentQuote.event_dates.map(d => 
-            // Formata a data para exibição amigável (DD/MM/AAAA)
             `<option value="${d.date}" ${item.event_date === d.date ? 'selected' : ''}>${new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')}</option>`
         ).join('');
 
@@ -365,19 +364,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderSummary(calculation) {
         // Rodapé Fixo
-        document.getElementById('subtotalValue').textContent = formatCurrency(calculation.subtotal);
-        document.getElementById('consumableValue').textContent = formatCurrency(calculation.consumableCredit);
-        document.getElementById('discountValue').value = calculation.discountGeneral.toFixed(2);
-        document.getElementById('totalValue').textContent = formatCurrency(calculation.total);
+        if(document.getElementById('subtotalValue')) document.getElementById('subtotalValue').textContent = formatCurrency(calculation.subtotal);
+        if(document.getElementById('consumableValue')) document.getElementById('consumableValue').textContent = formatCurrency(calculation.consumableCredit);
+        if(document.getElementById('discountValue')) document.getElementById('discountValue').value = calculation.discountGeneral.toFixed(2);
+        if(document.getElementById('totalValue')) document.getElementById('totalValue').textContent = formatCurrency(calculation.total);
 
         // Card de Resumo Principal
-        document.getElementById('summary-subtotal-value').textContent = formatCurrency(calculation.subtotal);
-        document.getElementById('summary-consumable-value').textContent = formatCurrency(calculation.consumableCredit);
-        document.getElementById('summary-discount-value').textContent = formatCurrency(calculation.discountGeneral);
-        document.getElementById('summary-total-value').textContent = formatCurrency(calculation.total);
+        if(document.getElementById('summary-subtotal-value')) document.getElementById('summary-subtotal-value').textContent = formatCurrency(calculation.subtotal);
+        if(document.getElementById('summary-consumable-value')) document.getElementById('summary-consumable-value').textContent = formatCurrency(calculation.consumableCredit);
+        if(document.getElementById('summary-discount-value')) document.getElementById('summary-discount-value').textContent = formatCurrency(calculation.discountGeneral);
+        if(document.getElementById('summary-total-value')) document.getElementById('summary-total-value').textContent = formatCurrency(calculation.total);
 
         // Resumo por categoria no Card
         const categoryList = document.getElementById('summary-categories-list');
+        if (!categoryList) return;
+
         categoryList.innerHTML = '';
         const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
             const service = services.find(s => s.id === item.service_id);
@@ -400,13 +401,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-
     // =================================================================
-    // GERENCIAMENTO DE ITENS E MULTISELECT
+    // GERENCIAMENTO DE ITENS E MULTISELECT (setupMultiselect, addItemsToQuote, updateItem, removeItem, showObsPopover)
+    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
     // =================================================================
 
-    // Funções de gerenciamento de itens (setupMultiselect, addItemsToQuote, updateItem, removeItem, showObsPopover)
-    // ... (Código omitido para brevidade, idêntico à resposta anterior) ...
     function setupMultiselect(accordion, category) {
         const container = accordion.querySelector('.multiselect-container');
         const input = container.querySelector('.multiselect-input');
@@ -435,7 +434,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         input.addEventListener('click', (e) => {
             e.stopPropagation();
-            // Fecha outros dropdowns abertos
             document.querySelectorAll('.multiselect-container.open').forEach(c => c.classList.remove('open'));
             container.classList.add('open');
             renderList();
@@ -454,7 +452,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             search.value = '';
         });
 
-        // Impede que o clique no dropdown feche o acordeão ou o próprio dropdown
         dropdown.addEventListener('click', (e) => e.stopPropagation());
     }
 
@@ -464,18 +461,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Define a data padrão como a primeira data do evento
         const defaultDate = currentQuote.event_dates[0].date;
 
         serviceIds.forEach(serviceId => {
-            // Evita duplicatas na mesma data
             const existing = currentQuote.items.find(item => item.service_id === serviceId && item.event_date === defaultDate);
             if (existing) {
                 return;
             }
 
             const newItem = {
-                id: Date.now() + '-' + serviceId, // ID temporário local (importante para o React/DOM)
+                id: Date.now() + '-' + serviceId, // ID temporário local
                 service_id: serviceId,
                 quantity: 1,
                 discount_percent: 0,
@@ -509,6 +504,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function showObsPopover(button, itemId) {
         const popover = document.getElementById('obs-popover');
+        if (!popover) return;
+
         const item = currentQuote.items.find(i => i.id === itemId);
         if (!item) return;
 
@@ -517,11 +514,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             <button id="save-obs-btn" class="btn">Salvar Observação</button>
         `;
 
-        // Posicionamento básico do Popover
         const rect = button.getBoundingClientRect();
         popover.style.position = 'absolute';
         popover.style.top = `${window.scrollY + rect.top}px`;
-        popover.style.left = `${rect.left - 310}px`; // Posiciona à esquerda do botão
+        popover.style.left = `${rect.left - 310}px`;
         popover.classList.add('show');
 
         document.getElementById('save-obs-btn').onclick = () => {
@@ -531,11 +527,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-
     // =================================================================
-    // EVENT LISTENERS
+    // EVENT LISTENERS (setupEventListeners)
+    // (Omitida para brevidade, idêntica à fornecida na interação anterior)
     // =================================================================
-
+    
     function setupEventListeners() {
         // Sincronização de dados do cliente/evento
         document.querySelectorAll('#clientName, #clientCnpj, #clientEmail, #clientPhone').forEach(input => {
@@ -552,13 +548,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
         // Gerenciamento de datas
-        document.getElementById('add-date-btn').addEventListener('click', () => {
+        document.getElementById('add-date-btn')?.addEventListener('click', () => {
             addDateEntry();
             syncClientData();
             renderQuote();
         });
 
-        document.getElementById('event-dates-container').addEventListener('click', (e) => {
+        document.getElementById('event-dates-container')?.addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-date-btn')) {
                 e.target.closest('.date-entry').remove();
                 syncClientData();
@@ -566,8 +562,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Delegação de eventos para itens do orçamento (Inputs e Botões)
-        document.getElementById('quote-categories-container').addEventListener('change', (e) => {
+        // Delegação de eventos para itens do orçamento
+        document.getElementById('quote-categories-container')?.addEventListener('change', (e) => {
             const row = e.target.closest('tr');
             if (!row) return;
             const itemId = row.dataset.itemId;
@@ -575,11 +571,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (e.target.classList.contains('qty-input')) {
                 updateItem(itemId, 'quantity', e.target.value);
             } else if (e.target.classList.contains('discount-input')) {
-                 // Segurança extra: Apenas admins podem mudar o desconto
                  if (userRole === 'admin') {
                     updateItem(itemId, 'discount_percent', e.target.value);
                 } else {
-                    // Reseta o valor se o cliente tentar mudar (embora o input deva estar oculto pelo CSS)
                     e.target.value = 0;
                 }
             } else if (e.target.classList.contains('date-select')) {
@@ -587,17 +581,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        document.getElementById('quote-categories-container').addEventListener('click', (e) => {
+        document.getElementById('quote-categories-container')?.addEventListener('click', (e) => {
             const row = e.target.closest('tr');
             
-            // Gerencia cliques nos botões da linha
             if (row) {
                 const itemId = row.dataset.itemId;
                 if (e.target.classList.contains('remove-item-btn')) {
                     removeItem(itemId);
                     return;
                 } else if (e.target.classList.contains('obs-btn')) {
-                    e.stopPropagation(); // Impede que o clique feche o popover imediatamente
+                    e.stopPropagation();
                     showObsPopover(e.target, itemId);
                     return;
                 }
@@ -605,64 +598,59 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Desconto geral (Rodapé)
-        document.getElementById('discountValue').addEventListener('change', (e) => {
-             // Segurança extra: Apenas admins podem mudar o desconto geral
+        document.getElementById('discountValue')?.addEventListener('change', (e) => {
             if (userRole === 'admin') {
                 currentQuote.discount_general = parseFloat(e.target.value) || 0;
                 setDirty(true);
                 renderQuote();
             } else {
-                 // Reseta o valor se o cliente tentar mudar
                 e.target.value = 0;
             }
         });
 
         // Fechar popovers/dropdowns ao clicar fora (Global)
         document.addEventListener('click', (e) => {
-            // Fecha Multiselects
             document.querySelectorAll('.multiselect-container.open').forEach(container => {
                 if (!container.contains(e.target)) {
                     container.classList.remove('open');
                 }
             });
-            // Fecha Popover de Observações
             const popover = document.getElementById('obs-popover');
-            if (popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('obs-btn')) {
+            if (popover && popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('obs-btn')) {
                 popover.classList.remove('show');
             }
         });
 
         // Salvar orçamento
-        document.getElementById('save-quote-btn').addEventListener('click', saveQuote);
+        document.getElementById('save-quote-btn')?.addEventListener('click', saveQuote);
 
-        // Exportar PDF (Funcionalidade básica de impressão do navegador)
-        document.getElementById('print-btn').addEventListener('click', () => {
+        // Exportar PDF
+        document.getElementById('print-btn')?.addEventListener('click', () => {
              window.print();
         });
     }
 
+
     // =================================================================
-    // PERSISTÊNCIA (SALVAR E CARREGAR)
+    // PERSISTÊNCIA (SALVAR E CARREGAR) (saveQuote, loadQuote)
+    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
     // =================================================================
 
     async function saveQuote() {
-        syncClientData(); // Garante que os dados mais recentes do formulário estão no estado
+        syncClientData();
 
         if (currentQuote.items.length === 0) {
             showNotification("Adicione itens antes de salvar ou enviar.", true);
             return;
         }
 
-        // Prepara os dados base para salvamento
         const calculation = calculateQuote();
         const dataToSave = {
             ...currentQuote,
-            // Remove IDs temporários locais dos itens antes de salvar no banco
             items: currentQuote.items.map(item => {
                 const { id, ...rest } = item;
                 return rest;
             }),
-            // Salva os valores calculados
             total_value: calculation.total,
             subtotal_value: calculation.subtotal,
             consumable_credit_used: calculation.consumableCredit,
@@ -670,14 +658,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Lógica específica para Clientes
         if (userRole === 'client') {
-            // Clientes sempre criam um NOVO registro (INSERT)
             dataToSave.id = null; 
             dataToSave.status = 'Solicitado pelo Cliente';
             
-            // Segurança: Limpa informações de preço que o cliente não deve enviar
+            // Segurança: Limpa informações de preço
             dataToSave.price_table_id = null;
             dataToSave.discount_general = 0;
-            dataToSave.total_value = 0; // Valores serão calculados pelo Admin depois
+            dataToSave.total_value = 0;
             dataToSave.subtotal_value = 0;
             dataToSave.consumable_credit_used = 0;
             dataToSave.items.forEach(item => {
@@ -687,34 +674,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
         } else if (userRole === 'admin' && !isDirty) {
-            // Lógica para Admin: Só salva se houver mudanças (isDirty)
             return; 
         }
 
         try {
             let result;
             if (dataToSave.id) {
-                // Atualizar existente (UPDATE) - Apenas Admin pode chegar aqui com um ID
+                // UPDATE (Admin)
                 const { data, error } = await supabase.from('quotes').update(dataToSave).eq('id', dataToSave.id).select().single();
                 result = { data, error };
             } else {
-                // Inserir novo (INSERT) - Admin ou Cliente
+                // INSERT (Admin ou Cliente)
                 const { data, error } = await supabase.from('quotes').insert(dataToSave).select().single();
                 result = { data, error };
             }
 
             if (result.error) throw result.error;
 
-            // Atualiza o ID local com o ID retornado do banco de dados
             currentQuote.id = result.data.id;
             
             if (userRole === 'client') {
                 showNotification('Solicitação enviada com sucesso! Entraremos em contato.');
-                // Opcional: Limpar o formulário do cliente após o envio
             } else {
                 showNotification('Orçamento salvo com sucesso!');
                 setDirty(false);
-                // Atualiza a URL se for um novo orçamento (Admin)
                 if (window.location.search.indexOf('quote_id') === -1) {
                     window.history.pushState({}, '', `?quote_id=${currentQuote.id}`);
                 }
@@ -727,10 +710,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function loadQuote(id) {
-        // Segurança: Clientes não devem poder carregar orçamentos existentes pelo ID
+        // Segurança: Clientes não podem carregar orçamentos
         if (userRole === 'client') {
-            console.warn("Clientes não podem carregar orçamentos por ID. Iniciando novo orçamento.");
-            window.history.pushState({}, '', window.location.pathname); // Limpa o ID da URL
+            console.warn("Clientes não podem carregar orçamentos por ID.");
+            window.history.pushState({}, '', window.location.pathname);
             return;
         }
 
@@ -738,39 +721,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data, error } = await supabase.from('quotes').select('*').eq('id', id).single();
             if (error) throw error;
 
-            // Adapta os dados carregados do banco para o estado local da aplicação
             currentQuote = {
                 ...data,
-                // Gera IDs temporários locais para os itens carregados (necessário para o DOM)
                 items: (data.items || []).map((item, index) => ({
                     ...item,
                     id: `loaded-${index}-${item.service_id || index}`
                 })),
                 event_dates: data.event_dates || [],
-                // Garante que os campos numéricos sejam carregados corretamente
                 discount_general: parseFloat(data.discount_general) || 0,
                 guest_count: parseInt(data.guest_count) || 100,
             };
 
-            // Popula o UI com os dados carregados
-            document.getElementById('clientName').value = currentQuote.client_name || '';
-            document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
-            document.getElementById('clientEmail').value = currentQuote.client_email || '';
-            document.getElementById('clientPhone').value = currentQuote.client_phone || '';
-            document.getElementById('guestCount').value = currentQuote.guest_count;
-            document.getElementById('priceTableSelect').value = currentQuote.price_table_id || '';
+            // Popula o UI
+            if(document.getElementById('clientName')) document.getElementById('clientName').value = currentQuote.client_name || '';
+            if(document.getElementById('clientCnpj')) document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
+            if(document.getElementById('clientEmail')) document.getElementById('clientEmail').value = currentQuote.client_email || '';
+            if(document.getElementById('clientPhone')) document.getElementById('clientPhone').value = currentQuote.client_phone || '';
+            if(document.getElementById('guestCount')) document.getElementById('guestCount').value = currentQuote.guest_count;
+            if(document.getElementById('priceTableSelect')) document.getElementById('priceTableSelect').value = currentQuote.price_table_id || '';
 
             // Popula as datas
             const datesContainer = document.getElementById('event-dates-container');
-            datesContainer.innerHTML = '';
-            if (currentQuote.event_dates.length > 0) {
-                currentQuote.event_dates.forEach(dateData => addDateEntry(dateData));
+            if (datesContainer) {
+                datesContainer.innerHTML = '';
+                if (currentQuote.event_dates.length > 0) {
+                    currentQuote.event_dates.forEach(dateData => addDateEntry(dateData));
+                }
             }
             
         } catch (error) {
             console.error("Erro ao carregar orçamento:", error);
             showNotification(`Erro ao carregar orçamento ID ${id}. Iniciando novo.`, true);
-            // Limpa a URL se o carregamento falhar
             window.history.pushState({}, '', window.location.pathname);
         }
     }
