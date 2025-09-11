@@ -78,20 +78,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Função CORRIGIDA para respeitar as permissões (RLS) do banco de dados
+    // Função que busca os dados respeitando as permissões (RLS) do banco de dados
     async function fetchData() {
         try {
             // 1. Sempre buscar o catálogo de serviços (Clientes e Admins precisam disso)
-            // A política RLS deve permitir leitura pública desta tabela.
             const servicesRes = await supabase.from('services').select('*').order('category').order('name');
             
-            // Este é o erro que você está vendo (404 / PGRST205) - significa que a tabela 'services' não existe.
             if (servicesRes.error) throw servicesRes.error;
             
             services = servicesRes.data;
 
             // 2. Buscar dados de preços APENAS se for Admin
-            // Clientes não têm permissão (RLS) para ler price_tables ou service_prices.
             if (userRole === 'admin') {
                 const [tablesRes, pricesRes] = await Promise.all([
                     supabase.from('price_tables').select('*').order('name'),
@@ -112,13 +109,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
             // Mostra notificação de erro
-            showNotification("Erro ao carregar dados iniciais. A estrutura do banco de dados pode estar ausente.", true);
+            showNotification("Erro ao carregar dados iniciais. Verifique a conexão e as permissões.", true);
         }
     }
 
     // =================================================================
-    // FUNÇÕES UTILITÁRIAS (setDirty, updateSaveButtonState, showNotification, formatCurrency)
-    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
+    // FUNÇÕES UTILITÁRIAS
     // =================================================================
     
     function setDirty(state) {
@@ -154,8 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // GERENCIAMENTO DE DADOS DO CLIENTE E EVENTO (populatePriceTables, syncClientData, syncEventDates, addDateEntry, updateDateInputs)
-    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
+    // GERENCIAMENTO DE DADOS DO CLIENTE E EVENTO
     // =================================================================
 
     function populatePriceTables() {
@@ -225,8 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // LÓGICA DE CÁLCULO DO ORÇAMENTO (calculateQuote)
-    // (Omitida para brevidade, idêntica à fornecida na interação anterior)
+    // LÓGICA DE CÁLCULO DO ORÇAMENTO
     // =================================================================
 
     function calculateQuote() {
@@ -279,8 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // RENDERIZAÇÃO DO ORÇAMENTO (renderQuote, renderCategories, renderItems, renderDateSelect, renderSummary)
-    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
+    // RENDERIZAÇÃO DO ORÇAMENTO
     // =================================================================
 
     function renderQuote() {
@@ -402,8 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // GERENCIAMENTO DE ITENS E MULTISELECT (setupMultiselect, addItemsToQuote, updateItem, removeItem, showObsPopover)
-    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
+    // GERENCIAMENTO DE ITENS E MULTISELECT
     // =================================================================
 
     function setupMultiselect(accordion, category) {
@@ -517,7 +509,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rect = button.getBoundingClientRect();
         popover.style.position = 'absolute';
         popover.style.top = `${window.scrollY + rect.top}px`;
-        popover.style.left = `${rect.left - 310}px`;
+        // Ajuste básico para tentar manter o popover na tela
+        if (rect.left < 310) {
+             popover.style.left = `${rect.right + 10}px`;
+        } else {
+             popover.style.left = `${rect.left - 310}px`;
+        }
+       
         popover.classList.add('show');
 
         document.getElementById('save-obs-btn').onclick = () => {
@@ -528,8 +526,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // EVENT LISTENERS (setupEventListeners)
-    // (Omitida para brevidade, idêntica à fornecida na interação anterior)
+    // EVENT LISTENERS
     // =================================================================
     
     function setupEventListeners() {
@@ -632,8 +629,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // =================================================================
-    // PERSISTÊNCIA (SALVAR E CARREGAR) (saveQuote, loadQuote)
-    // (Omitidas para brevidade, são idênticas às fornecidas na interação anterior)
+    // PERSISTÊNCIA (SALVAR E CARREGAR)
     // =================================================================
 
     async function saveQuote() {
