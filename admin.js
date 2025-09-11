@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderAll();
         } catch (error) {
             console.error("Erro ao carregar dados:", error.message);
-            showNotification("Erro ao carregar dados. Verifique se as tabelas existem no banco de dados.", true);
+            showNotification("Erro ao carregar dados. Verifique a conexão e as permissões.", true);
         }
     }
 
@@ -110,11 +110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         quotes.forEach(quote => {
             const row = document.createElement('tr');
             const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
-            //const totalValue = quote.total_value || 0;
-            //const formattedTotal = parseFloat(totalValue).toFixed(2).replace('.', ',');
-
-            // O HTML original do admin.html fornecido no início não tinha a coluna de Valor Total no THEAD.
-            // Se você adicionou essa coluna no HTML, descomente as linhas acima e adicione o TD abaixo.
+            // Nota: O admin.html original não tinha coluna de valor total no THEAD. 
+            // Se você quiser mostrar o valor, precisará adicionar a coluna no HTML.
             row.innerHTML = `
                 <td>${quote.client_name || 'Rascunho sem nome'}</td>
                 <td>${createdAt}</td>
