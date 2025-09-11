@@ -1,10 +1,9 @@
 // Importando o Supabase SDK diretamente do CDN via ESM
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Credenciais fornecidas.
-const SUPABASE_URL = "https://msmyfxgrnuusnvoqyeuo.supabase.co";
-// Use a sua chave ANNON real aqui.
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbXlmeGdybnV1c252b3F5ZXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2NTYzMTEsImV4cCI6MjA3MjIzMjMxMX0.21NV7RdrdXLqA9-PIG9TP2aZMgIseW7_qM1LDZzkO7U";
+// Novas Credenciais Fornecidas
+const SUPABASE_URL = "https://wadbknlbrzixuadpuuoz.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhZGJrbmxicnppeHVhZHB1dW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNDk3OTgsImV4cCI6MjA3MjkyNTc5OH0.KUu1jUgbhJxUuiZjJmeSViLbf73oNVqhVr7QMj6TPos";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
