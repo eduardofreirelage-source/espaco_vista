@@ -72,7 +72,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (quotesTbody) renderQuotesTable();
     }
 
-    // Funções de Renderização (Mantidas do original, com pequenas adaptações para total_value)
     function renderServicesTable() {
         servicesTbody.innerHTML = '';
         services.forEach(service => {
@@ -111,14 +110,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         quotes.forEach(quote => {
             const row = document.createElement('tr');
             const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
-            const totalValue = quote.total_value || 0;
-            const formattedTotal = parseFloat(totalValue).toFixed(2).replace('.', ',');
+            //const totalValue = quote.total_value || 0;
+            //const formattedTotal = parseFloat(totalValue).toFixed(2).replace('.', ',');
 
-            // Ajuste no TH do admin.html pode ser necessário para acomodar o Valor Total se não estiver presente.
+            // O HTML original do admin.html fornecido no início não tinha a coluna de Valor Total no THEAD.
+            // Se você adicionou essa coluna no HTML, descomente as linhas acima e adicione o TD abaixo.
             row.innerHTML = `
                 <td>${quote.client_name || 'Rascunho sem nome'}</td>
                 <td>${createdAt}</td>
-                <td>R$ ${formattedTotal}</td> 
                 <td><span class="status">${quote.status}</span></td>
                 <td class="actions">
                     <a href="index.html?quote_id=${quote.id}" class="btn">Carregar</a>
@@ -129,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- LÓGICA DO MODAL E EVENT LISTENERS (Mantidos do original) ---
+    // --- LÓGICA DO MODAL E EVENT LISTENERS ---
     function openEditPricesModal(serviceId) {
         const service = services.find(s => s.id === serviceId);
         if (!service) return;
@@ -189,11 +188,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const closeButton = editPricesModal.querySelector('.close-button');
         if (closeButton) closeButton.onclick = () => editPricesModal.style.display = 'none';
-        window.onclick = (event) => {
+        
+        // Fecha o modal se clicar fora dele
+        window.addEventListener('click', (event) => {
             if (event.target == editPricesModal) {
                 editPricesModal.style.display = "none";
             }
-        }
+        });
 
         const savePricesButton = document.getElementById('savePricesButton');
         if (savePricesButton) savePricesButton.addEventListener('click', async (e) => {
@@ -206,6 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 price: parseFloat(input.value) || 0
             }));
             
+            // Upsert atualiza se existir, insere se não existir
             const { error } = await supabase.from('service_prices').upsert(recordsToUpsert);
             if (error) {
                 showNotification(`Erro ao salvar preços: ${error.message}`, true);
@@ -243,7 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Usa as variáveis CSS definidas no admin.css
         notification.style.backgroundColor = isError ? 'var(--danger-color, #dc3545)' : 'var(--success-color, #28a745)';
         notification.classList.add('show');
-        setTimeout(() => notification.classList.remove('show'), 3000);
+        setTimeout(() => notification.classList.remove('show'), 5000);
     }
 
     initialize();
