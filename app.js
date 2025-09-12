@@ -2,7 +2,7 @@ import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
-    // ESTADO GLOBAL E CONFIGURAÇÃO
+    // ESTADO GLOBAL E CONFIGURAÇÃO (Permanece igual)
     // =================================================================
     let services = [];
     let priceTables = [];
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const catalogModal = document.getElementById('catalogModal');
 
     // =================================================================
-    // INICIALIZAÇÃO
+    // INICIALIZAÇÃO (Permanece igual)
     // =================================================================
     async function initialize() {
         await checkUserRole();
@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const urlParams = new URLSearchParams(window.location.search);
         const quoteId = urlParams.get('quote_id');
-        // (NOVO) Checa o parâmetro de impressão automática
         const autoPrint = urlParams.get('print') === 'true';
 
         if (quoteId) {
@@ -51,27 +50,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderQuote();
         setDirty(false);
 
-        // (NOVO) Lida com a impressão automática
         if (autoPrint) {
             if (userRole === 'admin') {
-                // Remove o parâmetro 'print' da URL para evitar loop de impressão ao recarregar a aba
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.delete('print');
                 window.history.replaceState({}, document.title, newUrl);
 
-                // Aguarda um breve momento para garantir que tudo (incluindo a saída de impressão) esteja renderizado
                 setTimeout(() => {
                     window.print();
                 }, 500);
             } else {
-                // Se um cliente acessar essa URL, remove o parâmetro de impressão
                 console.warn("Acesso de impressão negado para clientes.");
                  window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
     }
 
-    // (Funções checkUserRole e fetchData permanecem idênticas)
+    // (Funções checkUserRole, fetchData, FUNÇÕES UTILITÁRIAS, GERENCIAMENTO DE DADOS DO CLIENTE E EVENTO, LÓGICA DE CÁLCULO DO ORÇAMENTO permanecem idênticas)
+    // ... (Omitido para brevidade, pois não foram alteradas) ...
     async function checkUserRole() {
         const { role } = await getSession();
         userRole = role;
@@ -123,11 +119,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             showNotification("Erro ao carregar dados iniciais.", true);
         }
     }
-
-    // =================================================================
-    // FUNÇÕES UTILITÁRIAS (Idênticas)
-    // (setDirty, updateSaveButtonState, showNotification, formatCurrency)
-    // =================================================================
     
     function setDirty(state) {
         isDirty = state;
@@ -159,11 +150,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     function formatCurrency(value) {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
     }
-
-    // =================================================================
-    // GERENCIAMENTO DE DADOS DO CLIENTE E EVENTO (Idênticas)
-    // (populatePriceTables, syncClientData, syncEventDates, addDateEntry, updateDateInputs)
-    // =================================================================
     
     function populatePriceTables() {
         const select = document.getElementById('priceTableSelect');
@@ -230,10 +216,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         });
     }
-
-    // =================================================================
-    // LÓGICA DE CÁLCULO DO ORÇAMENTO (Idêntica)
-    // =================================================================
     
     function calculateQuote() {
         let subtotal = 0;
@@ -283,24 +265,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // RENDERIZAÇÃO DO ORÇAMENTO
     // =================================================================
 
-    // (MODIFICADO) Agora também chama a geração do PDF
+    // (renderQuote permanece igual)
     function renderQuote() {
         const calculation = calculateQuote();
         renderCategories(calculation);
         renderSummary(calculation);
 
-        // (NOVO) Gera a saída de impressão (apenas se for admin)
         if (userRole === 'admin') {
             generatePrintOutput(calculation);
         }
 
-        // Se o modal estiver aberto, atualiza o estado dos botões nele
         if (catalogModal.style.display === 'block') {
             updateCatalogButtonsState();
         }
     }
 
-    // (renderCategories, renderItems, renderDateSelect, renderSummary permanecem idênticas)
+    // (MODIFICADO) Lógica ajustada para garantir a remoção correta de categorias vazias
     function renderCategories(calculation) {
         const container = document.getElementById('quote-categories-container');
         if (!container) return;
@@ -315,7 +295,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.querySelectorAll('.category-accordion').forEach(accordion => {
             const categoryName = accordion.dataset.category;
             if (!categoriesInQuote.includes(categoryName)) {
-                accordion.remove();
+                 // Verificação extra caso o serviço tenha mudado de categoria no admin panel
+                const itemsStillExist = currentQuote.items.some(item => {
+                    const service = services.find(s => s.id === item.service_id);
+                    return service && service.category === categoryName;
+                });
+                if (!itemsStillExist) {
+                   accordion.remove();
+                }
             }
         });
 
@@ -338,21 +325,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // (MODIFICADO) Adicionado botão de duplicar (⧉) e lógica para manter a ordem correta
     function renderItems(accordion, category) {
         const tbody = accordion.querySelector('tbody');
         tbody.innerHTML = '';
-        const items = currentQuote.items.filter(item => {
+
+        // Para garantir que a ordem de duplicação seja respeitada, iteramos sobre a lista global
+        // mas apenas renderizamos os itens que pertencem a esta categoria.
+
+        // 1. Identificar os IDs dos itens nesta categoria
+        const itemIdsInCategory = currentQuote.items.filter(item => {
             const service = services.find(s => s.id === item.service_id);
             return service && service.category === category;
-        });
+        }).map(item => item.id);
 
-        items.forEach(item => {
+        // 2. Iterar sobre a lista global e renderizar se estiver na categoria
+        currentQuote.items.forEach(item => {
+            if (!itemIdsInCategory.includes(item.id)) return;
+
             const service = services.find(s => s.id === item.service_id);
+            if (!service) return; // Segurança extra
+
             const row = document.createElement('tr');
             row.dataset.itemId = item.id;
 
             const isPerPerson = service.unit === 'por_pessoa';
 
+            // Adicionado o botão duplicate-item-btn
             row.innerHTML = `
                 <td class="col-item">${service.name}</td>
                 <td class="col-date">${renderDateSelect(item)}</td>
@@ -365,14 +364,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </td>
                 <td class="col-total-price price">${formatCurrency(item.calculated_total)}</td>
                 <td class="col-actions item-actions">
+                    <button class="btn-icon duplicate-item-btn" title="Duplicar Item">⧉</button>
                     <button class="btn-icon obs-btn" title="Observações">${item.observations ? '📝' : '📄'}</button>
-                    <button class="btn-icon remove-item-btn">&times;</button>
+                    <button class="btn-icon remove-item-btn" title="Remover Item">&times;</button>
                 </td>
             `;
             tbody.appendChild(row);
         });
     }
 
+    // (renderDateSelect, renderSummary permanecem idênticas)
+    // ... (Omitido para brevidade) ...
     function renderDateSelect(item) {
         if (currentQuote.event_dates.length === 0) return 'N/A';
         
@@ -421,14 +423,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // (NOVO) LÓGICA DE GERAÇÃO DO PDF (IMPRESSÃO)
+    // LÓGICA DE GERAÇÃO DO PDF (IMPRESSÃO)
     // =================================================================
 
+    // (MODIFICADO) Garante que a ordem dos itens no PDF respeite a ordem da lista global
     function generatePrintOutput(calculation) {
         const printOutput = document.getElementById('print-output');
         if (!printOutput) return;
 
-        // Cabeçalho
+        // Cabeçalho e Informações do Cliente (Permanece igual)
         let html = `
             <div class="print-header">
                 <h1>Proposta Comercial</h1>
@@ -436,8 +439,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
-        // Informações do Cliente e Evento
-        // Usamos 'T12:00:00' para garantir a consistência do fuso horário ao formatar datas
         html += `
             <div class="print-client-info">
                 <p><strong>Cliente:</strong> ${currentQuote.client_name || 'N/A'}</p>
@@ -471,13 +472,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <tbody>
             `;
 
-            const items = currentQuote.items.filter(item => {
+            // (MODIFICADO) Usamos a mesma lógica de iteração do renderItems para manter a ordem correta no PDF
+            const itemIdsInCategory = currentQuote.items.filter(item => {
                 const service = services.find(s => s.id === item.service_id);
                 return service && service.category === category;
-            });
+            }).map(item => item.id);
 
-            items.forEach(item => {
+
+            currentQuote.items.forEach(item => {
+                if (!itemIdsInCategory.includes(item.id)) return;
+                
                 const service = services.find(s => s.id === item.service_id);
+                if (!service) return;
+
                 const formattedDate = item.event_date ? new Date(item.event_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/A';
                 
                 // Inclui observações se existirem
@@ -499,7 +506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             html += `</tbody></table>`;
         });
 
-        // Resumo Financeiro
+        // Resumo Financeiro (Permanece igual)
         html += `
             <div class="print-summary">
                 <table>
@@ -529,9 +536,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // =================================================================
     // LÓGICA DO MODAL DE CATÁLOGO (Permanece igual)
-    // (openCatalogModal, closeCatalogModal, renderCatalog, renderCatalogCategories, renderCatalogItems, updateCatalogButtonsState)
-    // =================================================================
-
+    // ... (Omitido para brevidade) ...
     let activeCategory = 'Todos';
     let searchQuery = '';
 
@@ -591,6 +596,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const defaultDate = currentQuote.event_dates[0]?.date;
 
         container.innerHTML = filteredServices.map(service => {
+            // Verifica se o item já foi adicionado na data padrão.
+            // Nota: Com a duplicação, um serviço pode estar várias vezes no orçamento.
             const isAdded = currentQuote.items.some(item => item.service_id === service.id && item.event_date === defaultDate);
 
             return `
@@ -627,10 +634,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // GERENCIAMENTO DE ITENS (Permanece igual)
-    // (addItemsToQuote, updateItem, removeItem, showObsPopover)
+    // GERENCIAMENTO DE ITENS
     // =================================================================
 
+    // (addItemsToQuote, updateItem, removeItem, showObsPopover permanecem iguais)
+    // ... (Omitido para brevidade) ...
     function addItemsToQuote(serviceId) {
         
         if (currentQuote.event_dates.length === 0) return;
@@ -654,7 +662,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentQuote.items.push(newItem);
         
         setDirty(true);
-        renderQuote(); // Isso também atualizará o botão no modal via updateCatalogButtonsState
+        renderQuote();
     }
 
     function updateItem(itemId, field, value) {
@@ -710,12 +718,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
+    // (NOVO) Função para duplicar um item
+    function duplicateItem(itemId) {
+        const originalItemIndex = currentQuote.items.findIndex(i => i.id === itemId);
+        if (originalItemIndex === -1) return;
+
+        const originalItem = currentQuote.items[originalItemIndex];
+        
+        // Cria uma cópia profunda do item
+        const duplicatedItem = JSON.parse(JSON.stringify(originalItem));
+        
+        // Atribui um novo ID temporário único
+        duplicatedItem.id = Date.now() + '-dup-' + (originalItem.service_id || originalItemIndex);
+        
+        // Insere o item duplicado logo após o original na lista global
+        currentQuote.items.splice(originalItemIndex + 1, 0, duplicatedItem);
+
+        setDirty(true);
+        renderQuote();
+    }
+
+
+
     // =================================================================
     // EVENT LISTENERS
     // =================================================================
     
     function setupEventListeners() {
-        // Listeners de Formulário (Idênticos)
+        // (Listeners de Formulário, Gerenciamento de datas, Delegação de eventos (CHANGE) - Idênticos)
+        // ... (Omitido para brevidade) ...
          document.querySelectorAll('#clientName, #clientCnpj, #clientEmail, #clientPhone').forEach(input => {
             input.addEventListener('change', syncClientData);
         });
@@ -727,7 +758,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
-        // Gerenciamento de datas (Idênticos)
         document.getElementById('add-date-btn')?.addEventListener('click', () => {
             addDateEntry();
             syncClientData();
@@ -742,7 +772,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Delegação de eventos para itens do orçamento (Idênticos)
         document.getElementById('quote-categories-container')?.addEventListener('change', (e) => {
             const row = e.target.closest('tr');
             if (!row) return;
@@ -761,11 +790,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // (MODIFICADO) Adicionado listener para o botão de duplicar
         document.getElementById('quote-categories-container')?.addEventListener('click', (e) => {
             const row = e.target.closest('tr');
             
             if (row) {
                 const itemId = row.dataset.itemId;
+
+                // (NOVO) Duplicar Item
+                if (e.target.classList.contains('duplicate-item-btn')) {
+                    duplicateItem(itemId);
+                    return;
+                }
+                
                 if (e.target.classList.contains('remove-item-btn')) {
                     removeItem(itemId);
                     return;
@@ -777,7 +814,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Desconto geral (Rodapé) (Idêntico)
+        // (Desconto geral, Listeners Globais, Salvar e Imprimir, Listeners do Catálogo Modal - Idênticos)
+        // ... (Omitido para brevidade) ...
         document.getElementById('discountValue')?.addEventListener('change', (e) => {
             if (userRole === 'admin') {
                 currentQuote.discount_general = parseFloat(e.target.value) || 0;
@@ -788,7 +826,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Listeners Globais (Ajustado para remover Multiselect)
         document.addEventListener('click', (e) => {
             // Fecha Popover de Observações
             const popover = document.getElementById('obs-popover');
@@ -797,27 +834,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Salvar e Imprimir (Atualizado para garantir que apenas admin imprima)
         document.getElementById('save-quote-btn')?.addEventListener('click', saveQuote);
         document.getElementById('print-btn')?.addEventListener('click', () => {
-             // Apenas admins devem conseguir imprimir (a visão do cliente esconde o botão, mas isso é uma segurança extra)
              if (userRole === 'admin') {
                  window.print();
              }
         });
 
-        // Listeners do Catálogo Modal (Idênticos)
         document.getElementById('open-catalog-btn')?.addEventListener('click', openCatalogModal);
         document.getElementById('close-catalog-btn')?.addEventListener('click', closeCatalogModal);
         
-        // Fechar modal ao clicar fora
         window.addEventListener('click', (event) => {
             if (event.target == catalogModal) {
                 closeCatalogModal();
             }
         });
 
-        // Busca no Catálogo (com debounce simples)
         let searchTimeout;
         document.getElementById('catalog-search')?.addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
@@ -827,7 +859,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 300);
         });
 
-        // Troca de Abas de Categoria
         document.getElementById('catalog-categories')?.addEventListener('click', (e) => {
             const tab = e.target.closest('.catalog-category-tab');
             if (tab) {
@@ -836,7 +867,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Adicionar Item do Catálogo
         document.getElementById('catalog-items')?.addEventListener('click', (e) => {
             const button = e.target.closest('.btn-add-item');
             if (button && !button.disabled) {
@@ -848,9 +878,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // =================================================================
-    // PERSISTÊNCIA (SALVAR E CARREGAR) (Idênticas)
+    // PERSISTÊNCIA (SALVAR E CARREGAR)
     // =================================================================
     
+    // (MODIFICADO) Ajustado para lidar corretamente com os IDs temporários após o salvamento
     async function saveQuote() {
         syncClientData();
 
@@ -866,6 +897,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dataToSave = {
             ...currentQuote,
             items: currentQuote.items.map(item => {
+                // Remove o ID temporário antes de salvar
                 const { id, ...rest } = item;
                 return rest;
             }),
@@ -907,7 +939,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (result.error) throw result.error;
 
+            // (MODIFICADO) Após salvar, precisamos recarregar os dados para sincronizar os IDs temporários com o estado salvo.
             currentQuote.id = result.data.id;
+            // Atualiza o estado local com os dados retornados do banco (principalmente os itens)
+             currentQuote.items = (result.data.items || []).map((item, index) => ({
+                ...item,
+                // Gera novos IDs temporários baseados nos dados salvos
+                id: `saved-${currentQuote.id}-${index}-${item.service_id || index}`
+            }));
             
             if (userRole === 'client') {
                 showNotification('Solicitação enviada com sucesso! Entraremos em contato.');
@@ -921,6 +960,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                      window.history.pushState({}, '', newUrl);
                 }
             }
+            
+            // Re-renderiza para atualizar os IDs nos elementos do DOM
+            renderQuote();
 
         } catch (error) {
             console.error("Erro ao salvar orçamento:", error);
@@ -928,6 +970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // (MODIFICADO) Ajustado para gerar IDs temporários consistentes ao carregar
     async function loadQuote(id) {
         if (userRole === 'client') {
             console.warn("Clientes não podem carregar orçamentos por ID.");
@@ -943,7 +986,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ...data,
                 items: (data.items || []).map((item, index) => ({
                     ...item,
-                    id: `loaded-${index}-${item.service_id || index}`
+                    // Gera IDs temporários ao carregar
+                    id: `loaded-${id}-${index}-${item.service_id || index}`
                 })),
                 event_dates: data.event_dates || [],
                 discount_general: parseFloat(data.discount_general) || 0,
