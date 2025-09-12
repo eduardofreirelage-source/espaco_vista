@@ -1,84 +1,68 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-:root { --primary-color: #8B0000; --secondary-color: #f8f8f8; --text-color: #2c2c2c; --border-color: #e5e5e5; --card-bg: #ffffff; --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1); --success-color: #28a745; --danger-color: #dc3545; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background-color: var(--secondary-color); color: var(--text-color); font-size: 14px; }
-/* Aumentado o container para melhor visualização da tabela expandida */
-.container { max-width: 1600px; margin: 1.5rem auto; padding: 1rem; }
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
-h1 { color: var(--text-color); font-size: 1.3rem; font-weight: 600; }
-h2 { color: var(--primary-color); font-size: 1.1rem; padding: 1.2rem 1.5rem; margin: 0; border-bottom: 1px solid var(--border-color); }
-h3 { margin-top: 1rem; margin-bottom: 1rem; }
-.card { background: var(--card-bg); border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 2rem; }
-.card-content { padding: 1.5rem; }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - Sistema de Orçamentos</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Painel de Administração</h1>
+            <div class="header-actions">
+                <a href="index.html" class="btn">← Voltar para Orçamentos</a>
+                <button id="logout-btn" class="btn" style="background-color: #6c757d;">Sair (Logout)</button>
+            </div>
+        </header>
 
-/* Estilos .admin-grid foram removidos. */
+        <main>
+            <section class="card">
+                <h2>Orçamentos Salvos</h2>
+                <div class="card-content" id="quotes-list-container">
+                    <table id="quotes-table">
+                        <thead><tr><th>Cliente</th><th>Data de Criação</th><th>Status</th><th>Ações</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
 
-/* NOVO: Wrapper para rolagem horizontal */
-.table-container {
-    overflow-x: auto;
-}
+            <section class="card">
+                    <h2>Catálogo de Serviços</h2>
+                    <div class="card-content table-container">
+                        <table id="services-table" class="editable-table">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                        <form id="addServiceForm" class="inline-form">
+                            <input type="text" id="serviceName" placeholder="Nome do novo serviço" required>
+                            <select id="serviceCategory" required><option value="" disabled selected>Categoria</option><option>Espaço</option><option>Gastronomia</option><option>Equipamentos</option><option>Serviços / Outros</option></select>
+                            <select id="serviceUnit" required><option value="" disabled selected>Unidade</option><option>unidade</option><option>diaria</option><option>por_pessoa</option></select>
+                            <button type="submit" class="btn">Adicionar Serviço</button>
+                        </form>
+                    </div>
+                </section>
 
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-tr:last-child td { border-bottom: none; }
-/* Adicionado white-space: nowrap; para evitar quebra de linha no cabeçalho */
-th { font-weight: 500; font-size: 0.75rem; text-transform: uppercase; color: #666; white-space: nowrap; }
-tr:nth-child(even) { background-color: #fafafa; }
-input, select { width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; }
+                <section class="card">
+                    <h2>Listas de Preços</h2>
+                    <div class="card-content">
+                        <table id="price-tables-list" class="editable-table">
+                            <thead><tr><th>Nome da Lista</th><th>Consumação (R$)</th><th>Ações</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <form id="addPriceTableForm" class="inline-form">
+                            <input type="text" id="tableName" placeholder="Nome da nova lista" required>
+                            <input type="number" id="tableConsumable" placeholder="Valor consumação" step="0.01" min="0" required>
+                            <button type="submit" class="btn">Adicionar</button>
+                        </form>
+                    </div>
+                </section>
 
-/* NOVO: Estilos para a tabela de serviços editável */
-.editable-table th, .editable-table td {
-    padding: 0.5rem; /* Padding mais justo para a visualização em matriz */
-}
-.editable-table input, .editable-table select {
-    padding: 0.5rem;
-    margin: -0.5rem; /* Alinha o input perfeitamente dentro da célula */
-    border: 1px solid transparent; /* Esconde a borda até focar */
-    background-color: inherit; /* Combina com o fundo da linha (incluindo linhas pares) */
-    border-radius: 4px;
-    transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
-}
+        </main>
+    </div>
 
-/* Feedback visual ao passar o mouse na linha */
-.editable-table tr:hover input,
-.editable-table tr:hover select {
-    border-color: #eee;
-}
-
-.editable-table input:focus, .editable-table select:focus {
-    border-color: var(--primary-color);
-    background-color: white;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2);
-}
-.price-column {
-    text-align: right; /* Alinha colunas de preço à direita */
-}
-.price-column input {
-    text-align: right; /* Alinha texto do input à direita */
-}
-
-/* NOVO: Animação de flash de sucesso para inputs */
-@keyframes success-flash-anim {
-    0% { background-color: inherit; }
-    50% { background-color: rgba(40, 167, 69, 0.2); } /* success-color com transparência */
-    100% { background-color: inherit; }
-}
-.success-flash {
-    /* Importante usar inherit no background-color para a animação funcionar corretamente em linhas pares */
-    animation: success-flash-anim 1.5s ease-out;
-}
-
-
-.inline-form { border-top: 1px solid var(--border-color); margin-top: 1rem; padding-top: 1rem; display: flex; gap: 1rem; align-items: flex-end; }
-.inline-form input, .inline-form select { flex-grow: 1; }
-.actions { text-align: right; white-space: nowrap; }
-.btn { padding: 0.6rem 1rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: background-color 0.2s; }
-.btn:hover { background-color: #6d0000; }
-.btn-remove { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #aaa; }
-.btn-remove:hover { color: var(--primary-color); }
-.status { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600; background-color: #eee; }
-.notification { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: white; padding: 1rem 1.5rem; border-radius: 5px; box-shadow: var(--shadow); font-weight: 500; opacity: 0; visibility: hidden; transition: all 0.5s; transform: translateY(20px); z-index: 2000;}
-.notification.show { opacity: 1; visibility: visible; transform: translateY(0); }
-
-/* Estilos de Modal e Media Queries antigos foram removidos. */
+    <div id="save-notification" class="notification"></div>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
