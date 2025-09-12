@@ -27,7 +27,22 @@
                 </div>
             </section>
 
-            <div class="admin-grid">
+            <section class="card">
+                    <h2>Catálogo de Serviços</h2>
+                    <div class="card-content table-container">
+                        <table id="services-table" class="editable-table">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                        <form id="addServiceForm" class="inline-form">
+                            <input type="text" id="serviceName" placeholder="Nome do novo serviço" required>
+                            <select id="serviceCategory" required><option value="" disabled selected>Categoria</option><option>Espaço</option><option>Gastronomia</option><option>Equipamentos</option><option>Serviços / Outros</option></select>
+                            <select id="serviceUnit" required><option value="" disabled selected>Unidade</option><option>unidade</option><option>diaria</option><option>por_pessoa</option></select>
+                            <button type="submit" class="btn">Adicionar Serviço</button>
+                        </form>
+                    </div>
+                </section>
+
                 <section class="card">
                     <h2>Listas de Preços</h2>
                     <div class="card-content">
@@ -43,32 +58,7 @@
                     </div>
                 </section>
 
-                <section class="card">
-                    <h2>Catálogo de Serviços</h2>
-                    <div class="card-content">
-                        <table id="services-table">
-                            <thead><tr><th>Nome</th><th>Categoria</th><th>Ações</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
-                        <form id="addServiceForm" class="inline-form">
-                            <input type="text" id="serviceName" placeholder="Nome do novo serviço" required>
-                            <select id="serviceCategory" required><option value="" disabled selected>Categoria</option><option>Espaço</option><option>Gastronomia</option><option>Equipamentos</option><option>Serviços / Outros</option></select>
-                            <select id="serviceUnit" required><option value="" disabled selected>Unidade</option><option>unidade</option><option>diaria</option><option>por_pessoa</option></select>
-                            <button type="submit" class="btn">Adicionar Serviço</button>
-                        </form>
-                    </div>
-                </section>
-            </div>
         </main>
-    </div>
-
-    <div id="editPricesModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2 id="editPricesModalTitle"></h2>
-            <form id="editPricesForm"></form>
-            <button id="savePricesButton" class="btn">Salvar Preços</button>
-        </div>
     </div>
 
     <div id="save-notification" class="notification"></div>
