@@ -117,8 +117,14 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .obs-popover.show { display: block; }
 .obs-popover textarea { width: 100%; height: 100px; margin-bottom: 1rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; resize: vertical; }
 
+/* (NOVO) Correção do Bug Visual: Esconde a saída de impressão na tela. 
+   O print.css se encarrega de torná-lo visível apenas durante a impressão. */
+#print-output {
+    display: none;
+}
+
 /* =================================================================
-   NOVO: ESTILOS PARA O MODAL DO CATÁLOGO
+   ESTILOS PARA O MODAL DO CATÁLOGO
    ================================================================= */
 
 .modal {
@@ -254,7 +260,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 
 
 /* =================================================================
-   REGRAS PARA A VISÃO DO CLIENTE (CLIENT-VIEW) (Permanece igual)
+   REGRAS PARA A VISÃO DO CLIENTE (CLIENT-VIEW)
    ================================================================= */
 
 .client-view .summary-footer,
@@ -270,3 +276,5 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .client-view .form-group:has(#priceTableSelect) { display: none !important; }
 .client-view { padding-bottom: 1rem !important; }
 .client-view #print-btn { display: none !important; }
+/* (NOVO) Clientes não devem ver o botão de duplicar */
+.client-view .duplicate-item-btn { display: none !important; }
