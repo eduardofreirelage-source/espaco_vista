@@ -2,14 +2,13 @@ import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
-    // VERIFICAÇÃO DE ACESSO
+    // VERIFICAÇÃO DE ACESSO (Permanece igual)
     // =================================================================
     const { role } = await getSession();
     if (role !== 'admin') {
-        // Se não for admin, redireciona para a página de login.
         console.warn("Acesso negado ao painel administrativo. Redirecionando para login.");
         window.location.href = 'login.html';
-        return; // Interrompe a execução do restante do script admin
+        return;
     }
 
     // =================================================================
@@ -26,17 +25,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const servicesTable = document.getElementById('services-table');
     const servicesTbody = servicesTable?.querySelector('tbody');
     const servicesThead = servicesTable?.querySelector('thead');
-    const priceTablesTbody = document.getElementById('price-tables-list')?.querySelector('tbody');
+    
+    const priceTablesList = document.getElementById('price-tables-list');
+    const priceTablesTbody = priceTablesList?.querySelector('tbody');
+
     const quotesTbody = document.getElementById('quotes-table')?.querySelector('tbody');
     const addServiceForm = document.getElementById('addServiceForm');
     const addPriceTableForm = document.getElementById('addPriceTableForm');
-    // Referências ao modal foram removidas.
     const notification = document.getElementById('save-notification');
 
     // Variável para o Debounce (Otimização)
     let debounceTimers = {};
 
-    // --- INICIALIZAÇÃO ---
+    // --- INICIALIZAÇÃO (Permanece igual) ---
     async function initialize() {
         await fetchData();
         addEventListeners();
@@ -45,11 +46,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function fetchData() {
         try {
             const [servicesRes, tablesRes, pricesRes, quotesRes] = await Promise.all([
-                // Ordena por categoria e nome para melhor organização na nova tabela
                 supabase.from('services').select('*').order('category').order('name'),
                 supabase.from('price_tables').select('*').order('name'),
                 supabase.from('service_prices').select('*'),
-                // Busca os dados essenciais dos orçamentos para a listagem
                 supabase.from('quotes').select('id, client_name, created_at, status, total_value').order('created_at', { ascending: false })
             ]);
 
@@ -72,12 +71,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- RENDERIZAÇÃO ---
     function renderAll() {
-        if (servicesTbody && servicesThead) renderServicesTable();
+        // Renderiza as listas primeiro, depois o catálogo que depende dos nomes das listas.
         if (priceTablesTbody) renderPriceTablesList();
+        if (servicesTbody && servicesThead) renderServicesTable();
         if (quotesTbody) renderQuotesTable();
     }
 
-    // (NOVO) Funções auxiliares para criar selects editáveis
+    // Funções auxiliares (Permanece igual)
     function createCategorySelect(currentCategory) {
         const categories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
         return `<select class="service-detail-input" data-field="category">
@@ -93,14 +93,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    // (REFORMULADO) Renderiza a tabela como uma matriz editável
+    // Renderiza a tabela como uma matriz editável (Permanece igual)
     function renderServicesTable() {
         servicesTbody.innerHTML = '';
         servicesThead.innerHTML = '';
 
         // 1. Construir o Cabeçalho
         const headerRow = document.createElement('tr');
-        // Definindo larguras mínimas para garantir usabilidade na rolagem horizontal
         headerRow.innerHTML = `
             <th style="min-width: 250px;">Nome</th>
             <th style="min-width: 150px;">Categoria</th>
@@ -135,7 +134,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const price = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
                 const td = document.createElement('td');
                 td.classList.add('price-column');
-                // Classes específicas e data-table-id para identificar a edição
                 td.innerHTML = `<input type="number" step="0.01" min="0" class="service-price-input" data-table-id="${table.id}" value="${price}">`;
                 row.appendChild(td);
             });
@@ -143,7 +141,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Coluna de Ações
             const actionsTd = document.createElement('td');
             actionsTd.className = 'actions';
-            // O botão "Editar Preços" foi removido.
             actionsTd.innerHTML = `
                 <button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button>
             `;
@@ -153,16 +150,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
-    // Permanece igual
+    // (MODIFICADO) Renderiza a lista de preços com inputs editáveis
     function renderPriceTablesList() {
         priceTablesTbody.innerHTML = '';
         priceTables.forEach(table => {
             const row = document.createElement('tr');
-            const consumable = table.consumable_credit || 0;
-            const formattedConsumable = parseFloat(consumable).toFixed(2).replace('.', ',');
+            // Adicionado data-table-id na linha
+            row.dataset.tableId = table.id;
+
+            const consumable = parseFloat(table.consumable_credit || 0).toFixed(2);
+            
+            // Transformado em inputs editáveis com classe específica e data-field
+            // Adicionado price-column ao TD para alinhamento correto do input numérico (definido no CSS)
             row.innerHTML = `
-                <td>${table.name}</td>
-                <td>R$ ${formattedConsumable}</td>
+                <td><input type="text" class="price-table-input" data-field="name" value="${table.name}"></td>
+                <td class="price-column">
+                    <input type="number" step="0.01" min="0" class="price-table-input" data-field="consumable_credit" value="${consumable}">
+                </td>
                 <td class="actions">
                     <button class="btn-remove" data-action="delete-table" data-id="${table.id}" title="Excluir Lista">&times;</button>
                 </td>
@@ -171,18 +175,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Permanece igual
+    // (MODIFICADO) Atualiza as ações (Editar, Exportar, Excluir)
     function renderQuotesTable() {
         quotesTbody.innerHTML = '';
         quotes.forEach(quote => {
             const row = document.createElement('tr');
             const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
+
+            // Usamos links (<a>) para Editar e Exportar. Exportar abre em nova aba com parâmetro print=true.
             row.innerHTML = `
                 <td>${quote.client_name || 'Rascunho sem nome'}</td>
                 <td>${createdAt}</td>
                 <td><span class="status">${quote.status}</span></td>
                 <td class="actions">
-                    <a href="index.html?quote_id=${quote.id}" class="btn">Carregar</a>
+                    <a href="index.html?quote_id=${quote.id}" class="btn" title="Editar Orçamento">Editar</a>
+                    <a href="index.html?quote_id=${quote.id}&print=true" target="_blank" class="btn" style="background-color: #6c757d;" title="Exportar PDF">Exportar</a>
                     <button class="btn-remove" data-action="delete-quote" data-id="${quote.id}" title="Excluir Orçamento">&times;</button>
                 </td>
             `;
@@ -195,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function addEventListeners() {
         // Formulários de adição (permanecem iguais)
         addServiceForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
+             e.preventDefault();
             const newService = {
                 name: document.getElementById('serviceName').value,
                 category: document.getElementById('serviceCategory').value,
@@ -224,40 +231,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!button) return;
 
             const { action, id } = button.dataset;
-            // Ação 'edit-prices' foi removida
             if (action === 'delete-service') deleteService(id);
             if (action === 'delete-table') deletePriceTable(id);
             if (action === 'delete-quote') deleteQuote(id);
         });
 
-        // (NOVO) Listener para edições inline na tabela de serviços
-        // Usamos 'input' para campos de texto (com debounce) e 'change' para selects/números.
-        
-        // 'input' event listener for text fields (debounced)
-        servicesTable.addEventListener('input', (e) => {
-            if (e.target.matches('.service-detail-input[type="text"]')) {
-                handleInlineEdit(e.target, true); // true para aplicar debounce
-            }
-        });
+        // Listeners para edições inline na tabela de SERVIÇOS
+        if (servicesTable) {
+            servicesTable.addEventListener('input', (e) => {
+                if (e.target.matches('.service-detail-input[type="text"]')) {
+                    handleServiceEdit(e.target, true);
+                }
+            });
 
-        // 'change' event listener for selects and number inputs (immediate)
-        servicesTable.addEventListener('change', (e) => {
-            if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) {
-                handleInlineEdit(e.target, false); // false para salvar imediatamente
-            }
-        });
+            servicesTable.addEventListener('change', (e) => {
+                if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) {
+                    handleServiceEdit(e.target, false);
+                }
+            });
+        }
+
+        // (NOVO) Listeners para edições inline na tabela de LISTAS DE PREÇO
+        if (priceTablesList) {
+            // 'input' para o nome (com debounce)
+            priceTablesList.addEventListener('input', (e) => {
+                if (e.target.matches('.price-table-input[data-field="name"]')) {
+                    handlePriceTableEdit(e.target, true);
+                }
+            });
+
+            // 'change' para a consumação (imediato)
+            priceTablesList.addEventListener('change', (e) => {
+                if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) {
+                    handlePriceTableEdit(e.target, false);
+                }
+            });
+        }
     }
 
-    // (NOVO) Função unificada para lidar com a edição inline
-    function handleInlineEdit(inputElement, useDebounce) {
+    // (Renomeado de handleInlineEdit para handleServiceEdit)
+    function handleServiceEdit(inputElement, useDebounce) {
         const row = inputElement.closest('tr');
         if (!row) return;
         const serviceId = row.dataset.serviceId;
         
-        // Cria uma chave única para o timer baseado no ID do serviço e no campo/tabela
-        const timerKey = `${serviceId}-${inputElement.dataset.field || inputElement.dataset.tableId}`;
+        const timerKey = `service-${serviceId}-${inputElement.dataset.field || inputElement.dataset.tableId}`;
 
-        // Limpa o timer anterior se existir (para o debounce)
         if (debounceTimers[timerKey]) {
             clearTimeout(debounceTimers[timerKey]);
         }
@@ -270,8 +289,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (inputElement.classList.contains('service-price-input')) {
                 const tableId = inputElement.dataset.tableId;
                 const price = parseFloat(inputElement.value) || 0;
-                // Garantir que o input reflita o valor formatado (ex: 5 -> 5.00)
-                // Apenas se for imediato (change event), pois o input event pode interferir na digitação
                 if (!useDebounce) {
                     inputElement.value = price.toFixed(2);
                 }
@@ -280,7 +297,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         if (useDebounce) {
-            // Define um novo timer (500ms)
+            debounceTimers[timerKey] = setTimeout(action, 500);
+        } else {
+            action();
+        }
+    }
+
+    // (NOVO) Função para lidar com a edição inline das Listas de Preço
+    function handlePriceTableEdit(inputElement, useDebounce) {
+        const row = inputElement.closest('tr');
+        if (!row) return;
+        const tableId = row.dataset.tableId;
+        const field = inputElement.dataset.field;
+        
+        const timerKey = `table-${tableId}-${field}`;
+
+        if (debounceTimers[timerKey]) {
+            clearTimeout(debounceTimers[timerKey]);
+        }
+
+        const action = () => {
+            let value = inputElement.value;
+
+            if (field === 'consumable_credit') {
+                value = parseFloat(value) || 0;
+                // Formatação imediata para campos numéricos no evento 'change'
+                if (!useDebounce) {
+                    inputElement.value = value.toFixed(2);
+                }
+            }
+            
+            updatePriceTableDetail(tableId, field, value, inputElement);
+        };
+
+        if (useDebounce) {
             debounceTimers[timerKey] = setTimeout(action, 500);
         } else {
             action();
@@ -290,7 +340,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- FUNÇÕES DE AÇÃO (CRUD) ---
 
-    // (NOVO) Função para atualizar detalhes do serviço (Nome, Categoria, Unidade)
+    // (NOVO) Função para atualizar detalhes da Lista de Preço (Nome, Consumação)
+    async function updatePriceTableDetail(tableId, field, value, inputElement) {
+        if (!tableId || !field) return;
+
+        // Validação básica para nome
+        if (field === 'name' && !value.trim()) {
+            showNotification('O nome da lista não pode ficar vazio.', true);
+            const table = priceTables.find(t => t.id === tableId);
+            if (table) inputElement.value = table[field];
+            return;
+        }
+
+        // Atualização otimista (estado local)
+        const table = priceTables.find(t => t.id === tableId);
+        // Guardar o nome antigo para verificar se precisamos re-renderizar o catálogo
+        const oldName = table ? table.name : null;
+        if (table) {
+            table[field] = value;
+        }
+
+        // Atualizar Supabase
+        const { error } = await supabase
+            .from('price_tables')
+            .update({ [field]: value })
+            .eq('id', tableId);
+
+        if (error) {
+            console.error(`Error updating price table detail ${field}:`, error.message);
+            showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
+            // Se der erro, re-busca os dados para garantir consistência
+            fetchData(); 
+        } else {
+            // Indicar sucesso no input brevemente (CSS Flash)
+            showFlash(inputElement);
+
+            // IMPORTANTE: Se o nome mudou, precisamos re-renderizar a tabela de serviços
+            // pois os cabeçalhos das colunas usam esse nome.
+            if (field === 'name' && oldName !== value) {
+                renderServicesTable();
+            }
+        }
+    }
+
+
+    // (Permanece igual, mas usa showFlash)
     async function updateServiceDetail(serviceId, field, value, inputElement) {
         if (!serviceId || !field) return;
 
@@ -321,13 +415,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Se der erro, re-busca os dados para reverter a atualização otimista
             fetchData(); 
         } else {
-            // Indicar sucesso no input brevemente (CSS Flash)
-            inputElement.classList.add('success-flash');
-            setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
+            showFlash(inputElement);
         }
     }
 
-    // (NOVO) Função para atualizar preços dos serviços
+    // (Permanece igual, mas usa showFlash)
     async function updateServicePrice(serviceId, tableId, price, inputElement) {
         if (!serviceId || !tableId) return;
 
@@ -361,9 +453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 servicePrices.push(data);
             }
 
-            // Indicar sucesso no input brevemente (CSS Flash)
-            inputElement.classList.add('success-flash');
-            setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
+            showFlash(inputElement);
         }
     }
 
@@ -386,11 +476,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Orçamento excluído.'); fetchData(); }
     }
 
-    // --- FUNÇÃO DE NOTIFICAÇÃO ---
+    // --- FUNÇÕES UTILITÁRIAS ---
+
+    // (NOVO) Função auxiliar para feedback visual
+    function showFlash(inputElement) {
+        inputElement.classList.add('success-flash');
+        setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
+    }
+
+    // --- FUNÇÃO DE NOTIFICAÇÃO (Permanece igual) ---
     function showNotification(message, isError = false) {
         if (!notification) return;
         notification.textContent = message;
-        // Usa as variáveis CSS definidas no admin.css
         notification.style.backgroundColor = isError ? 'var(--danger-color, #dc3545)' : 'var(--success-color, #28a745)';
         notification.classList.add('show');
         setTimeout(() => notification.classList.remove('show'), 5000);
