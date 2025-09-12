@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const urlParams = new URLSearchParams(window.location.search);
         const quoteId = urlParams.get('quote_id');
+        // (NOVO) Checa o parâmetro de impressão automática
+        const autoPrint = urlParams.get('print') === 'true';
+
         if (quoteId) {
             await loadQuote(quoteId);
         } 
@@ -47,6 +50,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         renderQuote();
         setDirty(false);
+
+        // (NOVO) Lida com a impressão automática
+        if (autoPrint) {
+            if (userRole === 'admin') {
+                // Remove o parâmetro 'print' da URL para evitar loop de impressão ao recarregar a aba
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.delete('print');
+                window.history.replaceState({}, document.title, newUrl);
+
+                // Aguarda um breve momento para garantir que tudo (incluindo a saída de impressão) esteja renderizado
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            } else {
+                // Se um cliente acessar essa URL, remove o parâmetro de impressão
+                console.warn("Acesso de impressão negado para clientes.");
+                 window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
     }
 
     // (Funções checkUserRole e fetchData permanecem idênticas)
@@ -104,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // =================================================================
     // FUNÇÕES UTILITÁRIAS (Idênticas)
+    // (setDirty, updateSaveButtonState, showNotification, formatCurrency)
     // =================================================================
     
     function setDirty(state) {
@@ -139,6 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // =================================================================
     // GERENCIAMENTO DE DADOS DO CLIENTE E EVENTO (Idênticas)
+    // (populatePriceTables, syncClientData, syncEventDates, addDateEntry, updateDateInputs)
     // =================================================================
     
     function populatePriceTables() {
@@ -256,20 +280,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // =================================================================
-    // RENDERIZAÇÃO DO ORÇAMENTO (Ajustada para o novo fluxo)
+    // RENDERIZAÇÃO DO ORÇAMENTO
     // =================================================================
 
+    // (MODIFICADO) Agora também chama a geração do PDF
     function renderQuote() {
         const calculation = calculateQuote();
         renderCategories(calculation);
         renderSummary(calculation);
-        // NOVO: Se o modal estiver aberto, atualiza o estado dos botões nele
+
+        // (NOVO) Gera a saída de impressão (apenas se for admin)
+        if (userRole === 'admin') {
+            generatePrintOutput(calculation);
+        }
+
+        // Se o modal estiver aberto, atualiza o estado dos botões nele
         if (catalogModal.style.display === 'block') {
             updateCatalogButtonsState();
         }
     }
 
-    // MODIFICADO: Agora só renderiza categorias que possuem itens no orçamento
+    // (renderCategories, renderItems, renderDateSelect, renderSummary permanecem idênticas)
     function renderCategories(calculation) {
         const container = document.getElementById('quote-categories-container');
         if (!container) return;
@@ -297,7 +328,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 accordion.dataset.category = category;
                 accordion.querySelector('.category-title').textContent = category;
                 container.appendChild(accordion);
-                // setupMultiselect foi removido!
             }
             renderItems(accordion, category);
         });
@@ -308,7 +338,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // (renderItems, renderDateSelect, renderSummary permanecem idênticas)
     function renderItems(accordion, category) {
         const tbody = accordion.querySelector('tbody');
         tbody.innerHTML = '';
@@ -347,6 +376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderDateSelect(item) {
         if (currentQuote.event_dates.length === 0) return 'N/A';
         
+        // Usamos 'T12:00:00' para evitar problemas de fuso horário ao formatar a data
         let options = currentQuote.event_dates.map(d => 
             `<option value="${d.date}" ${item.event_date === d.date ? 'selected' : ''}>${new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')}</option>`
         ).join('');
@@ -390,9 +420,116 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // =================================================================
+    // (NOVO) LÓGICA DE GERAÇÃO DO PDF (IMPRESSÃO)
+    // =================================================================
+
+    function generatePrintOutput(calculation) {
+        const printOutput = document.getElementById('print-output');
+        if (!printOutput) return;
+
+        // Cabeçalho
+        let html = `
+            <div class="print-header">
+                <h1>Proposta Comercial</h1>
+                <p>Data da Proposta: ${new Date().toLocaleDateString('pt-BR')}</p>
+            </div>
+        `;
+
+        // Informações do Cliente e Evento
+        // Usamos 'T12:00:00' para garantir a consistência do fuso horário ao formatar datas
+        html += `
+            <div class="print-client-info">
+                <p><strong>Cliente:</strong> ${currentQuote.client_name || 'N/A'}</p>
+                <p><strong>CNPJ:</strong> ${currentQuote.client_cnpj || 'N/A'}</p>
+                <p><strong>E-mail:</strong> ${currentQuote.client_email || 'N/A'}</p>
+                <p><strong>Nº Convidados:</strong> ${currentQuote.guest_count}</p>
+                <p><strong>Datas do Evento:</strong> ${currentQuote.event_dates.map(d => new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')).join(', ')}</p>
+            </div>
+        `;
+
+        // Categorias e Itens
+        const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
+             const service = services.find(s => s.id === item.service_id);
+             return service?.category;
+        }).filter(Boolean))].sort();
+
+        categoriesInQuote.forEach(category => {
+            html += `<h2 class="print-category-title">${category}</h2>`;
+            html += `
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th class="center">Data</th>
+                            <th class="center">Qtde.</th>
+                            <th class="price">Vlr. Unitário</th>
+                            <th class="price">Desconto (%)</th>
+                            <th class="price">Vlr. Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            const items = currentQuote.items.filter(item => {
+                const service = services.find(s => s.id === item.service_id);
+                return service && service.category === category;
+            });
+
+            items.forEach(item => {
+                const service = services.find(s => s.id === item.service_id);
+                const formattedDate = item.event_date ? new Date(item.event_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/A';
+                
+                // Inclui observações se existirem
+                html += `
+                    <tr>
+                        <td>
+                            ${service.name}
+                            ${item.observations ? `<div class="print-item-obs">${item.observations}</div>` : ''}
+                        </td>
+                        <td class="center">${formattedDate}</td>
+                        <td class="center">${item.quantity}</td>
+                        <td class="price">${formatCurrency(item.calculated_unit_price)}</td>
+                        <td class="price">${item.discount_percent || 0}%</td>
+                        <td class="price">${formatCurrency(item.calculated_total)}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+        });
+
+        // Resumo Financeiro
+        html += `
+            <div class="print-summary">
+                <table>
+                    <tr>
+                        <td class="total-label">Subtotal:</td>
+                        <td class="total-value">${formatCurrency(calculation.subtotal)}</td>
+                    </tr>
+                    <tr>
+                        <td class="total-label">Consumação Inclusa:</td>
+                        <td class="total-value">(-) ${formatCurrency(calculation.consumableCredit)}</td>
+                    </tr>
+                    <tr>
+                        <td class="total-label">Desconto Geral:</td>
+                        <td class="total-value">(-) ${formatCurrency(calculation.discountGeneral)}</td>
+                    </tr>
+                    <tr class="grand-total">
+                        <td class="total-label">VALOR TOTAL:</td>
+                        <td class="total-value">${formatCurrency(calculation.total)}</td>
+                    </tr>
+                </table>
+            </div>
+        `;
+
+        printOutput.innerHTML = html;
+    }
+
 
     // =================================================================
-    // NOVO: LÓGICA DO MODAL DE CATÁLOGO
+    // LÓGICA DO MODAL DE CATÁLOGO (Permanece igual)
+    // (openCatalogModal, closeCatalogModal, renderCatalog, renderCatalogCategories, renderCatalogItems, updateCatalogButtonsState)
     // =================================================================
 
     let activeCategory = 'Todos';
@@ -490,10 +627,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // GERENCIAMENTO DE ITENS
+    // GERENCIAMENTO DE ITENS (Permanece igual)
+    // (addItemsToQuote, updateItem, removeItem, showObsPopover)
     // =================================================================
 
-    // MODIFICADO: Agora lida com um ID por vez, vindo do modal
     function addItemsToQuote(serviceId) {
         
         if (currentQuote.event_dates.length === 0) return;
@@ -520,7 +657,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderQuote(); // Isso também atualizará o botão no modal via updateCatalogButtonsState
     }
 
-    // (updateItem, removeItem, showObsPopover permanecem idênticas)
     function updateItem(itemId, field, value) {
         const item = currentQuote.items.find(i => i.id === itemId);
         if (item) {
@@ -661,13 +797,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Salvar e Imprimir (Idêntico)
+        // Salvar e Imprimir (Atualizado para garantir que apenas admin imprima)
         document.getElementById('save-quote-btn')?.addEventListener('click', saveQuote);
         document.getElementById('print-btn')?.addEventListener('click', () => {
-             window.print();
+             // Apenas admins devem conseguir imprimir (a visão do cliente esconde o botão, mas isso é uma segurança extra)
+             if (userRole === 'admin') {
+                 window.print();
+             }
         });
 
-        // NOVO: Listeners do Catálogo Modal
+        // Listeners do Catálogo Modal (Idênticos)
         document.getElementById('open-catalog-btn')?.addEventListener('click', openCatalogModal);
         document.getElementById('close-catalog-btn')?.addEventListener('click', closeCatalogModal);
         
@@ -775,8 +914,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 showNotification('Orçamento salvo com sucesso!');
                 setDirty(false);
-                if (window.location.search.indexOf('quote_id') === -1) {
-                    window.history.pushState({}, '', `?quote_id=${currentQuote.id}`);
+                // Atualiza a URL se for um novo orçamento, garantindo que o quote_id seja adicionado
+                if (window.location.search.indexOf('quote_id=') === -1) {
+                     const newUrl = new URL(window.location);
+                     newUrl.searchParams.set('quote_id', currentQuote.id);
+                     window.history.pushState({}, '', newUrl);
                 }
             }
 
