@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let userRole = 'client';
     let isDirty = false;
 
-    // NOVO: Define a ordem fixa para as categorias
     const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços e Outros'];
 
     const notification = document.getElementById('save-notification');
@@ -226,7 +225,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
-    // MODIFICADO: Função de cálculo para aplicar a regra da consumação
     function calculateQuote() {
         let consumableSubtotal = 0;
         let nonConsumableSubtotal = 0;
@@ -244,7 +242,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             let quantity = item.quantity;
-            if (service.unit === 'por_pessoa') {
+            // MODIFICADO: A quantidade só é travada se for 'por_pessoa' E a categoria NÃO for 'Gastronomia'
+            if (service.unit === 'por_pessoa' && service.category !== 'Gastronomia') {
                 quantity = guestCount;
                 item.quantity = quantity;
             }
@@ -256,7 +255,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.calculated_unit_price = basePrice;
             item.calculated_total = total;
             
-            // Separa os totais entre consumíveis e não consumíveis
             if (service.category === 'Serviços e Outros') {
                 nonConsumableSubtotal += total;
             } else {
@@ -273,9 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             availableConsumableCredit = table ? (parseFloat(table.consumable_credit) || 0) : 0;
         }
 
-        // O crédito usado é o menor valor entre o crédito disponível e o subtotal dos itens consumíveis
         const consumableCreditUsed = Math.min(consumableSubtotal, availableConsumableCredit);
-
         const total = subtotal - discountGeneral - consumableCreditUsed;
 
         return { subtotal, consumableCredit: consumableCreditUsed, discountGeneral, total: Math.max(0, total) };
@@ -286,15 +282,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // RENDERIZAÇÃO DO ORÇAMENTO
     // =================================================================
 
-    // NOVO: Função auxiliar para ordenação customizada
     function sortCategories(categories) {
         return categories.sort((a, b) => {
             const indexA = CATEGORY_ORDER.indexOf(a);
             const indexB = CATEGORY_ORDER.indexOf(b);
-            if (indexA === -1 && indexB === -1) return a.localeCompare(b); // Alfabético para não listados
-            if (indexA === -1) return 1;  // Não listados vão para o fim
-            if (indexB === -1) return -1; // Não listados vão para o fim
-            return indexA - indexB; // Ordena pelos definidos
+            if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
         });
     }
     
@@ -312,48 +307,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // MODIFICADO: Lógica de renderização das categorias para garantir a ordem correta no DOM
     function renderCategories(calculation) {
         const container = document.getElementById('quote-categories-container');
         if (!container) return;
 
-        // MODIFICADO: Usa a nova função de ordenação
         const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
-             const service = services.find(s => s.id === item.service_id);
-             return service?.category;
+            const service = services.find(s => s.id === item.service_id);
+            return service?.category;
         }).filter(Boolean))]);
 
-        container.querySelectorAll('.category-accordion').forEach(accordion => {
-            const categoryName = accordion.dataset.category;
-            if (!categoriesInQuote.includes(categoryName)) {
-                const itemsStillExist = currentQuote.items.some(item => {
-                    const service = services.find(s => s.id === item.service_id);
-                    return service && service.category === categoryName;
-                });
-                if (!itemsStillExist) {
-                   accordion.remove();
-                }
-            }
-        });
+        const elementsToRender = [];
 
         categoriesInQuote.forEach(category => {
+            // Reutiliza um elemento existente se encontrar, ou cria um novo
             let accordion = container.querySelector(`details[data-category="${category}"]`);
             if (!accordion) {
                 const template = document.getElementById('category-template').content.cloneNode(true);
                 accordion = template.querySelector('details');
                 accordion.dataset.category = category;
                 accordion.querySelector('.category-title').textContent = category;
-                container.appendChild(accordion);
             }
             renderItems(accordion, category);
+            elementsToRender.push(accordion);
         });
+
+        // Limpa o container e adiciona os elementos na ordem correta
+        container.innerHTML = '';
+        elementsToRender.forEach(element => container.appendChild(element));
 
         if (categoriesInQuote.length === 0) {
             container.innerHTML = '<p style="padding: 1.2rem; text-align: center; color: var(--subtle-text-color);">Nenhum item adicionado ainda. Clique em "+ Adicionar Itens" para começar.</p>';
-        } else {
-            const messageEl = container.querySelector('p');
-            if (messageEl) {
-                messageEl.remove();
-            }
         }
     }
 
@@ -375,13 +359,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = document.createElement('tr');
             row.dataset.itemId = item.id;
 
-            const isPerPerson = service.unit === 'por_pessoa';
+            // MODIFICADO: A quantidade só é travada se for 'por_pessoa' E a categoria NÃO for 'Gastronomia'
+            const isQuantityLocked = service.unit === 'por_pessoa' && service.category !== 'Gastronomia';
 
             row.innerHTML = `
                 <td class="col-item">${service.name}</td>
                 <td class="col-date">${renderDateSelect(item)}</td>
                 <td class="col-qty">
-                    <input type="number" value="${item.quantity}" min="1" class="qty-input" ${isPerPerson ? 'disabled' : ''}>
+                    <input type="number" value="${item.quantity}" min="1" class="qty-input" ${isQuantityLocked ? 'disabled' : ''}>
                 </td>
                 <td class="col-unit-price price">${formatCurrency(item.calculated_unit_price)}</td>
                 <td class="col-discount">
@@ -425,7 +410,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         categoryList.innerHTML = '';
         
-        // MODIFICADO: Usa a nova função de ordenação
         const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
             const service = services.find(s => s.id === item.service_id);
             return service ? service.category : null;
@@ -472,7 +456,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
-        // MODIFICADO: Usa a nova função de ordenação
         const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
              const service = services.find(s => s.id === item.service_id);
              return service?.category;
@@ -769,7 +752,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             ["Categoria", "Item", "Data", "Qtde.", "Vlr. Unitário", "Desc. (%)", "Vlr. Total", "Observações"]
         ];
 
-        // MODIFICADO: Usa a nova função de ordenação
         const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
             const service = services.find(s => s.id === item.service_id);
             return service?.category;
