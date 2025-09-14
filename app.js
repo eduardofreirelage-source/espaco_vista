@@ -2,7 +2,7 @@ import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
-    // ESTADO GLOBAL E CONFIGURAÇÃO (Permanece igual)
+    // ESTADO GLOBAL E CONFIGURAÇÃO
     // =================================================================
     let services = [];
     let priceTables = [];
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const catalogModal = document.getElementById('catalogModal');
 
     // =================================================================
-    // INICIALIZAÇÃO (Permanece igual)
+    // INICIALIZAÇÃO
     // =================================================================
     async function initialize() {
         await checkUserRole();
@@ -43,9 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await loadQuote(quoteId);
         } 
         
-        if (currentQuote.event_dates.length === 0) {
-            addDateEntry();
-        }
+        // CORREÇÃO: Não adiciona mais uma data ao iniciar. O usuário deve clicar no botão.
         
         renderQuote();
         setDirty(false);
@@ -66,8 +64,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // (Funções checkUserRole, fetchData, FUNÇÕES UTILITÁRIAS, GERENCIAMENTO DE DADOS DO CLIENTE E EVENTO, LÓGICA DE CÁLCULO DO ORÇAMENTO permanecem idênticas)
-    // ... (Omitido para brevidade, pois não foram alteradas) ...
     async function checkUserRole() {
         const { role } = await getSession();
         userRole = role;
@@ -192,17 +188,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // CORREÇÃO: Layout da entrada de data melhorado.
     function addDateEntry(data = {}) {
         const container = document.getElementById('event-dates-container');
         if (!container) return;
+
         const div = document.createElement('div');
         div.className = 'date-entry';
+        const uniqueId = Date.now() + Math.random();
+
         div.innerHTML = `
-            <input type="date" value="${data.date || ''}" required>
-            <input type="time" class="start-time" value="${data.start || '19:00'}">
-            <input type="time" class="end-time" value="${data.end || '23:00'}">
-            <span></span>
-            <button type="button" class="btn-icon remove-date-btn">&times;</button>
+            <div class="form-group">
+                <label for="event_date_${uniqueId}">Data</label>
+                <input type="date" id="event_date_${uniqueId}" value="${data.date || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="start_time_${uniqueId}">Início</label>
+                <input type="time" class="start-time" id="start_time_${uniqueId}" value="${data.start || '19:00'}">
+            </div>
+            <div class="form-group">
+                <label for="end_time_${uniqueId}">Fim</label>
+                <input type="time" class="end-time" id="end_time_${uniqueId}" value="${data.end || '23:00'}">
+            </div>
+            <button type="button" class="btn-icon remove-date-btn" title="Remover Data">&times;</button>
         `;
         container.appendChild(div);
         updateDateInputs();
@@ -313,11 +321,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderItems(accordion, category);
         });
 
-        // CORREÇÃO: Lógica para exibir ou remover a mensagem inicial.
         if (categoriesInQuote.length === 0) {
             container.innerHTML = '<p style="padding: 1.2rem; text-align: center; color: var(--subtle-text-color);">Nenhum item adicionado ainda. Clique em "+ Adicionar Itens" para começar.</p>';
         } else {
-            // Se houver itens, garante que a mensagem de "nenhum item" seja removida.
             const messageEl = container.querySelector('p');
             if (messageEl) {
                 messageEl.remove();
@@ -519,8 +525,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // =================================================================
-    // LÓGICA DO MODAL DE CATÁLOGO (Permanece igual)
-    // ... (Omitido para brevidade) ...
+    // LÓGICA DO MODAL DE CATÁLOGO
+    // =================================================================
     let activeCategory = 'Todos';
     let searchQuery = '';
 
@@ -859,8 +865,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             subtotal_value: calculation.subtotal,
             consumable_credit_used: calculation.consumableCredit,
         };
-
-        // CORREÇÃO: Cria uma cópia e remove os campos que não existem no DB para evitar erros.
+        
         const payload = { ...dataToSave };
         delete payload.client_cnpj;
         delete payload.client_email;
