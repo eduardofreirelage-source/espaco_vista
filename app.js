@@ -265,7 +265,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // RENDERIZAÇÃO DO ORÇAMENTO
     // =================================================================
 
-    // (renderQuote permanece igual)
     function renderQuote() {
         const calculation = calculateQuote();
         renderCategories(calculation);
@@ -280,22 +279,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // (MODIFICADO) Lógica ajustada para garantir a remoção correta de categorias vazias
     function renderCategories(calculation) {
         const container = document.getElementById('quote-categories-container');
         if (!container) return;
 
-        // Apenas categorias que possuem itens no orçamento atual
         const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
              const service = services.find(s => s.id === item.service_id);
              return service?.category;
         }).filter(Boolean))].sort();
 
-        // Remove acordeões de categorias que não estão mais no orçamento
         container.querySelectorAll('.category-accordion').forEach(accordion => {
             const categoryName = accordion.dataset.category;
             if (!categoriesInQuote.includes(categoryName)) {
-                 // Verificação extra caso o serviço tenha mudado de categoria no admin panel
                 const itemsStillExist = currentQuote.items.some(item => {
                     const service = services.find(s => s.id === item.service_id);
                     return service && service.category === categoryName;
@@ -306,7 +301,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Renderiza ou atualiza as categorias presentes
         categoriesInQuote.forEach(category => {
             let accordion = container.querySelector(`details[data-category="${category}"]`);
             if (!accordion) {
@@ -319,39 +313,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderItems(accordion, category);
         });
 
-        // Exibe mensagem se não houver itens
+        // CORREÇÃO: Lógica para exibir ou remover a mensagem inicial.
         if (categoriesInQuote.length === 0) {
             container.innerHTML = '<p style="padding: 1.2rem; text-align: center; color: var(--subtle-text-color);">Nenhum item adicionado ainda. Clique em "+ Adicionar Itens" para começar.</p>';
+        } else {
+            // Se houver itens, garante que a mensagem de "nenhum item" seja removida.
+            const messageEl = container.querySelector('p');
+            if (messageEl) {
+                messageEl.remove();
+            }
         }
     }
 
-    // (MODIFICADO) Adicionado botão de duplicar (⧉) e lógica para manter a ordem correta
     function renderItems(accordion, category) {
         const tbody = accordion.querySelector('tbody');
         tbody.innerHTML = '';
 
-        // Para garantir que a ordem de duplicação seja respeitada, iteramos sobre a lista global
-        // mas apenas renderizamos os itens que pertencem a esta categoria.
-
-        // 1. Identificar os IDs dos itens nesta categoria
         const itemIdsInCategory = currentQuote.items.filter(item => {
             const service = services.find(s => s.id === item.service_id);
             return service && service.category === category;
         }).map(item => item.id);
 
-        // 2. Iterar sobre a lista global e renderizar se estiver na categoria
         currentQuote.items.forEach(item => {
             if (!itemIdsInCategory.includes(item.id)) return;
 
             const service = services.find(s => s.id === item.service_id);
-            if (!service) return; // Segurança extra
+            if (!service) return;
 
             const row = document.createElement('tr');
             row.dataset.itemId = item.id;
 
             const isPerPerson = service.unit === 'por_pessoa';
 
-            // Adicionado o botão duplicate-item-btn
             row.innerHTML = `
                 <td class="col-item">${service.name}</td>
                 <td class="col-date">${renderDateSelect(item)}</td>
@@ -373,12 +366,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // (renderDateSelect, renderSummary permanecem idênticas)
-    // ... (Omitido para brevidade) ...
     function renderDateSelect(item) {
         if (currentQuote.event_dates.length === 0) return 'N/A';
         
-        // Usamos 'T12:00:00' para evitar problemas de fuso horário ao formatar a data
         let options = currentQuote.event_dates.map(d => 
             `<option value="${d.date}" ${item.event_date === d.date ? 'selected' : ''}>${new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')}</option>`
         ).join('');
@@ -427,12 +417,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // LÓGICA DE GERAÇÃO DO PDF (IMPRESSÃO)
     // =================================================================
 
-    // (MODIFICADO) Garante que a ordem dos itens no PDF respeite a ordem da lista global
     function generatePrintOutput(calculation) {
         const printOutput = document.getElementById('print-output');
         if (!printOutput) return;
 
-        // Cabeçalho e Informações do Cliente (Permanece igual)
         let html = `
             <div class="print-header">
                 <h1>Proposta Comercial</h1>
@@ -450,7 +438,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
-        // Categorias e Itens
         const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
              const service = services.find(s => s.id === item.service_id);
              return service?.category;
@@ -472,8 +459,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </thead>
                     <tbody>
             `;
-
-            // (MODIFICADO) Usamos a mesma lógica de iteração do renderItems para manter a ordem correta no PDF
             const itemIdsInCategory = currentQuote.items.filter(item => {
                 const service = services.find(s => s.id === item.service_id);
                 return service && service.category === category;
@@ -488,7 +473,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const formattedDate = item.event_date ? new Date(item.event_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/A';
                 
-                // Inclui observações se existirem
                 html += `
                     <tr>
                         <td>
@@ -507,7 +491,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             html += `</tbody></table>`;
         });
 
-        // Resumo Financeiro (Permanece igual)
         html += `
             <div class="print-summary">
                 <table>
@@ -547,7 +530,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // Reseta o estado do modal ao abrir
         activeCategory = 'Todos';
         searchQuery = '';
         document.getElementById('catalog-search').value = '';
@@ -568,7 +550,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderCatalogCategories() {
         const container = document.getElementById('catalog-categories');
-        // Cria a lista de categorias incluindo a opção "Todos"
         const categories = ['Todos', ...new Set(services.map(s => s.category))].sort((a, b) => a === 'Todos' ? -1 : b === 'Todos' ? 1 : a.localeCompare(b));
         
         container.innerHTML = categories.map(category => `
@@ -583,22 +564,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         let filteredServices = services;
 
-        // Aplica filtro de categoria
         if (activeCategory !== 'Todos') {
             filteredServices = filteredServices.filter(s => s.category === activeCategory);
         }
 
-        // Aplica filtro de busca
         if (searchQuery) {
             filteredServices = filteredServices.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
         }
 
-        // Data padrão para verificar se o item já foi adicionado (primeira data do evento)
         const defaultDate = currentQuote.event_dates[0]?.date;
 
         container.innerHTML = filteredServices.map(service => {
-            // Verifica se o item já foi adicionado na data padrão.
-            // Nota: Com a duplicação, um serviço pode estar várias vezes no orçamento.
             const isAdded = currentQuote.items.some(item => item.service_id === service.id && item.event_date === defaultDate);
 
             return `
@@ -611,7 +587,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         `}).join('');
     }
 
-    // Atualiza o estado dos botões no catálogo (caso algo mude enquanto ele está aberto)
     function updateCatalogButtonsState() {
         const container = document.getElementById('catalog-items');
         if (!container) return;
@@ -637,23 +612,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
     // GERENCIAMENTO DE ITENS
     // =================================================================
-
-    // (addItemsToQuote, updateItem, removeItem, showObsPopover permanecem iguais)
-    // ... (Omitido para brevidade) ...
     function addItemsToQuote(serviceId) {
         
         if (currentQuote.event_dates.length === 0) return;
 
         const defaultDate = currentQuote.event_dates[0].date;
 
-        // Verifica duplicatas na data padrão
         const existing = currentQuote.items.find(item => item.service_id === serviceId && item.event_date === defaultDate);
         if (existing) {
             return;
         }
 
         const newItem = {
-            id: Date.now() + '-' + serviceId, // ID temporário local
+            id: Date.now() + '-' + serviceId, 
             service_id: serviceId,
             quantity: 1,
             discount_percent: 0,
@@ -700,7 +671,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rect = button.getBoundingClientRect();
         popover.style.position = 'absolute';
         popover.style.top = `${window.scrollY + rect.top}px`;
-        // Ajuste básico para tentar manter o popover na tela
         if (rect.left < 310) {
              popover.style.left = `${rect.right + 10}px`;
         } else {
@@ -713,26 +683,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             const text = document.getElementById('obs-text').value;
             updateItem(itemId, 'observations', text);
             popover.classList.remove('show');
-            // Importante: Re-renderizar para atualizar o ícone (📝 ou 📄)
             renderQuote(); 
         };
     }
 
 
-    // (NOVO) Função para duplicar um item
     function duplicateItem(itemId) {
         const originalItemIndex = currentQuote.items.findIndex(i => i.id === itemId);
         if (originalItemIndex === -1) return;
 
         const originalItem = currentQuote.items[originalItemIndex];
         
-        // Cria uma cópia profunda do item
         const duplicatedItem = JSON.parse(JSON.stringify(originalItem));
         
-        // Atribui um novo ID temporário único
         duplicatedItem.id = Date.now() + '-dup-' + (originalItem.service_id || originalItemIndex);
         
-        // Insere o item duplicado logo após o original na lista global
         currentQuote.items.splice(originalItemIndex + 1, 0, duplicatedItem);
 
         setDirty(true);
@@ -746,8 +711,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
     
     function setupEventListeners() {
-        // (Listeners de Formulário, Gerenciamento de datas, Delegação de eventos (CHANGE) - Idênticos)
-        // ... (Omitido para brevidade) ...
          document.querySelectorAll('#clientName, #clientCnpj, #clientEmail, #clientPhone').forEach(input => {
             input.addEventListener('change', syncClientData);
         });
@@ -791,14 +754,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // (MODIFICADO) Adicionado listener para o botão de duplicar
         document.getElementById('quote-categories-container')?.addEventListener('click', (e) => {
             const row = e.target.closest('tr');
             
             if (row) {
                 const itemId = row.dataset.itemId;
 
-                // (NOVO) Duplicar Item
                 if (e.target.classList.contains('duplicate-item-btn')) {
                     duplicateItem(itemId);
                     return;
@@ -815,8 +776,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // (Desconto geral, Listeners Globais, Salvar e Imprimir, Listeners do Catálogo Modal - Idênticos)
-        // ... (Omitido para brevidade) ...
         document.getElementById('discountValue')?.addEventListener('change', (e) => {
             if (userRole === 'admin') {
                 currentQuote.discount_general = parseFloat(e.target.value) || 0;
@@ -828,7 +787,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.addEventListener('click', (e) => {
-            // Fecha Popover de Observações
             const popover = document.getElementById('obs-popover');
             if (popover && popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('obs-btn')) {
                 popover.classList.remove('show');
@@ -882,7 +840,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // PERSISTÊNCIA (SALVAR E CARREGAR)
     // =================================================================
     
-    // (MODIFICADO) Ajustado para lidar corretamente com os IDs temporários após o salvamento
     async function saveQuote() {
         syncClientData();
 
@@ -895,7 +852,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dataToSave = {
             ...currentQuote,
             items: currentQuote.items.map(item => {
-                // Remove o ID temporário antes de salvar
                 const { id, ...rest } = item;
                 return rest;
             }),
@@ -904,13 +860,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             consumable_credit_used: calculation.consumableCredit,
         };
 
-        // CORREÇÃO: Cria uma cópia do objeto a ser salvo e remove o campo 'client_cnpj',
-        // que não existe no schema do banco de dados e estava causando o erro.
+        // CORREÇÃO: Cria uma cópia e remove os campos que não existem no DB para evitar erros.
         const payload = { ...dataToSave };
         delete payload.client_cnpj;
+        delete payload.client_email;
 
 
-        // Lógica Cliente vs Admin (Limpeza de dados sensíveis)
         if (userRole === 'client') {
             payload.id = null; 
             payload.status = 'Solicitado pelo Cliente';
@@ -932,23 +887,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             let result;
             if (payload.id) {
-                // UPDATE
                 const { data, error } = await supabase.from('quotes').update(payload).eq('id', payload.id).select().single();
                 result = { data, error };
             } else {
-                // INSERT
                 const { data, error } = await supabase.from('quotes').insert(payload).select().single();
                 result = { data, error };
             }
 
             if (result.error) throw result.error;
 
-            // (MODIFICADO) Após salvar, precisamos recarregar os dados para sincronizar os IDs temporários com o estado salvo.
             currentQuote.id = result.data.id;
-            // Atualiza o estado local com os dados retornados do banco (principalmente os itens)
              currentQuote.items = (result.data.items || []).map((item, index) => ({
                 ...item,
-                // Gera novos IDs temporários baseados nos dados salvos
                 id: `saved-${currentQuote.id}-${index}-${item.service_id || index}`
             }));
             
@@ -957,7 +907,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 showNotification('Orçamento salvo com sucesso!');
                 setDirty(false);
-                // Atualiza a URL se for um novo orçamento, garantindo que o quote_id seja adicionado
                 if (window.location.search.indexOf('quote_id=') === -1) {
                      const newUrl = new URL(window.location);
                      newUrl.searchParams.set('quote_id', currentQuote.id);
@@ -965,7 +914,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
             
-            // Re-renderiza para atualizar os IDs nos elementos do DOM
             renderQuote();
 
         } catch (error) {
@@ -974,7 +922,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // (MODIFICADO) Ajustado para gerar IDs temporários consistentes ao carregar
     async function loadQuote(id) {
         if (userRole === 'client') {
             console.warn("Clientes não podem carregar orçamentos por ID.");
@@ -990,7 +937,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ...data,
                 items: (data.items || []).map((item, index) => ({
                     ...item,
-                    // Gera IDs temporários ao carregar
                     id: `loaded-${id}-${index}-${item.service_id || index}`
                 })),
                 event_dates: data.event_dates || [],
@@ -998,7 +944,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 guest_count: parseInt(data.guest_count) || 100,
             };
 
-            // Popula o UI
             if(document.getElementById('clientName')) document.getElementById('clientName').value = currentQuote.client_name || '';
             if(document.getElementById('clientCnpj')) document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
             if(document.getElementById('clientEmail')) document.getElementById('clientEmail').value = currentQuote.client_email || '';
