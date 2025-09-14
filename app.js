@@ -780,13 +780,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.getElementById('discountValue')?.addEventListener('change', (e) => {
-            if (userRole === 'admin') {
-                currentQuote.discount_general = parseFloat(e.target.value) || 0;
-                setDirty(true);
-                renderQuote();
-            } else {
-                e.target.value = 0;
-            }
+            currentQuote.discount_general = parseFloat(e.target.value) || 0;
+            setDirty(true);
+            renderQuote();
         });
 
         document.addEventListener('click', (e) => {
@@ -852,32 +848,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const calculation = calculateQuote();
-        const dataToSave = {
-            ...currentQuote,
+        
+        // CORREÇÃO FINAL: Copia apenas os campos que REALMENTE devem ser salvos no banco.
+        const payload = {
+            id: currentQuote.id,
+            client_name: currentQuote.client_name,
+            guest_count: currentQuote.guest_count,
+            price_table_id: currentQuote.price_table_id,
+            event_dates: currentQuote.event_dates,
             items: currentQuote.items.map(item => {
-                const { id, ...rest } = item;
+                const { id, ...rest } = item; // Remove o ID local temporário dos itens
                 return rest;
             }),
-            total_value: calculation.total,
-            subtotal_value: calculation.subtotal,
-            consumable_credit_used: calculation.consumableCredit,
+            status: currentQuote.status,
+            // Adiciona o total ao salvar para referência na listagem do admin
+            total_value: calculation.total 
         };
         
-        // CORREÇÃO: Remove todos os campos que não existem no DB para evitar erros.
-        const payload = { ...dataToSave };
-        delete payload.client_cnpj;
-        delete payload.client_email;
-        delete payload.client_phone;
-
+        // Os campos abaixo são removidos pois são de UI ou de cálculo e não colunas do DB
+        // delete payload.client_cnpj;
+        // delete payload.client_email;
+        // delete payload.client_phone;
+        // delete payload.discount_general; 
+        // delete payload.subtotal_value;
+        // delete payload.consumable_credit_used;
 
         if (userRole === 'client') {
             payload.id = null; 
             payload.status = 'Solicitado pelo Cliente';
             payload.price_table_id = null;
-            payload.discount_general = 0;
-            payload.total_value = 0;
-            payload.subtotal_value = 0;
-            payload.consumable_credit_used = 0;
+            payload.total_value = 0; // Cliente não envia valor
+            
             payload.items.forEach(item => {
                 item.discount_percent = 0;
                 item.calculated_unit_price = 0;
@@ -937,23 +938,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data, error } = await supabase.from('quotes').select('*').eq('id', id).single();
             if (error) throw error;
 
+            // Ao carregar, preenchemos o estado local, incluindo campos que não são salvos
             currentQuote = {
+                ...currentQuote, // Mantém a estrutura padrão
                 ...data,
                 items: (data.items || []).map((item, index) => ({
                     ...item,
                     id: `loaded-${id}-${index}-${item.service_id || index}`
                 })),
                 event_dates: data.event_dates || [],
-                discount_general: parseFloat(data.discount_general) || 0,
+                // Se o desconto não vem do DB, reseta para 0 ou busca de outro lugar se aplicável
+                discount_general: parseFloat(data.discount_general) || 0, 
                 guest_count: parseInt(data.guest_count) || 100,
             };
 
+            // Popula a UI com os dados do estado local
             if(document.getElementById('clientName')) document.getElementById('clientName').value = currentQuote.client_name || '';
             if(document.getElementById('clientCnpj')) document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
             if(document.getElementById('clientEmail')) document.getElementById('clientEmail').value = currentQuote.client_email || '';
             if(document.getElementById('clientPhone')) document.getElementById('clientPhone').value = currentQuote.client_phone || '';
             if(document.getElementById('guestCount')) document.getElementById('guestCount').value = currentQuote.guest_count;
             if(document.getElementById('priceTableSelect')) document.getElementById('priceTableSelect').value = currentQuote.price_table_id || '';
+            if(document.getElementById('discountValue')) document.getElementById('discountValue').value = currentQuote.discount_general.toFixed(2);
+
 
             const datesContainer = document.getElementById('event-dates-container');
             if (datesContainer) {
