@@ -43,8 +43,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await loadQuote(quoteId);
         } 
         
-        // CORREÇÃO: Não adiciona mais uma data ao iniciar. O usuário deve clicar no botão.
-        
         renderQuote();
         setDirty(false);
 
@@ -188,7 +186,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // CORREÇÃO: Layout da entrada de data melhorado.
     function addDateEntry(data = {}) {
         const container = document.getElementById('event-dates-container');
         if (!container) return;
@@ -866,9 +863,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             consumable_credit_used: calculation.consumableCredit,
         };
         
+        // CORREÇÃO: Remove todos os campos que não existem no DB para evitar erros.
         const payload = { ...dataToSave };
         delete payload.client_cnpj;
         delete payload.client_email;
+        delete payload.client_phone;
 
 
         if (userRole === 'client') {
