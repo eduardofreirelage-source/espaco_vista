@@ -37,7 +37,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .card > h2 { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border-color); }
 .card-content { padding: 1rem 1.2rem; }
 
-/* (NOVO) Estilo para cabeçalho de card com ações (botões) */
+/* Estilo para cabeçalho de card com ações (botões) */
 .card .card-header {
     display: flex;
     justify-content: space-between;
@@ -64,21 +64,48 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 
 .btn.dirty { background-color: var(--warning-color); }
 .btn.dirty:hover { background-color: #ec971f; }
-.btn-icon { background: none; border: none; font-size: 1rem; cursor: pointer; padding: 0 0.4rem; color: #999; }
-.btn-icon:hover { color: var(--primary-color); }
+.btn-icon { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 0.4rem; color: #999; line-height: 1; }
+.btn-icon:hover { color: var(--danger-color); }
 
-/* Datas do Evento */
-#event-dates-container { display: flex; flex-direction: column; gap: 0.8rem; }
-.date-entry { display: grid; grid-template-columns: 130px 80px 80px 1fr auto; gap: 0.8rem; align-items: center; }
-#add-date-btn { margin-top: 1rem; align-self: flex-start; }
+/* Datas do Evento - NOVO LAYOUT */
+.event-dates-wrapper {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+}
+.date-entry {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: #fcfcfc;
+    margin-bottom: 1rem;
+}
+.date-entry .form-group {
+    margin-bottom: 0;
+    flex: 1 1 120px;
+}
+.date-entry .remove-date-btn {
+    flex-shrink: 0;
+    margin-bottom: 0.3rem; /* Alinhamento vertical com os inputs */
+}
+
 
 /* Acordeões (Details/Summary) */
-.data-accordion summary, .category-header { list-style: none; cursor: pointer; }
-/* Esconde o marcador padrão do navegador */
-.data-accordion summary::-webkit-details-marker, .category-header::-webkit-details-marker { display: none; }
-
+.data-accordion summary { list-style: none; cursor: pointer; }
+.data-accordion summary::-webkit-details-marker { display: none; }
 .data-accordion summary { padding: 1rem 1.2rem; }
 .data-accordion[open] summary { border-bottom: 1px solid var(--border-color); }
+
+/* (NOVO) Estilo para Summary que funciona como header flex */
+.card-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
 
 /* Estilos específicos para o acordeão de categorias no orçamento */
 #quote-categories-container { padding-top: 0.5rem; }
@@ -93,10 +120,8 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     background-color: #f9f9f9;
 }
 
-/* Adiciona um ícone de seta customizado */
 .category-header::after { content: '▼'; font-size: 0.7rem; color: #999; transition: transform 0.2s; }
 .category-accordion[open] .category-header::after { transform: rotate(180deg); }
-
 .category-title { font-size: 0.95rem; font-weight: 600; color: var(--primary-color); }
 
 /* Tabela de Orçamento */
@@ -130,9 +155,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .obs-popover.show { display: block; }
 .obs-popover textarea { width: 100%; height: 100px; margin-bottom: 1rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; resize: vertical; }
 
-/* (CORRIGIDO) Esconde a saída de impressão da tela movendo-a para fora da viewport,
-   o que permite que as regras de impressão em print.css a tornem visível novamente.
-   Usar 'display: none;' impedia a impressão. */
+/* (CORRIGIDO) Esconde a saída de impressão da tela movendo-a para fora da viewport */
 #print-output {
     position: absolute;
     left: -9999px;
@@ -149,7 +172,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .modal {
     display: none; 
     position: fixed; 
-    z-index: 1000; /* Acima de tudo */
+    z-index: 1000;
     left: 0;
     top: 0;
     width: 100%; 
@@ -168,7 +191,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     display: flex;
     flex-direction: column;
-    max-height: 85vh; /* Garante que o modal não seja maior que a tela */
+    max-height: 85vh;
 }
 
 .modal-header {
@@ -199,7 +222,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Permite que o conteúdo interno faça scroll */
+    overflow: hidden;
 }
 
 #catalog-search {
@@ -214,7 +237,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .catalog-container {
     display: flex;
     flex-grow: 1;
-    overflow: hidden; /* Necessário para o layout flexível */
+    overflow: hidden;
 }
 
 .catalog-categories {
@@ -222,7 +245,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     flex-shrink: 0;
     border-right: 1px solid var(--border-color);
     padding-right: 1rem;
-    overflow-y: auto; /* Scroll se houver muitas categorias */
+    overflow-y: auto;
 }
 
 .catalog-category-tab {
@@ -245,7 +268,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .catalog-items {
     flex-grow: 1;
     padding-left: 1rem;
-    overflow-y: auto; /* Scroll principal dos itens */
+    overflow-y: auto;
 }
 
 .catalog-item {
@@ -295,5 +318,4 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .client-view .form-group:has(#priceTableSelect) { display: none !important; }
 .client-view { padding-bottom: 1rem !important; }
 .client-view #print-btn { display: none !important; }
-/* (NOVO) Clientes não devem ver o botão de duplicar */
 .client-view .duplicate-item-btn { display: none !important; }
