@@ -708,6 +708,102 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderQuote();
     }
 
+    // =================================================================
+    // LÓGICA DE EXPORTAÇÃO XLSX (NOVO)
+    // =================================================================
+    function exportToXLSX() {
+        if (userRole !== 'admin') {
+            showNotification("Funcionalidade disponível apenas para administradores.", true);
+            return;
+        }
+
+        const clientName = currentQuote.client_name || 'Cliente';
+        const fileName = `Proposta - ${clientName.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
+        const calculation = calculateQuote();
+
+        const data = [
+            ["Proposta Comercial"],
+            [],
+            ["DADOS DO CLIENTE"],
+            ["Nome", currentQuote.client_name],
+            ["CNPJ", currentQuote.client_cnpj],
+            ["E-mail", currentQuote.client_email],
+            ["Telefone", currentQuote.client_phone],
+            [],
+            ["DADOS DO EVENTO"],
+            ["Nº de Convidados", currentQuote.guest_count],
+            ["Datas do Evento", currentQuote.event_dates.map(d => new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')).join(', ')],
+            [],
+            ["ITENS DO ORÇAMENTO"],
+            ["Categoria", "Item", "Data", "Qtde.", "Vlr. Unitário", "Desc. (%)", "Vlr. Total", "Observações"]
+        ];
+
+        const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
+            const service = services.find(s => s.id === item.service_id);
+            return service?.category;
+        }).filter(Boolean))].sort();
+
+        categoriesInQuote.forEach(category => {
+            const itemsInCategory = currentQuote.items.filter(item => {
+                const service = services.find(s => s.id === item.service_id);
+                return service && service.category === category;
+            });
+
+            itemsInCategory.forEach(item => {
+                const service = services.find(s => s.id === item.service_id);
+                if (!service) return;
+
+                const formattedDate = item.event_date ? new Date(item.event_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/A';
+                data.push([
+                    service.category,
+                    service.name,
+                    formattedDate,
+                    item.quantity,
+                    item.calculated_unit_price,
+                    item.discount_percent || 0,
+                    item.calculated_total,
+                    item.observations || ''
+                ]);
+            });
+        });
+
+        data.push([]);
+        data.push([]);
+        data.push([null, null, null, null, null, "Subtotal", calculation.subtotal]);
+        data.push([null, null, null, null, null, "Consumação Inclusa", -calculation.consumableCredit]);
+        data.push([null, null, null, null, null, "Desconto Geral", -calculation.discountGeneral]);
+        data.push([null, null, null, null, null, "VALOR TOTAL", calculation.total]);
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+
+        ws['!cols'] = [
+            { wch: 25 }, { wch: 40 }, { wch: 12 }, { wch: 8 },
+            { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 50 }
+        ];
+
+        const currencyFormat = 'R$ #,##0.00';
+        const itemsHeaderRowIndex = 13;
+        for (let i = itemsHeaderRowIndex; i < data.length; i++) {
+            if (data[i].length < 4) continue;
+            
+            const unitPriceCell = ws[XLSX.utils.encode_cell({ c: 4, r: i })];
+            if (unitPriceCell && typeof unitPriceCell.v === 'number') {
+                unitPriceCell.t = 'n';
+                unitPriceCell.z = currencyFormat;
+            }
+            const totalCell = ws[XLSX.utils.encode_cell({ c: 6, r: i })];
+            if (totalCell && typeof totalCell.v === 'number') {
+                totalCell.t = 'n';
+                totalCell.z = currencyFormat;
+            }
+        }
+        
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Proposta");
+
+        XLSX.writeFile(wb, fileName);
+    }
+
 
 
     // =================================================================
@@ -794,6 +890,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.getElementById('save-quote-btn')?.addEventListener('click', saveQuote);
+        
+        document.getElementById('export-xlsx-btn')?.addEventListener('click', exportToXLSX); // NOVO
+
         document.getElementById('print-btn')?.addEventListener('click', () => {
              if (userRole === 'admin') {
                  window.print();
@@ -850,8 +949,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const calculation = calculateQuote();
         
-        // CORREÇÃO: Monta um objeto com os detalhes para a coluna 'quote_data'
-        // e um payload final para a linha da tabela, conforme a nova estrutura.
         const quoteDataObject = {
             client_cnpj: currentQuote.client_cnpj,
             client_email: currentQuote.client_email,
@@ -895,21 +992,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             let result;
             if (currentQuote.id) {
-                // Para updates, passamos o payload e o ID
                 const { data, error } = await supabase.from('quotes').update(finalPayload).eq('id', currentQuote.id).select().single();
                 result = { data, error };
             } else {
-                // Para inserts, não há ID
                 const { data, error } = await supabase.from('quotes').insert(finalPayload).select().single();
                 result = { data, error };
             }
 
             if (result.error) throw result.error;
 
-            // Atualiza o estado local com os dados retornados
             const savedData = result.data;
             currentQuote.id = savedData.id;
-            // Mescla os dados salvos em quote_data de volta para o estado principal
             Object.assign(currentQuote, savedData.quote_data);
             currentQuote.items = (savedData.quote_data.items || []).map((item, index) => ({
                 ...item,
@@ -948,12 +1041,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
             if (!data) throw new Error("Orçamento não encontrado.");
 
-            // Desmonta o objeto para preencher a UI
             const quoteDetails = data.quote_data || {};
             currentQuote = {
-                ...currentQuote, // Estrutura base
-                ...quoteDetails, // Detalhes de dentro do JSON
-                id: data.id,     // Detalhes da linha principal
+                ...currentQuote,
+                ...quoteDetails,
+                id: data.id,
                 client_name: data.client_name,
                 status: data.status,
                 items: (quoteDetails.items || []).map((item, index) => ({
@@ -962,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 })),
             };
 
-            // Popula a UI com os dados do estado local
             document.getElementById('clientName').value = currentQuote.client_name || '';
             document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
             document.getElementById('clientEmail').value = currentQuote.client_email || '';
