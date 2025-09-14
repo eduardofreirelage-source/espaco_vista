@@ -146,7 +146,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
    ================================================================= */
 
 .container {
-    max-width: 1600px; /* Admin usa um container maior */
+    max-width: 1600px;
 }
 
 /* Estilos de Abas */
@@ -174,7 +174,18 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .editable-table input:focus, .editable-table select:focus { border-color: var(--primary-color); background-color: white; outline: none; box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2); }
 .price-column { text-align: right; }
 .price-column input { text-align: right; }
-.editable-table .category-header th { background-color: #e9ecef; color: #495057; font-weight: 600; text-align: left; padding: 10px 12px; border-top: 2px solid #dee2e6; border-bottom: 1px solid #dee2e6; }
+
+/* MODIFICADO: Estilo do cabeçalho de categoria no Admin para ser igual ao da página de orçamento */
+.editable-table .category-header th {
+    background-color: #f9f9f9; /* Fundo mais claro, igual ao do acordeão */
+    color: var(--primary-color);  /* Texto vermelho, igual ao do acordeão */
+    font-size: 0.95rem;          /* Tamanho da fonte igual ao do acordeão */
+    font-weight: 600;
+    text-align: left;
+    padding: 0.8rem 1.2rem;
+    border-top: 2px solid #eee;
+    border-bottom: 1px solid var(--border-color);
+}
 .success-flash { animation: success-flash-anim 1.5s ease-out; }
 .inline-form { border-top: 1px solid var(--border-color); margin-top: 1rem; padding-top: 1rem; display: flex; gap: 1rem; align-items: flex-end; }
 .inline-form input, .inline-form select { flex-grow: 1; }
