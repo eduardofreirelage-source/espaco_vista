@@ -17,17 +17,25 @@
         </header>
 
         <main>
-            <section class="card">
-                <h2>Orçamentos Salvos</h2>
-                <div class="card-content" id="quotes-list-container">
-                    <table id="quotes-table">
-                        <thead><tr><th>Cliente</th><th>Data de Criação</th><th>Status</th><th>Ações</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </section>
+            <div class="tabs-nav">
+                <button class="tab-btn active" data-tab="quotes">Orçamentos</button>
+                <button class="tab-btn" data-tab="settings">Catálogo & Preços</button>
+            </div>
 
-            <section class="card">
+            <div id="tab-content-quotes" class="tab-content active">
+                <section class="card">
+                    <h2>Orçamentos Salvos</h2>
+                    <div class="card-content" id="quotes-list-container">
+                        <table id="quotes-table">
+                            <thead><tr><th>Cliente</th><th>Data de Criação</th><th>Status</th><th>Ações</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <div id="tab-content-settings" class="tab-content">
+                <section class="card">
                     <h2>Catálogo de Serviços</h2>
                     <div class="card-content table-container">
                         <table id="services-table" class="editable-table">
@@ -57,7 +65,7 @@
                         </form>
                     </div>
                 </section>
-
+            </div>
         </main>
     </div>
 
