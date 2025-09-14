@@ -254,7 +254,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.calculated_unit_price = basePrice;
             item.calculated_total = total;
             
-            if (service.category === 'Serviços e Outros') {
+            // MODIFICADO: Itens de 'Espaço' e 'Serviços e Outros' não são abatidos pela consumação
+            if (service.category === 'Serviços e Outros' || service.category === 'Espaço') {
                 nonConsumableSubtotal += total;
             } else {
                 consumableSubtotal += total;
@@ -626,7 +627,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // GERENCIAMENTO DE ITENS
     // =================================================================
     
-    // MODIFICADO: A quantidade inicial de itens de Gastronomia agora é o número de convidados
     function addItemsToQuote(serviceId) {
         if (currentQuote.event_dates.length === 0) return;
 
@@ -643,7 +643,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // Define a quantidade inicial
         let initialQuantity = 1;
         if (service.category === 'Gastronomia') {
             initialQuantity = currentQuote.guest_count > 0 ? currentQuote.guest_count : 1;
@@ -652,7 +651,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newItem = {
             id: Date.now() + '-' + serviceId, 
             service_id: serviceId,
-            quantity: initialQuantity, // Usa a quantidade inicial definida
+            quantity: initialQuantity,
             discount_percent: 0,
             event_date: defaultDate,
             observations: ''
