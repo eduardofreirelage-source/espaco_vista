@@ -190,8 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- LÓGICA DE EVENT LISTENERS ---
-
-    // NOVO: Função para controlar as abas
+    
     function setupTabEvents() {
         const tabsNav = document.querySelector('.tabs-nav');
         if (!tabsNav) return;
@@ -203,11 +202,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tabId = clickedTab.dataset.tab;
             const targetContent = document.getElementById(`tab-content-${tabId}`);
 
-            // Remove a classe 'active' de todos
             tabsNav.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-            // Adiciona a classe 'active' ao alvo
             clickedTab.classList.add('active');
             if (targetContent) {
                 targetContent.classList.add('active');
@@ -215,8 +212,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // NOVO: Função para controlar as seções expansíveis
+    function setupCollapsibleEvents() {
+        const collapsibleHeaders = document.querySelectorAll('.collapsible-card .card-header');
+        collapsibleHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const card = header.closest('.collapsible-card');
+                if (card) {
+                    card.classList.toggle('collapsed');
+                }
+            });
+        });
+    }
+
     function addEventListeners() {
-        setupTabEvents(); // NOVO: Adiciona os listeners das abas
+        setupTabEvents();
+        setupCollapsibleEvents(); // NOVO: Adiciona os listeners das seções
 
         // Formulários de adição
         addServiceForm?.addEventListener('submit', async (e) => {
@@ -253,7 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (action === 'delete-quote') deleteQuote(id);
         });
 
-        // Listeners para edições inline na tabela de SERVIÇOS
+        // Listeners para edições inline
         if (servicesTable) {
             servicesTable.addEventListener('input', (e) => {
                 if (e.target.matches('.service-detail-input[type="text"]')) {
@@ -268,7 +279,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Listeners para edições inline na tabela de LISTAS DE PREÇO
         if (priceTablesList) {
             priceTablesList.addEventListener('input', (e) => {
                 if (e.target.matches('.price-table-input[data-field="name"]')) {
