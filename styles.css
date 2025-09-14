@@ -37,6 +37,19 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .card > h2 { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border-color); }
 .card-content { padding: 1rem 1.2rem; }
 
+/* (NOVO) Estilo para cabeçalho de card com ações (botões) */
+.card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.card .card-header h2 {
+    padding: 0;
+    border: none;
+}
+
 /* Formulários */
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
 .form-group { margin-bottom: 0.5rem; }
@@ -68,7 +81,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .data-accordion[open] summary { border-bottom: 1px solid var(--border-color); }
 
 /* Estilos específicos para o acordeão de categorias no orçamento */
-#quote-categories-container { padding: 0.5rem 0; }
+#quote-categories-container { padding-top: 0.5rem; }
 .category-accordion { border-bottom: 1px solid var(--border-color); }
 .category-accordion:last-child { border-bottom: none; }
 
@@ -117,10 +130,16 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .obs-popover.show { display: block; }
 .obs-popover textarea { width: 100%; height: 100px; margin-bottom: 1rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; resize: vertical; }
 
-/* (NOVO) Correção do Bug Visual: Esconde a saída de impressão na tela. 
-   O print.css se encarrega de torná-lo visível apenas durante a impressão. */
+/* (CORRIGIDO) Esconde a saída de impressão da tela movendo-a para fora da viewport,
+   o que permite que as regras de impressão em print.css a tornem visível novamente.
+   Usar 'display: none;' impedia a impressão. */
 #print-output {
-    display: none;
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
 }
 
 /* =================================================================
