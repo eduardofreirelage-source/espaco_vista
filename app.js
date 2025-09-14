@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let userRole = 'client';
     let isDirty = false;
 
+    // NOVO: Define a ordem fixa para as categorias
+    const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços e Outros'];
+
     const notification = document.getElementById('save-notification');
     const catalogModal = document.getElementById('catalogModal');
 
@@ -223,8 +226,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
+    // MODIFICADO: Função de cálculo para aplicar a regra da consumação
     function calculateQuote() {
-        let subtotal = 0;
+        let consumableSubtotal = 0;
+        let nonConsumableSubtotal = 0;
         const guestCount = currentQuote.guest_count;
         const priceTableId = currentQuote.price_table_id;
 
@@ -250,20 +255,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             item.calculated_unit_price = basePrice;
             item.calculated_total = total;
-            subtotal += total;
+            
+            // Separa os totais entre consumíveis e não consumíveis
+            if (service.category === 'Serviços e Outros') {
+                nonConsumableSubtotal += total;
+            } else {
+                consumableSubtotal += total;
+            }
         });
 
+        const subtotal = consumableSubtotal + nonConsumableSubtotal;
         const discountGeneral = userRole === 'admin' ? (parseFloat(currentQuote.discount_general) || 0) : 0;
         
-        let consumableCredit = 0;
+        let availableConsumableCredit = 0;
         if (userRole === 'admin' && priceTableId) {
             const table = priceTables.find(t => t.id === priceTableId);
-            consumableCredit = table ? (parseFloat(table.consumable_credit) || 0) : 0;
+            availableConsumableCredit = table ? (parseFloat(table.consumable_credit) || 0) : 0;
         }
 
-        const total = subtotal - discountGeneral - consumableCredit;
+        // O crédito usado é o menor valor entre o crédito disponível e o subtotal dos itens consumíveis
+        const consumableCreditUsed = Math.min(consumableSubtotal, availableConsumableCredit);
 
-        return { subtotal, consumableCredit, discountGeneral, total: Math.max(0, total) };
+        const total = subtotal - discountGeneral - consumableCreditUsed;
+
+        return { subtotal, consumableCredit: consumableCreditUsed, discountGeneral, total: Math.max(0, total) };
     }
 
 
@@ -271,6 +286,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // RENDERIZAÇÃO DO ORÇAMENTO
     // =================================================================
 
+    // NOVO: Função auxiliar para ordenação customizada
+    function sortCategories(categories) {
+        return categories.sort((a, b) => {
+            const indexA = CATEGORY_ORDER.indexOf(a);
+            const indexB = CATEGORY_ORDER.indexOf(b);
+            if (indexA === -1 && indexB === -1) return a.localeCompare(b); // Alfabético para não listados
+            if (indexA === -1) return 1;  // Não listados vão para o fim
+            if (indexB === -1) return -1; // Não listados vão para o fim
+            return indexA - indexB; // Ordena pelos definidos
+        });
+    }
+    
     function renderQuote() {
         const calculation = calculateQuote();
         renderCategories(calculation);
@@ -289,10 +316,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('quote-categories-container');
         if (!container) return;
 
-        const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
+        // MODIFICADO: Usa a nova função de ordenação
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
              const service = services.find(s => s.id === item.service_id);
              return service?.category;
-        }).filter(Boolean))].sort();
+        }).filter(Boolean))]);
 
         container.querySelectorAll('.category-accordion').forEach(accordion => {
             const categoryName = accordion.dataset.category;
@@ -396,10 +424,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!categoryList) return;
 
         categoryList.innerHTML = '';
-        const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
+        
+        // MODIFICADO: Usa a nova função de ordenação
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
             const service = services.find(s => s.id === item.service_id);
             return service ? service.category : null;
-        }).filter(Boolean))].sort();
+        }).filter(Boolean))]);
 
         categoriesInQuote.forEach(category => {
             const categoryTotal = currentQuote.items.reduce((sum, item) => {
@@ -442,10 +472,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
-        const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
+        // MODIFICADO: Usa a nova função de ordenação
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
              const service = services.find(s => s.id === item.service_id);
              return service?.category;
-        }).filter(Boolean))].sort();
+        }).filter(Boolean))]);
 
         categoriesInQuote.forEach(category => {
             html += `<h2 class="print-category-title">${category}</h2>`;
@@ -709,7 +740,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // LÓGICA DE EXPORTAÇÃO XLSX (NOVO)
+    // LÓGICA DE EXPORTAÇÃO XLSX
     // =================================================================
     function exportToXLSX() {
         if (userRole !== 'admin') {
@@ -738,10 +769,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             ["Categoria", "Item", "Data", "Qtde.", "Vlr. Unitário", "Desc. (%)", "Vlr. Total", "Observações"]
         ];
 
-        const categoriesInQuote = [...new Set(currentQuote.items.map(item => {
+        // MODIFICADO: Usa a nova função de ordenação
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
             const service = services.find(s => s.id === item.service_id);
             return service?.category;
-        }).filter(Boolean))].sort();
+        }).filter(Boolean))]);
 
         categoriesInQuote.forEach(category => {
             const itemsInCategory = currentQuote.items.filter(item => {
@@ -891,7 +923,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('save-quote-btn')?.addEventListener('click', saveQuote);
         
-        document.getElementById('export-xlsx-btn')?.addEventListener('click', exportToXLSX); // NOVO
+        document.getElementById('export-xlsx-btn')?.addEventListener('click', exportToXLSX);
 
         document.getElementById('print-btn')?.addEventListener('click', () => {
              if (userRole === 'admin') {
