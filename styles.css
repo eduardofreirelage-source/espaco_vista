@@ -155,13 +155,11 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .obs-popover.show { display: block; }
 .obs-popover textarea { width: 100%; height: 100px; margin-bottom: 1rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; resize: vertical; }
 
-/* (CORRIGIDO) Esconde a saída de impressão da tela movendo-a para fora da viewport */
+/* (CORRIGIDO) Regra de CSS para esconder o conteúdo da impressão na tela. */
 #print-output {
+    visibility: hidden;
     position: absolute;
-    left: -9999px;
-    top: auto;
-    width: 1px;
-    height: 1px;
+    height: 0;
     overflow: hidden;
 }
 
