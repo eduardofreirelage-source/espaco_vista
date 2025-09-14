@@ -12,7 +12,6 @@
         <header>
             <h1 id="main-title">Gerador de Propostas</h1>
             <div class="header-actions">
-                <button id="open-catalog-btn" class="btn btn-primary">+ Adicionar Itens</button>
                 
                 <button id="save-quote-btn" class="btn btn-save">Salvar</button>
                 <a href="admin.html" id="admin-link" class="btn" style="display: none;">⚙️ Gerenciar</a>
@@ -49,7 +48,10 @@
             </details>
 
             <section class="card" id="quote-card">
-                <h2>Itens do Orçamento</h2>
+                <div class="card-header">
+                    <h2>Itens do Orçamento</h2>
+                    <button id="open-catalog-btn" class="btn btn-primary">+ Adicionar Itens</button>
+                </div>
                 <div id="quote-categories-container">
                     </div>
             </section>
