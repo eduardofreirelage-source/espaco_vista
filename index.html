@@ -36,14 +36,16 @@
             </details>
 
             <details class="card data-accordion" open>
-                <summary><h2>Dados do Evento</h2></summary>
+                <summary class="card-summary-header">
+                    <h2>Dados do Evento</h2>
+                    <button id="add-date-btn" class="btn btn-primary">+ Adicionar Data</button>
+                </summary>
                 <div class="card-content">
                     <div class="form-grid">
                         <div class="form-group"><label for="guestCount">Nº de Convidados</label><input type="number" id="guestCount" value="100" min="1"></div>
                         <div class="form-group"><label for="priceTableSelect">Tabela de Preços</label><select id="priceTableSelect"></select></div>
                     </div>
-                    <div id="event-dates-container"></div>
-                    <button id="add-date-btn" class="btn">+ Adicionar Data</button>
+                    <div id="event-dates-container" class="event-dates-wrapper"></div>
                 </div>
             </details>
 
