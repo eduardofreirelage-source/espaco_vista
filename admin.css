@@ -24,7 +24,6 @@ body {
     font-size: 14px;
 }
 
-/* Aumentado o container para melhor visualização da tabela expandida */
 .container {
     max-width: 1600px;
     margin: 1.5rem auto;
@@ -46,12 +45,11 @@ h1 {
     font-weight: 600;
 }
 
+/* MODIFICADO: Estilo do H2 agora está no .card-header */
 h2 {
     color: var(--primary-color);
     font-size: 1.1rem;
-    padding: 1.2rem 1.5rem;
     margin: 0;
-    border-bottom: 1px solid var(--border-color);
 }
 
 h3 {
@@ -68,9 +66,14 @@ h3 {
     margin-bottom: 2rem;
 }
 
+/* MODIFICADO: .card-content sem padding por padrão no collapsible */
 .card-content {
     padding: 1.5rem;
 }
+.collapsible-card .card-content {
+    padding: 0 1.5rem;
+}
+
 
 /* Wrapper para rolagem horizontal */
 .table-container {
@@ -92,7 +95,6 @@ tr:last-child td {
     border-bottom: none;
 }
 
-/* Adicionado white-space: nowrap; para evitar quebra de linha no cabeçalho */
 th {
     font-weight: 500;
     font-size: 0.75rem;
@@ -113,21 +115,19 @@ input, select {
     font-size: 0.9rem;
 }
 
-/* Estilos para a tabela de serviços editável */
 .editable-table th, .editable-table td {
-    padding: 0.5rem; /* Padding mais justo para a visualização em matriz */
+    padding: 0.5rem;
 }
 
 .editable-table input, .editable-table select {
     padding: 0.5rem;
-    margin: -0.5rem; /* Alinha o input perfeitamente dentro da célula */
-    border: 1px solid transparent; /* Esconde a borda até focar */
-    background-color: inherit; /* Combina com o fundo da linha (incluindo linhas pares) */
+    margin: -0.5rem;
+    border: 1px solid transparent;
+    background-color: inherit;
     border-radius: 4px;
     transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
-/* Feedback visual ao passar o mouse na linha */
 .editable-table tr:hover input,
 .editable-table tr:hover select {
     border-color: #eee;
@@ -141,33 +141,30 @@ input, select {
 }
 
 .price-column {
-    text-align: right; /* Alinha colunas de preço à direita */
+    text-align: right;
 }
 
 .price-column input {
-    text-align: right; /* Alinha texto do input à direita */
+    text-align: right;
 }
 
-/* Estilos para o cabeçalho da categoria na tabela de serviços */
 .editable-table .category-header th {
-    background-color: #e9ecef; /* Um cinza claro para destacar */
+    background-color: #e9ecef;
     color: #495057;
     font-weight: 600;
     text-align: left;
     padding: 10px 12px;
-    border-top: 2px solid #dee2e6; /* Linha superior para separar grupos */
+    border-top: 2px solid #dee2e6;
     border-bottom: 1px solid #dee2e6;
 }
 
-/* Animação de flash de sucesso para inputs */
 @keyframes success-flash-anim {
     0% { background-color: inherit; }
-    50% { background-color: rgba(40, 167, 69, 0.2); } /* success-color com transparência */
+    50% { background-color: rgba(40, 167, 69, 0.2); }
     100% { background-color: inherit; }
 }
 
 .success-flash {
-    /* Importante usar inherit no background-color para a animação funcionar corretamente em linhas pares */
     animation: success-flash-anim 1.5s ease-out;
 }
 
@@ -249,7 +246,6 @@ input, select {
     transform: translateY(0);
 }
 
-/* NOVO: Estilos para as Abas */
 .tabs-nav {
     display: flex;
     border-bottom: 1px solid var(--border-color);
@@ -266,7 +262,7 @@ input, select {
     font-weight: 500;
     color: #666;
     transition: color 0.2s, border-color 0.2s;
-    margin-bottom: -1px; /* Faz a borda ativa sobrepor a borda principal */
+    margin-bottom: -1px;
 }
 
 .tab-btn:hover {
@@ -285,4 +281,48 @@ input, select {
 
 .tab-content.active {
     display: block;
+}
+
+/* NOVO: Estilos para seções expansíveis (Accordion) */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 1.2rem 1.5rem;
+}
+
+.collapsible-card:not(.collapsed) .card-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.collapse-icon {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--primary-color);
+    transition: transform 0.3s ease;
+}
+
+.collapsible-card.collapsed .collapse-icon::before {
+    content: '+';
+}
+
+.collapsible-card:not(.collapsed) .collapse-icon::before {
+    content: '−';
+}
+
+.collapsible-card .card-content {
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out, border-top 0.4s ease-out;
+    max-height: 2000px; /* Um valor alto para acomodar o conteúdo */
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.collapsible-card.collapsed .card-content {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top: 1px solid transparent;
 }
