@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- RENDERIZAÇÃO ---
     function renderAll() {
-        // Renderiza as listas primeiro, depois o catálogo que depende dos nomes das listas.
         if (priceTablesTbody) renderPriceTablesList();
         if (servicesTbody && servicesThead) renderServicesTable();
         if (quotesTbody) renderQuotesTable();
@@ -93,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    // Renderiza a tabela como uma matriz editável (Permanece igual)
+    // MODIFICADO: Renderiza a tabela de serviços com agrupamento por categoria
     function renderServicesTable() {
         servicesTbody.innerHTML = '';
         servicesThead.innerHTML = '';
@@ -105,7 +104,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             <th style="min-width: 150px;">Categoria</th>
             <th style="min-width: 120px;">Unidade</th>
         `;
-        // Adicionar colunas para cada tabela de preço
         priceTables.forEach(table => {
             const th = document.createElement('th');
             th.textContent = table.name;
@@ -116,19 +114,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         headerRow.innerHTML += `<th>Ações</th>`;
         servicesThead.appendChild(headerRow);
 
-        // 2. Construir o Corpo
+        // 2. Construir o Corpo com Agrupamento
+        let currentCategory = null; // NOVO: Variável para rastrear a categoria atual
+        const colspan = headerRow.children.length; // NOVO: Calcula o colspan para o cabeçalho da categoria
+
         services.forEach(service => {
+            // NOVO: Verifica se a categoria mudou para adicionar uma linha de cabeçalho
+            if (service.category !== currentCategory) {
+                currentCategory = service.category;
+                const categoryRow = document.createElement('tr');
+                categoryRow.className = 'category-header'; // Classe para estilização
+                categoryRow.innerHTML = `<th colspan="${colspan}">${currentCategory}</th>`;
+                servicesTbody.appendChild(categoryRow);
+            }
+
+            // Lógica original para criar a linha de serviço
             const row = document.createElement('tr');
             row.dataset.serviceId = service.id;
 
-            // Colunas para detalhes do serviço (editáveis)
             row.innerHTML = `
                 <td><input type="text" class="service-detail-input" data-field="name" value="${service.name}"></td>
                 <td>${createCategorySelect(service.category)}</td>
                 <td>${createUnitSelect(service.unit)}</td>
             `;
 
-            // Colunas para preços (editáveis)
             priceTables.forEach(table => {
                 const priceRecord = servicePrices.find(p => p.service_id === service.id && p.price_table_id === table.id);
                 const price = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
@@ -138,30 +147,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 row.appendChild(td);
             });
 
-            // Coluna de Ações
             const actionsTd = document.createElement('td');
             actionsTd.className = 'actions';
-            actionsTd.innerHTML = `
-                <button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button>
-            `;
+            actionsTd.innerHTML = `<button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button>`;
             row.appendChild(actionsTd);
 
             servicesTbody.appendChild(row);
         });
     }
     
-    // (MODIFICADO) Renderiza a lista de preços com inputs editáveis
     function renderPriceTablesList() {
         priceTablesTbody.innerHTML = '';
         priceTables.forEach(table => {
             const row = document.createElement('tr');
-            // Adicionado data-table-id na linha
             row.dataset.tableId = table.id;
-
             const consumable = parseFloat(table.consumable_credit || 0).toFixed(2);
             
-            // Transformado em inputs editáveis com classe específica e data-field
-            // Adicionado price-column ao TD para alinhamento correto do input numérico (definido no CSS)
             row.innerHTML = `
                 <td><input type="text" class="price-table-input" data-field="name" value="${table.name}"></td>
                 <td class="price-column">
@@ -175,14 +176,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // (MODIFICADO) Atualiza as ações (Editar, Exportar, Excluir)
     function renderQuotesTable() {
         quotesTbody.innerHTML = '';
         quotes.forEach(quote => {
             const row = document.createElement('tr');
             const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
 
-            // Usamos links (<a>) para Editar e Exportar. Exportar abre em nova aba com parâmetro print=true.
             row.innerHTML = `
                 <td>${quote.client_name || 'Rascunho sem nome'}</td>
                 <td>${createdAt}</td>
@@ -200,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- LÓGICA DE EVENT LISTENERS ---
 
     function addEventListeners() {
-        // Formulários de adição (permanecem iguais)
+        // Formulários de adição
         addServiceForm?.addEventListener('submit', async (e) => {
              e.preventDefault();
             const newService = {
@@ -221,7 +220,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             const { error } = await supabase.from('price_tables').insert([newTable]);
             if(error) { showNotification(`Erro: ${error.message}`, true); } 
-            // Quando uma nova lista é adicionada, precisamos recarregar para mostrar a nova coluna.
             else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
         });
 
@@ -251,16 +249,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // (NOVO) Listeners para edições inline na tabela de LISTAS DE PREÇO
+        // Listeners para edições inline na tabela de LISTAS DE PREÇO
         if (priceTablesList) {
-            // 'input' para o nome (com debounce)
             priceTablesList.addEventListener('input', (e) => {
                 if (e.target.matches('.price-table-input[data-field="name"]')) {
                     handlePriceTableEdit(e.target, true);
                 }
             });
 
-            // 'change' para a consumação (imediato)
             priceTablesList.addEventListener('change', (e) => {
                 if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) {
                     handlePriceTableEdit(e.target, false);
@@ -269,7 +265,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // (Renomeado de handleInlineEdit para handleServiceEdit)
     function handleServiceEdit(inputElement, useDebounce) {
         const row = inputElement.closest('tr');
         if (!row) return;
@@ -303,7 +298,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // (NOVO) Função para lidar com a edição inline das Listas de Preço
     function handlePriceTableEdit(inputElement, useDebounce) {
         const row = inputElement.closest('tr');
         if (!row) return;
@@ -321,7 +315,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (field === 'consumable_credit') {
                 value = parseFloat(value) || 0;
-                // Formatação imediata para campos numéricos no evento 'change'
                 if (!useDebounce) {
                     inputElement.value = value.toFixed(2);
                 }
@@ -340,11 +333,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- FUNÇÕES DE AÇÃO (CRUD) ---
 
-    // (NOVO) Função para atualizar detalhes da Lista de Preço (Nome, Consumação)
     async function updatePriceTableDetail(tableId, field, value, inputElement) {
         if (!tableId || !field) return;
 
-        // Validação básica para nome
         if (field === 'name' && !value.trim()) {
             showNotification('O nome da lista não pode ficar vazio.', true);
             const table = priceTables.find(t => t.id === tableId);
@@ -352,15 +343,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Atualização otimista (estado local)
         const table = priceTables.find(t => t.id === tableId);
-        // Guardar o nome antigo para verificar se precisamos re-renderizar o catálogo
         const oldName = table ? table.name : null;
         if (table) {
             table[field] = value;
         }
 
-        // Atualizar Supabase
         const { error } = await supabase
             .from('price_tables')
             .update({ [field]: value })
@@ -369,41 +357,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error) {
             console.error(`Error updating price table detail ${field}:`, error.message);
             showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
-            // Se der erro, re-busca os dados para garantir consistência
             fetchData(); 
         } else {
-            // Indicar sucesso no input brevemente (CSS Flash)
             showFlash(inputElement);
-
-            // IMPORTANTE: Se o nome mudou, precisamos re-renderizar a tabela de serviços
-            // pois os cabeçalhos das colunas usam esse nome.
             if (field === 'name' && oldName !== value) {
                 renderServicesTable();
             }
         }
     }
 
-
-    // (Permanece igual, mas usa showFlash)
     async function updateServiceDetail(serviceId, field, value, inputElement) {
         if (!serviceId || !field) return;
 
-        // Validação básica para nome
         if (field === 'name' && !value.trim()) {
             showNotification('O nome do serviço não pode ficar vazio.', true);
-            // Reverte o input para o valor anterior usando o estado local
             const service = services.find(s => s.id === serviceId);
             if (service) inputElement.value = service[field];
             return;
         }
 
-        // Atualização otimista (estado local)
         const service = services.find(s => s.id === serviceId);
         if (service) {
             service[field] = value;
         }
 
-        // Atualizar Supabase
         const { error } = await supabase
             .from('services')
             .update({ [field]: value })
@@ -412,14 +389,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error) {
             console.error(`Error updating service detail ${field}:`, error.message);
             showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
-            // Se der erro, re-busca os dados para reverter a atualização otimista
             fetchData(); 
         } else {
             showFlash(inputElement);
         }
     }
 
-    // (Permanece igual, mas usa showFlash)
     async function updateServicePrice(serviceId, tableId, price, inputElement) {
         if (!serviceId || !tableId) return;
 
@@ -429,7 +404,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             price: price
         };
 
-        // Atualizar Supabase (Upsert lida com inserção e atualização)
         const { data, error } = await supabase
             .from('service_prices')
             .upsert(recordToUpsert)
@@ -439,17 +413,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error) {
             console.error("Error updating service price:", error.message);
             showNotification(`Erro ao atualizar preço: ${error.message}`, true);
-            // Reverte o input em caso de erro (buscando do estado local anterior)
             const priceRecord = servicePrices.find(p => p.service_id === serviceId && p.price_table_id === tableId);
             inputElement.value = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
         } else {
-            // Atualizar estado local (servicePrices) com os dados retornados do banco
             const existingIndex = servicePrices.findIndex(p => p.service_id === serviceId && p.price_table_id === tableId);
             if (existingIndex > -1) {
-                // Atualizar registro existente no cache local
                 servicePrices[existingIndex] = data;
             } else {
-                // Adicionar novo registro ao cache local
                 servicePrices.push(data);
             }
 
@@ -477,14 +447,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- FUNÇÕES UTILITÁRIAS ---
-
-    // (NOVO) Função auxiliar para feedback visual
     function showFlash(inputElement) {
         inputElement.classList.add('success-flash');
         setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
     }
 
-    // --- FUNÇÃO DE NOTIFICAÇÃO (Permanece igual) ---
     function showNotification(message, isError = false) {
         if (!notification) return;
         notification.textContent = message;
