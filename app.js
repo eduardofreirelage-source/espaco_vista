@@ -850,54 +850,70 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const calculation = calculateQuote();
         
-        const dataToSave = {
-            ...currentQuote,
+        // CORREÇÃO: Monta um objeto com os detalhes para a coluna 'quote_data'
+        // e um payload final para a linha da tabela, conforme a nova estrutura.
+        const quoteDataObject = {
+            client_cnpj: currentQuote.client_cnpj,
+            client_email: currentQuote.client_email,
+            client_phone: currentQuote.client_phone,
+            guest_count: currentQuote.guest_count,
+            price_table_id: currentQuote.price_table_id,
+            event_dates: currentQuote.event_dates,
             items: currentQuote.items.map(item => {
                 const { id, ...rest } = item;
                 return rest;
             }),
-            total_value: calculation.total,
+            discount_general: currentQuote.discount_general,
             subtotal_value: calculation.subtotal,
-            consumable_credit_used: calculation.consumableCredit,
+            consumable_credit_used: calculation.consumableCredit
+        };
+
+        const finalPayload = {
+            client_name: currentQuote.client_name,
+            status: currentQuote.status,
+            total_value: calculation.total,
+            quote_data: quoteDataObject
         };
         
         if (userRole === 'client') {
-            dataToSave.id = null; 
-            dataToSave.status = 'Solicitado pelo Cliente';
-            dataToSave.price_table_id = null;
-            dataToSave.discount_general = 0;
-            dataToSave.total_value = 0;
-            dataToSave.subtotal_value = 0;
-            dataToSave.consumable_credit_used = 0;
-            dataToSave.items.forEach(item => {
+            finalPayload.status = 'Solicitado pelo Cliente';
+            finalPayload.total_value = 0;
+            // Limpa dados sensíveis no objeto JSON
+            finalPayload.quote_data.price_table_id = null;
+            finalPayload.quote_data.discount_general = 0;
+            finalPayload.quote_data.subtotal_value = 0;
+            finalPayload.quote_data.consumable_credit_used = 0;
+            finalPayload.quote_data.items.forEach(item => {
                 item.discount_percent = 0;
                 item.calculated_unit_price = 0;
                 item.calculated_total = 0;
             });
-
         } else if (userRole === 'admin' && !isDirty) {
             return; 
         }
 
         try {
             let result;
-            if (dataToSave.id) {
-                // Para updates, o ID é necessário
-                const { data, error } = await supabase.from('quotes').update(dataToSave).eq('id', dataToSave.id).select().single();
+            if (currentQuote.id) {
+                // Para updates, passamos o payload e o ID
+                const { data, error } = await supabase.from('quotes').update(finalPayload).eq('id', currentQuote.id).select().single();
                 result = { data, error };
             } else {
-                // CORREÇÃO: Para inserts, removemos a chave 'id' para que o DB a gere.
-                const { id, ...insertData } = dataToSave;
-                const { data, error } = await supabase.from('quotes').insert(insertData).select().single();
+                // Para inserts, não há ID
+                const { data, error } = await supabase.from('quotes').insert(finalPayload).select().single();
                 result = { data, error };
             }
 
             if (result.error) throw result.error;
 
-            currentQuote.id = result.data.id;
-             currentQuote.items = (result.data.items || []).map((item, index) => ({
+            // Atualiza o estado local com os dados retornados
+            const savedData = result.data;
+            currentQuote.id = savedData.id;
+            // Mescla os dados salvos em quote_data de volta para o estado principal
+            Object.assign(currentQuote, savedData.quote_data);
+            currentQuote.items = (savedData.quote_data.items || []).map((item, index) => ({
                 ...item,
-                id: `saved-${currentQuote.id}-${index}-${item.service_id || index}`
+                id: `saved-${savedData.id}-${index}-${item.service_id || index}`
             }));
             
             if (userRole === 'client') {
@@ -907,7 +923,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setDirty(false);
                 if (window.location.search.indexOf('quote_id=') === -1) {
                      const newUrl = new URL(window.location);
-                     newUrl.searchParams.set('quote_id', currentQuote.id);
+                     newUrl.searchParams.set('quote_id', savedData.id);
                      window.history.pushState({}, '', newUrl);
                 }
             }
@@ -930,27 +946,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const { data, error } = await supabase.from('quotes').select('*').eq('id', id).single();
             if (error) throw error;
+            if (!data) throw new Error("Orçamento não encontrado.");
 
+            // Desmonta o objeto para preencher a UI
+            const quoteDetails = data.quote_data || {};
             currentQuote = {
-                ...currentQuote,
-                ...data,
-                items: (data.items || []).map((item, index) => ({
+                ...currentQuote, // Estrutura base
+                ...quoteDetails, // Detalhes de dentro do JSON
+                id: data.id,     // Detalhes da linha principal
+                client_name: data.client_name,
+                status: data.status,
+                items: (quoteDetails.items || []).map((item, index) => ({
                     ...item,
                     id: `loaded-${id}-${index}-${item.service_id || index}`
                 })),
-                event_dates: data.event_dates || [],
-                discount_general: parseFloat(data.discount_general) || 0, 
-                guest_count: parseInt(data.guest_count) || 100,
             };
 
-            if(document.getElementById('clientName')) document.getElementById('clientName').value = currentQuote.client_name || '';
-            if(document.getElementById('clientCnpj')) document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
-            if(document.getElementById('clientEmail')) document.getElementById('clientEmail').value = currentQuote.client_email || '';
-            if(document.getElementById('clientPhone')) document.getElementById('clientPhone').value = currentQuote.client_phone || '';
-            if(document.getElementById('guestCount')) document.getElementById('guestCount').value = currentQuote.guest_count;
-            if(document.getElementById('priceTableSelect')) document.getElementById('priceTableSelect').value = currentQuote.price_table_id || '';
-            if(document.getElementById('discountValue')) document.getElementById('discountValue').value = currentQuote.discount_general.toFixed(2);
-
+            // Popula a UI com os dados do estado local
+            document.getElementById('clientName').value = currentQuote.client_name || '';
+            document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
+            document.getElementById('clientEmail').value = currentQuote.client_email || '';
+            document.getElementById('clientPhone').value = currentQuote.client_phone || '';
+            document.getElementById('guestCount').value = currentQuote.guest_count || 100;
+            document.getElementById('priceTableSelect').value = currentQuote.price_table_id || '';
+            document.getElementById('discountValue').value = (currentQuote.discount_general || 0).toFixed(2);
 
             const datesContainer = document.getElementById('event-dates-container');
             if (datesContainer) {
