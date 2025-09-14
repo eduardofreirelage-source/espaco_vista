@@ -387,13 +387,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderSummary(calculation) {
+        const consumableText = "(-) " + formatCurrency(calculation.consumableCredit);
         if(document.getElementById('subtotalValue')) document.getElementById('subtotalValue').textContent = formatCurrency(calculation.subtotal);
-        if(document.getElementById('consumableValue')) document.getElementById('consumableValue').textContent = formatCurrency(calculation.consumableCredit);
+        if(document.getElementById('consumableValue')) document.getElementById('consumableValue').textContent = consumableText;
         if(document.getElementById('discountValue')) document.getElementById('discountValue').value = calculation.discountGeneral.toFixed(2);
         if(document.getElementById('totalValue')) document.getElementById('totalValue').textContent = formatCurrency(calculation.total);
 
         if(document.getElementById('summary-subtotal-value')) document.getElementById('summary-subtotal-value').textContent = formatCurrency(calculation.subtotal);
-        if(document.getElementById('summary-consumable-value')) document.getElementById('summary-consumable-value').textContent = formatCurrency(calculation.consumableCredit);
+        if(document.getElementById('summary-consumable-value')) document.getElementById('summary-consumable-value').textContent = consumableText;
         if(document.getElementById('summary-discount-value')) document.getElementById('summary-discount-value').textContent = formatCurrency(calculation.discountGeneral);
         if(document.getElementById('summary-total-value')) document.getElementById('summary-total-value').textContent = formatCurrency(calculation.total);
 
@@ -885,11 +886,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function saveQuote() {
         syncClientData();
 
-        if (currentQuote.items.length === 0) {
-            // Verifica se há algo para mostrar antes de notificar
-            if (document.getElementById('quote-categories-container').children.length > 0) {
-                showNotification("Adicione itens antes de salvar ou enviar.", true);
-            }
+        if (currentQuote.items.length === 0 && document.getElementById('quote-categories-container').children.length > 0) {
+            showNotification("Adicione itens antes de salvar ou enviar.", true);
             return;
         }
 
@@ -906,16 +904,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             consumable_credit_used: calculation.consumableCredit,
         };
 
+        // CORREÇÃO: Cria uma cópia do objeto a ser salvo e remove o campo 'client_cnpj',
+        // que não existe no schema do banco de dados e estava causando o erro.
+        const payload = { ...dataToSave };
+        delete payload.client_cnpj;
+
+
         // Lógica Cliente vs Admin (Limpeza de dados sensíveis)
         if (userRole === 'client') {
-            dataToSave.id = null; 
-            dataToSave.status = 'Solicitado pelo Cliente';
-            dataToSave.price_table_id = null;
-            dataToSave.discount_general = 0;
-            dataToSave.total_value = 0;
-            dataToSave.subtotal_value = 0;
-            dataToSave.consumable_credit_used = 0;
-            dataToSave.items.forEach(item => {
+            payload.id = null; 
+            payload.status = 'Solicitado pelo Cliente';
+            payload.price_table_id = null;
+            payload.discount_general = 0;
+            payload.total_value = 0;
+            payload.subtotal_value = 0;
+            payload.consumable_credit_used = 0;
+            payload.items.forEach(item => {
                 item.discount_percent = 0;
                 item.calculated_unit_price = 0;
                 item.calculated_total = 0;
@@ -927,13 +931,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             let result;
-            if (dataToSave.id) {
+            if (payload.id) {
                 // UPDATE
-                const { data, error } = await supabase.from('quotes').update(dataToSave).eq('id', dataToSave.id).select().single();
+                const { data, error } = await supabase.from('quotes').update(payload).eq('id', payload.id).select().single();
                 result = { data, error };
             } else {
                 // INSERT
-                const { data, error } = await supabase.from('quotes').insert(dataToSave).select().single();
+                const { data, error } = await supabase.from('quotes').insert(payload).select().single();
                 result = { data, error };
             }
 
