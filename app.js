@@ -242,7 +242,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             let quantity = item.quantity;
-            // MODIFICADO: A quantidade só é travada se for 'por_pessoa' E a categoria NÃO for 'Gastronomia'
             if (service.unit === 'por_pessoa' && service.category !== 'Gastronomia') {
                 quantity = guestCount;
                 item.quantity = quantity;
@@ -307,7 +306,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // MODIFICADO: Lógica de renderização das categorias para garantir a ordem correta no DOM
     function renderCategories(calculation) {
         const container = document.getElementById('quote-categories-container');
         if (!container) return;
@@ -320,7 +318,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const elementsToRender = [];
 
         categoriesInQuote.forEach(category => {
-            // Reutiliza um elemento existente se encontrar, ou cria um novo
             let accordion = container.querySelector(`details[data-category="${category}"]`);
             if (!accordion) {
                 const template = document.getElementById('category-template').content.cloneNode(true);
@@ -332,7 +329,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             elementsToRender.push(accordion);
         });
 
-        // Limpa o container e adiciona os elementos na ordem correta
         container.innerHTML = '';
         elementsToRender.forEach(element => container.appendChild(element));
 
@@ -359,7 +355,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = document.createElement('tr');
             row.dataset.itemId = item.id;
 
-            // MODIFICADO: A quantidade só é travada se for 'por_pessoa' E a categoria NÃO for 'Gastronomia'
             const isQuantityLocked = service.unit === 'por_pessoa' && service.category !== 'Gastronomia';
 
             row.innerHTML = `
@@ -630,8 +625,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
     // GERENCIAMENTO DE ITENS
     // =================================================================
+    
+    // MODIFICADO: A quantidade inicial de itens de Gastronomia agora é o número de convidados
     function addItemsToQuote(serviceId) {
-        
         if (currentQuote.event_dates.length === 0) return;
 
         const defaultDate = currentQuote.event_dates[0].date;
@@ -640,11 +636,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (existing) {
             return;
         }
+        
+        const service = services.find(s => s.id === serviceId);
+        if (!service) {
+            console.error("Serviço não encontrado no catálogo");
+            return;
+        }
+        
+        // Define a quantidade inicial
+        let initialQuantity = 1;
+        if (service.category === 'Gastronomia') {
+            initialQuantity = currentQuote.guest_count > 0 ? currentQuote.guest_count : 1;
+        }
 
         const newItem = {
             id: Date.now() + '-' + serviceId, 
             service_id: serviceId,
-            quantity: 1,
+            quantity: initialQuantity, // Usa a quantidade inicial definida
             discount_percent: 0,
             event_date: defaultDate,
             observations: ''
