@@ -166,6 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (userRole === 'admin') {
             currentQuote.price_table_id = document.getElementById('priceTableSelect')?.value || null;
+            currentQuote.discount_general = parseFloat(document.getElementById('discountValue')?.value) || 0;
         }
         syncEventDates();
         setDirty(true);
@@ -849,37 +850,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const calculation = calculateQuote();
         
-        // CORREÇÃO FINAL: Copia apenas os campos que REALMENTE devem ser salvos no banco.
-        const payload = {
-            id: currentQuote.id,
-            client_name: currentQuote.client_name,
-            guest_count: currentQuote.guest_count,
-            price_table_id: currentQuote.price_table_id,
-            event_dates: currentQuote.event_dates,
+        // CORREÇÃO: Objeto dataToSave agora inclui todos os campos.
+        // Execute o SQL fornecido para que o banco de dados possa aceitar estes dados.
+        const dataToSave = {
+            ...currentQuote,
             items: currentQuote.items.map(item => {
-                const { id, ...rest } = item; // Remove o ID local temporário dos itens
+                const { id, ...rest } = item;
                 return rest;
             }),
-            status: currentQuote.status,
-            // Adiciona o total ao salvar para referência na listagem do admin
-            total_value: calculation.total 
+            total_value: calculation.total,
+            subtotal_value: calculation.subtotal,
+            consumable_credit_used: calculation.consumableCredit,
         };
         
-        // Os campos abaixo são removidos pois são de UI ou de cálculo e não colunas do DB
-        // delete payload.client_cnpj;
-        // delete payload.client_email;
-        // delete payload.client_phone;
-        // delete payload.discount_general; 
-        // delete payload.subtotal_value;
-        // delete payload.consumable_credit_used;
-
         if (userRole === 'client') {
-            payload.id = null; 
-            payload.status = 'Solicitado pelo Cliente';
-            payload.price_table_id = null;
-            payload.total_value = 0; // Cliente não envia valor
-            
-            payload.items.forEach(item => {
+            dataToSave.id = null; 
+            dataToSave.status = 'Solicitado pelo Cliente';
+            dataToSave.price_table_id = null;
+            dataToSave.discount_general = 0;
+            dataToSave.total_value = 0;
+            dataToSave.subtotal_value = 0;
+            dataToSave.consumable_credit_used = 0;
+            dataToSave.items.forEach(item => {
                 item.discount_percent = 0;
                 item.calculated_unit_price = 0;
                 item.calculated_total = 0;
@@ -891,11 +883,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             let result;
-            if (payload.id) {
-                const { data, error } = await supabase.from('quotes').update(payload).eq('id', payload.id).select().single();
+            if (dataToSave.id) {
+                const { data, error } = await supabase.from('quotes').update(dataToSave).eq('id', dataToSave.id).select().single();
                 result = { data, error };
             } else {
-                const { data, error } = await supabase.from('quotes').insert(payload).select().single();
+                const { data, error } = await supabase.from('quotes').insert(dataToSave).select().single();
                 result = { data, error };
             }
 
@@ -938,16 +930,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data, error } = await supabase.from('quotes').select('*').eq('id', id).single();
             if (error) throw error;
 
-            // Ao carregar, preenchemos o estado local, incluindo campos que não são salvos
+            // Ao carregar, preenchemos o estado local com os dados do banco
             currentQuote = {
-                ...currentQuote, // Mantém a estrutura padrão
-                ...data,
+                ...currentQuote, // Mantém a estrutura padrão com campos que não vem do DB
+                ...data, // Sobrescreve com os dados do DB
                 items: (data.items || []).map((item, index) => ({
                     ...item,
                     id: `loaded-${id}-${index}-${item.service_id || index}`
                 })),
                 event_dates: data.event_dates || [],
-                // Se o desconto não vem do DB, reseta para 0 ou busca de outro lugar se aplicável
                 discount_general: parseFloat(data.discount_general) || 0, 
                 guest_count: parseInt(data.guest_count) || 100,
             };
@@ -965,7 +956,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const datesContainer = document.getElementById('event-dates-container');
             if (datesContainer) {
                 datesContainer.innerHTML = '';
-                if (currentQuote.event_dates.length > 0) {
+                if (currentQuote.event_dates && currentQuote.event_dates.length > 0) {
                     currentQuote.event_dates.forEach(dateData => addDateEntry(dateData));
                 }
             }
