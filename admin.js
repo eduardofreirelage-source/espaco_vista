@@ -2,7 +2,7 @@ import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
-    // VERIFICAÇÃO DE ACESSO (Permanece igual)
+    // VERIFICAÇÃO DE ACESSO
     // =================================================================
     const { role } = await getSession();
     if (role !== 'admin') {
@@ -34,10 +34,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addPriceTableForm = document.getElementById('addPriceTableForm');
     const notification = document.getElementById('save-notification');
 
-    // Variável para o Debounce (Otimização)
+    // Variável para o Debounce
     let debounceTimers = {};
 
-    // --- INICIALIZAÇÃO (Permanece igual) ---
+    // --- INICIALIZAÇÃO ---
     async function initialize() {
         await fetchData();
         addEventListeners();
@@ -76,7 +76,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (quotesTbody) renderQuotesTable();
     }
 
-    // Funções auxiliares (Permanece igual)
     function createCategorySelect(currentCategory) {
         const categories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
         return `<select class="service-detail-input" data-field="category">
@@ -91,13 +90,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         </select>`;
     }
 
-
-    // MODIFICADO: Renderiza a tabela de serviços com agrupamento por categoria
     function renderServicesTable() {
         servicesTbody.innerHTML = '';
         servicesThead.innerHTML = '';
 
-        // 1. Construir o Cabeçalho
         const headerRow = document.createElement('tr');
         headerRow.innerHTML = `
             <th style="min-width: 250px;">Nome</th>
@@ -114,21 +110,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         headerRow.innerHTML += `<th>Ações</th>`;
         servicesThead.appendChild(headerRow);
 
-        // 2. Construir o Corpo com Agrupamento
-        let currentCategory = null; // NOVO: Variável para rastrear a categoria atual
-        const colspan = headerRow.children.length; // NOVO: Calcula o colspan para o cabeçalho da categoria
+        let currentCategory = null;
+        const colspan = headerRow.children.length;
 
         services.forEach(service => {
-            // NOVO: Verifica se a categoria mudou para adicionar uma linha de cabeçalho
             if (service.category !== currentCategory) {
                 currentCategory = service.category;
                 const categoryRow = document.createElement('tr');
-                categoryRow.className = 'category-header'; // Classe para estilização
+                categoryRow.className = 'category-header';
                 categoryRow.innerHTML = `<th colspan="${colspan}">${currentCategory}</th>`;
                 servicesTbody.appendChild(categoryRow);
             }
 
-            // Lógica original para criar a linha de serviço
             const row = document.createElement('tr');
             row.dataset.serviceId = service.id;
 
@@ -198,7 +191,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- LÓGICA DE EVENT LISTENERS ---
 
+    // NOVO: Função para controlar as abas
+    function setupTabEvents() {
+        const tabsNav = document.querySelector('.tabs-nav');
+        if (!tabsNav) return;
+
+        tabsNav.addEventListener('click', (e) => {
+            const clickedTab = e.target.closest('.tab-btn');
+            if (!clickedTab) return;
+
+            const tabId = clickedTab.dataset.tab;
+            const targetContent = document.getElementById(`tab-content-${tabId}`);
+
+            // Remove a classe 'active' de todos
+            tabsNav.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // Adiciona a classe 'active' ao alvo
+            clickedTab.classList.add('active');
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    }
+
     function addEventListeners() {
+        setupTabEvents(); // NOVO: Adiciona os listeners das abas
+
         // Formulários de adição
         addServiceForm?.addEventListener('submit', async (e) => {
              e.preventDefault();
