@@ -148,7 +148,7 @@ input, select {
     text-align: right; /* Alinha texto do input à direita */
 }
 
-/* NOVO: Estilos para o cabeçalho da categoria na tabela de serviços */
+/* Estilos para o cabeçalho da categoria na tabela de serviços */
 .editable-table .category-header th {
     background-color: #e9ecef; /* Um cinza claro para destacar */
     color: #495057;
@@ -249,4 +249,40 @@ input, select {
     transform: translateY(0);
 }
 
-/* A chave '}' extra no final do arquivo original foi removida. */
+/* NOVO: Estilos para as Abas */
+.tabs-nav {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #666;
+    transition: color 0.2s, border-color 0.2s;
+    margin-bottom: -1px; /* Faz a borda ativa sobrepor a borda principal */
+}
+
+.tab-btn:hover {
+    color: var(--text-color);
+    background-color: #fdfdfd;
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
