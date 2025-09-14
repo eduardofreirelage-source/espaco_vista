@@ -2,8 +2,18 @@
     @page { size: A4; margin: 1.5cm; }
     body, html { background: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 9pt; color: #333; }
     * { visibility: hidden; box-shadow: none !important; border-color: #ddd !important; }
+    
     #print-output, #print-output * { visibility: visible; }
-    #print-output { position: absolute; left: 0; top: 0; width: 100%; }
+    
+    /* CORREÇÃO: Garante que o container de impressão tenha altura e não esconda o conteúdo. */
+    #print-output { 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 100%;
+        height: auto !important;
+        overflow: visible !important;
+    }
 
     .print-header { padding-bottom: 20px; margin-bottom: 30px; border-bottom: 2px solid #000; text-align: center; }
     .print-header h1 { font-size: 22pt; margin: 0; }
