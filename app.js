@@ -850,8 +850,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const calculation = calculateQuote();
         
-        // CORREÇÃO: Objeto dataToSave agora inclui todos os campos.
-        // Execute o SQL fornecido para que o banco de dados possa aceitar estes dados.
         const dataToSave = {
             ...currentQuote,
             items: currentQuote.items.map(item => {
@@ -884,10 +882,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             let result;
             if (dataToSave.id) {
+                // Para updates, o ID é necessário
                 const { data, error } = await supabase.from('quotes').update(dataToSave).eq('id', dataToSave.id).select().single();
                 result = { data, error };
             } else {
-                const { data, error } = await supabase.from('quotes').insert(dataToSave).select().single();
+                // CORREÇÃO: Para inserts, removemos a chave 'id' para que o DB a gere.
+                const { id, ...insertData } = dataToSave;
+                const { data, error } = await supabase.from('quotes').insert(insertData).select().single();
                 result = { data, error };
             }
 
@@ -930,10 +931,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data, error } = await supabase.from('quotes').select('*').eq('id', id).single();
             if (error) throw error;
 
-            // Ao carregar, preenchemos o estado local com os dados do banco
             currentQuote = {
-                ...currentQuote, // Mantém a estrutura padrão com campos que não vem do DB
-                ...data, // Sobrescreve com os dados do DB
+                ...currentQuote,
+                ...data,
                 items: (data.items || []).map((item, index) => ({
                     ...item,
                     id: `loaded-${id}-${index}-${item.service_id || index}`
@@ -943,7 +943,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 guest_count: parseInt(data.guest_count) || 100,
             };
 
-            // Popula a UI com os dados do estado local
             if(document.getElementById('clientName')) document.getElementById('clientName').value = currentQuote.client_name || '';
             if(document.getElementById('clientCnpj')) document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
             if(document.getElementById('clientEmail')) document.getElementById('clientEmail').value = currentQuote.client_email || '';
