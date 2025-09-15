@@ -22,10 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let quotes = [];
 
     // ELEMENTOS DO DOM
-    const servicesTable = document.getElementById('services-table');
-    const servicesTbody = servicesTable?.querySelector('tbody');
-    const servicesThead = servicesTable?.querySelector('thead');
-    
+    const adminCatalogContainer = document.getElementById('admin-catalog-container'); // MODIFICADO: Novo container
     const priceTablesList = document.getElementById('price-tables-list');
     const priceTablesTbody = priceTablesList?.querySelector('tbody');
 
@@ -34,7 +31,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addPriceTableForm = document.getElementById('addPriceTableForm');
     const notification = document.getElementById('save-notification');
 
-    // Variável para o Debounce
     let debounceTimers = {};
 
     // --- INICIALIZAÇÃO ---
@@ -72,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- RENDERIZAÇÃO ---
     function renderAll() {
         if (priceTablesTbody) renderPriceTablesList();
-        if (servicesTbody && servicesThead) renderServicesTable();
+        if (adminCatalogContainer) renderAdminCatalog(); // MODIFICADO: Chama a nova função
         if (quotesTbody) renderQuotesTable();
     }
 
@@ -90,62 +86,73 @@ document.addEventListener('DOMContentLoaded', async () => {
         </select>`;
     }
 
-    function renderServicesTable() {
-        servicesTbody.innerHTML = '';
-        servicesThead.innerHTML = '';
+    // NOVA FUNÇÃO: Recria o catálogo de serviços usando o layout de accordion
+    function renderAdminCatalog() {
+        adminCatalogContainer.innerHTML = ''; // Limpa o container
 
-        const headerRow = document.createElement('tr');
-        headerRow.innerHTML = `
-            <th style="min-width: 250px;">Nome</th>
-            <th style="min-width: 150px;">Categoria</th>
-            <th style="min-width: 120px;">Unidade</th>
-        `;
-        priceTables.forEach(table => {
-            const th = document.createElement('th');
-            th.textContent = table.name;
-            th.classList.add('price-column');
-            th.style.minWidth = '120px';
-            headerRow.appendChild(th);
-        });
-        headerRow.innerHTML += `<th>Ações</th>`;
-        servicesThead.appendChild(headerRow);
-
-        let currentCategory = null;
-        const colspan = headerRow.children.length;
-
-        services.forEach(service => {
-            if (service.category !== currentCategory) {
-                currentCategory = service.category;
-                const categoryRow = document.createElement('tr');
-                categoryRow.className = 'category-header';
-                categoryRow.innerHTML = `<th colspan="${colspan}">${currentCategory}</th>`;
-                servicesTbody.appendChild(categoryRow);
+        // Agrupa os serviços por categoria
+        const servicesByCategory = services.reduce((acc, service) => {
+            if (!acc[service.category]) {
+                acc[service.category] = [];
             }
+            acc[service.category].push(service);
+            return acc;
+        }, {});
 
-            const row = document.createElement('tr');
-            row.dataset.serviceId = service.id;
+        // Ordena as categorias
+        const orderedCategories = Object.keys(servicesByCategory).sort((a, b) => {
+             const order = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
+             return order.indexOf(a) - order.indexOf(b);
+        });
 
-            row.innerHTML = `
-                <td><input type="text" class="service-detail-input" data-field="name" value="${service.name}"></td>
-                <td>${createCategorySelect(service.category)}</td>
-                <td>${createUnitSelect(service.unit)}</td>
-            `;
+        // Cria um accordion para cada categoria
+        orderedCategories.forEach(category => {
+            const details = document.createElement('details');
+            details.className = 'category-accordion';
+            details.open = true;
 
-            priceTables.forEach(table => {
-                const priceRecord = servicePrices.find(p => p.service_id === service.id && p.price_table_id === table.id);
-                const price = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
-                const td = document.createElement('td');
-                td.classList.add('price-column');
-                td.innerHTML = `<input type="number" step="0.01" min="0" class="service-price-input" data-table-id="${table.id}" value="${price}">`;
-                row.appendChild(td);
+            // Cria o cabeçalho (summary)
+            const summary = document.createElement('summary');
+            summary.className = 'category-header';
+            summary.innerHTML = `<h3 class="category-title">${category}</h3>`;
+            
+            // Cria a tabela para os serviços da categoria
+            const table = document.createElement('table');
+            table.className = 'editable-table'; // Usa a classe de edição existente
+            
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `<th>Nome</th><th>Unidade</th>`;
+            priceTables.forEach(pt => headerRow.innerHTML += `<th class="price-column">${pt.name}</th>`);
+            headerRow.innerHTML += `<th>Ações</th>`;
+            thead.appendChild(headerRow);
+
+            const tbody = document.createElement('tbody');
+            servicesByCategory[category].forEach(service => {
+                const row = document.createElement('tr');
+                row.dataset.serviceId = service.id;
+                
+                let priceColumns = '';
+                priceTables.forEach(table => {
+                    const priceRecord = servicePrices.find(p => p.service_id === service.id && p.price_table_id === table.id);
+                    const price = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
+                    priceColumns += `<td class="price-column"><input type="number" step="0.01" min="0" class="service-price-input" data-table-id="${table.id}" value="${price}"></td>`;
+                });
+
+                row.innerHTML = `
+                    <td><input type="text" class="service-detail-input" data-field="name" value="${service.name}"></td>
+                    <td>${createUnitSelect(service.unit)}</td>
+                    ${priceColumns}
+                    <td class="actions"><button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button></td>
+                `;
+                tbody.appendChild(row);
             });
-
-            const actionsTd = document.createElement('td');
-            actionsTd.className = 'actions';
-            actionsTd.innerHTML = `<button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button>`;
-            row.appendChild(actionsTd);
-
-            servicesTbody.appendChild(row);
+            
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            details.appendChild(summary);
+            details.appendChild(table);
+            adminCatalogContainer.appendChild(details);
         });
     }
     
@@ -155,15 +162,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = document.createElement('tr');
             row.dataset.tableId = table.id;
             const consumable = parseFloat(table.consumable_credit || 0).toFixed(2);
-            
             row.innerHTML = `
                 <td><input type="text" class="price-table-input" data-field="name" value="${table.name}"></td>
-                <td class="price-column">
-                    <input type="number" step="0.01" min="0" class="price-table-input" data-field="consumable_credit" value="${consumable}">
-                </td>
-                <td class="actions">
-                    <button class="btn-remove" data-action="delete-table" data-id="${table.id}" title="Excluir Lista">&times;</button>
-                </td>
+                <td class="price-column"><input type="number" step="0.01" min="0" class="price-table-input" data-field="consumable_credit" value="${consumable}"></td>
+                <td class="actions"><button class="btn-remove" data-action="delete-table" data-id="${table.id}" title="Excluir Lista">&times;</button></td>
             `;
             priceTablesTbody.appendChild(row);
         });
@@ -174,7 +176,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         quotes.forEach(quote => {
             const row = document.createElement('tr');
             const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
-
             row.innerHTML = `
                 <td>${quote.client_name || 'Rascunho sem nome'}</td>
                 <td>${createdAt}</td>
@@ -190,21 +191,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- LÓGICA DE EVENT LISTENERS ---
-    
     function setupTabEvents() {
         const tabsNav = document.querySelector('.tabs-nav');
         if (!tabsNav) return;
-
         tabsNav.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab-btn');
             if (!clickedTab) return;
-
             const tabId = clickedTab.dataset.tab;
             const targetContent = document.getElementById(`tab-content-${tabId}`);
-
             tabsNav.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
             clickedTab.classList.add('active');
             if (targetContent) {
                 targetContent.classList.add('active');
@@ -212,7 +208,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // NOVO: Função para controlar as seções expansíveis
     function setupCollapsibleEvents() {
         const collapsibleHeaders = document.querySelectorAll('.collapsible-card .card-header');
         collapsibleHeaders.forEach(header => {
@@ -227,16 +222,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function addEventListeners() {
         setupTabEvents();
-        setupCollapsibleEvents(); // NOVO: Adiciona os listeners das seções
+        setupCollapsibleEvents();
 
-        // Formulários de adição
         addServiceForm?.addEventListener('submit', async (e) => {
-             e.preventDefault();
-            const newService = {
-                name: document.getElementById('serviceName').value,
-                category: document.getElementById('serviceCategory').value,
-                unit: document.getElementById('serviceUnit').value,
-            };
+            e.preventDefault();
+            const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value };
             const { error } = await supabase.from('services').insert([newService]);
             if(error) { showNotification(`Erro: ${error.message}`, true); } 
             else { showNotification('Serviço adicionado!'); e.target.reset(); fetchData(); }
@@ -244,52 +234,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         addPriceTableForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const newTable = { 
-                name: document.getElementById('tableName').value,
-                consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0
-            };
+            const newTable = { name: document.getElementById('tableName').value, consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0 };
             const { error } = await supabase.from('price_tables').insert([newTable]);
             if(error) { showNotification(`Erro: ${error.message}`, true); } 
             else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
         });
 
-        // Listener para cliques (Ações de exclusão)
         document.body.addEventListener('click', e => {
             const button = e.target.closest('button');
             if (!button) return;
-
             const { action, id } = button.dataset;
             if (action === 'delete-service') deleteService(id);
             if (action === 'delete-table') deletePriceTable(id);
             if (action === 'delete-quote') deleteQuote(id);
         });
-
-        // Listeners para edições inline
-        if (servicesTable) {
-            servicesTable.addEventListener('input', (e) => {
-                if (e.target.matches('.service-detail-input[type="text"]')) {
-                    handleServiceEdit(e.target, true);
-                }
+        
+        // MODIFICADO: O listener agora é no container dos accordions
+        if (adminCatalogContainer) {
+            adminCatalogContainer.addEventListener('input', (e) => {
+                if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); }
             });
-
-            servicesTable.addEventListener('change', (e) => {
-                if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) {
-                    handleServiceEdit(e.target, false);
-                }
+            adminCatalogContainer.addEventListener('change', (e) => {
+                if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) { handleServiceEdit(e.target, false); }
             });
         }
 
         if (priceTablesList) {
             priceTablesList.addEventListener('input', (e) => {
-                if (e.target.matches('.price-table-input[data-field="name"]')) {
-                    handlePriceTableEdit(e.target, true);
-                }
+                if (e.target.matches('.price-table-input[data-field="name"]')) { handlePriceTableEdit(e.target, true); }
             });
-
             priceTablesList.addEventListener('change', (e) => {
-                if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) {
-                    handlePriceTableEdit(e.target, false);
-                }
+                if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) { handlePriceTableEdit(e.target, false); }
             });
         }
     }
@@ -298,33 +273,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = inputElement.closest('tr');
         if (!row) return;
         const serviceId = row.dataset.serviceId;
-        
         const timerKey = `service-${serviceId}-${inputElement.dataset.field || inputElement.dataset.tableId}`;
-
-        if (debounceTimers[timerKey]) {
-            clearTimeout(debounceTimers[timerKey]);
-        }
-
+        if (debounceTimers[timerKey]) { clearTimeout(debounceTimers[timerKey]); }
         const action = () => {
             if (inputElement.classList.contains('service-detail-input')) {
-                const field = inputElement.dataset.field;
-                const value = inputElement.value;
-                updateServiceDetail(serviceId, field, value, inputElement);
+                updateServiceDetail(serviceId, inputElement.dataset.field, inputElement.value, inputElement);
             } else if (inputElement.classList.contains('service-price-input')) {
-                const tableId = inputElement.dataset.tableId;
                 const price = parseFloat(inputElement.value) || 0;
-                if (!useDebounce) {
-                    inputElement.value = price.toFixed(2);
-                }
-                updateServicePrice(serviceId, tableId, price, inputElement);
+                if (!useDebounce) { inputElement.value = price.toFixed(2); }
+                updateServicePrice(serviceId, inputElement.dataset.tableId, price, inputElement);
             }
         };
-
-        if (useDebounce) {
-            debounceTimers[timerKey] = setTimeout(action, 500);
-        } else {
-            action();
-        }
+        if (useDebounce) { debounceTimers[timerKey] = setTimeout(action, 500); } else { action(); }
     }
 
     function handlePriceTableEdit(inputElement, useDebounce) {
@@ -332,91 +292,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!row) return;
         const tableId = row.dataset.tableId;
         const field = inputElement.dataset.field;
-        
         const timerKey = `table-${tableId}-${field}`;
-
-        if (debounceTimers[timerKey]) {
-            clearTimeout(debounceTimers[timerKey]);
-        }
-
+        if (debounceTimers[timerKey]) { clearTimeout(debounceTimers[timerKey]); }
         const action = () => {
             let value = inputElement.value;
-
             if (field === 'consumable_credit') {
                 value = parseFloat(value) || 0;
-                if (!useDebounce) {
-                    inputElement.value = value.toFixed(2);
-                }
+                if (!useDebounce) { inputElement.value = value.toFixed(2); }
             }
-            
             updatePriceTableDetail(tableId, field, value, inputElement);
         };
-
-        if (useDebounce) {
-            debounceTimers[timerKey] = setTimeout(action, 500);
-        } else {
-            action();
-        }
+        if (useDebounce) { debounceTimers[timerKey] = setTimeout(action, 500); } else { action(); }
     }
 
-
     // --- FUNÇÕES DE AÇÃO (CRUD) ---
-
     async function updatePriceTableDetail(tableId, field, value, inputElement) {
         if (!tableId || !field) return;
-
         if (field === 'name' && !value.trim()) {
             showNotification('O nome da lista não pode ficar vazio.', true);
             const table = priceTables.find(t => t.id === tableId);
             if (table) inputElement.value = table[field];
             return;
         }
-
         const table = priceTables.find(t => t.id === tableId);
         const oldName = table ? table.name : null;
-        if (table) {
-            table[field] = value;
-        }
-
-        const { error } = await supabase
-            .from('price_tables')
-            .update({ [field]: value })
-            .eq('id', tableId);
-
+        if (table) { table[field] = value; }
+        const { error } = await supabase.from('price_tables').update({ [field]: value }).eq('id', tableId);
         if (error) {
-            console.error(`Error updating price table detail ${field}:`, error.message);
             showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
             fetchData(); 
         } else {
             showFlash(inputElement);
-            if (field === 'name' && oldName !== value) {
-                renderServicesTable();
-            }
+            if (field === 'name' && oldName !== value) { renderAdminCatalog(); }
         }
     }
 
     async function updateServiceDetail(serviceId, field, value, inputElement) {
         if (!serviceId || !field) return;
-
         if (field === 'name' && !value.trim()) {
             showNotification('O nome do serviço não pode ficar vazio.', true);
             const service = services.find(s => s.id === serviceId);
             if (service) inputElement.value = service[field];
             return;
         }
-
         const service = services.find(s => s.id === serviceId);
-        if (service) {
-            service[field] = value;
-        }
-
-        const { error } = await supabase
-            .from('services')
-            .update({ [field]: value })
-            .eq('id', serviceId);
-
+        if (service) { service[field] = value; }
+        const { error } = await supabase.from('services').update({ [field]: value }).eq('id', serviceId);
         if (error) {
-            console.error(`Error updating service detail ${field}:`, error.message);
             showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
             fetchData(); 
         } else {
@@ -426,36 +348,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function updateServicePrice(serviceId, tableId, price, inputElement) {
         if (!serviceId || !tableId) return;
-
-        const recordToUpsert = {
-            service_id: serviceId,
-            price_table_id: tableId,
-            price: price
-        };
-
-        const { data, error } = await supabase
-            .from('service_prices')
-            .upsert(recordToUpsert)
-            .select()
-            .single();
-
+        const recordToUpsert = { service_id: serviceId, price_table_id: tableId, price: price };
+        const { data, error } = await supabase.from('service_prices').upsert(recordToUpsert).select().single();
         if (error) {
-            console.error("Error updating service price:", error.message);
             showNotification(`Erro ao atualizar preço: ${error.message}`, true);
             const priceRecord = servicePrices.find(p => p.service_id === serviceId && p.price_table_id === tableId);
             inputElement.value = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
         } else {
             const existingIndex = servicePrices.findIndex(p => p.service_id === serviceId && p.price_table_id === tableId);
-            if (existingIndex > -1) {
-                servicePrices[existingIndex] = data;
-            } else {
-                servicePrices.push(data);
-            }
-
+            if (existingIndex > -1) { servicePrices[existingIndex] = data; } else { servicePrices.push(data); }
             showFlash(inputElement);
         }
     }
-
 
     async function deleteService(id) {
         if (!confirm('Tem certeza? Isso excluirá o serviço e todos os seus preços.')) return;
