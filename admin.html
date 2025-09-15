@@ -27,44 +27,6 @@
                 <button class="tab-btn" data-tab="catalogs">Cadastros</button>
             </nav>
 
-            <div id="tab-content-quotes" class="tab-content active">
-                <section class="card">
-                    <div class="card-header"><h2>Todos os Orçamentos</h2></div>
-                    <div class="card-content table-container">
-                        <table id="quotes-table" class="quote-table">
-                             <thead>
-                                <tr>
-                                    <th style="width: 45%;">Cliente</th>
-                                    <th style="width: 15%;">Data Criação</th>
-                                    <th style="width: 15%;">Status</th>
-                                    <th style="width: 25%;">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
-
-            <div id="tab-content-events" class="tab-content">
-                <section class="card">
-                     <div class="card-header"><h2>Eventos Ganhos</h2></div>
-                     <div class="card-content table-container">
-                         <table id="events-table" class="quote-table">
-                              <thead>
-                                 <tr>
-                                    <th style="width: 40%;">Cliente</th>
-                                    <th style="width: 20%;">Data do Evento</th>
-                                    <th style="width: 20%;">Valor Total</th>
-                                    <th style="width: 20%;">Ações</th>
-                                </tr>
-                             </thead>
-                             <tbody></tbody>
-                         </table>
-                     </div>
-                </section>
-            </div>
-            
             <div id="tab-content-calendar" class="tab-content">
                 <section class="card">
                     <div class="card-header"><h2>Calendário de Eventos</h2></div>
@@ -80,7 +42,6 @@
             </div>
 
             <div id="tab-content-analytics" class="tab-content">
-                <div id="analytics-notice" style="display: none;"></div>
                 <section id="analytics-container" class="analytics-grid"></section>
             </div>
 
@@ -92,22 +53,7 @@
                     </div>
                     <div class="card-content">
                         <div id="admin-catalog-container" class="table-container"></div>
-                        <form id="addServiceForm" class="inline-form">
-                            <input type="text" id="serviceName" placeholder="Nome do Serviço" required>
-                            <select id="serviceCategory" required>
-                                <option value="Espaço">Espaço</option>
-                                <option value="Gastronomia">Gastronomia</option>
-                                <option value="Equipamentos">Equipamentos</option>
-                                <option value="Serviços / Outros">Serviços / Outros</option>
-                            </select>
-                            <select id="serviceUnit" required>
-                                 <option value="unidade">Unidade</option>
-                                <option value="diaria">Diária</option>
-                                <option value="por_pessoa">Por Pessoa</option>
-                            </select>
-                            <button type="submit" class="btn btn-primary">Adicionar Serviço</button>
-                        </form>
-                    </div>
+                        </div>
                 </section>
 
                 <section class="card collapsible-card collapsed">
@@ -116,35 +62,12 @@
                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
-                        <div class="table-container">
-                            <table id="price-tables-list" class="editable-table">
-                                 <colgroup>
-                                    <col style="width: 60%;">
-                                    <col style="width: 30%;">
-                                    <col style="width: 10%;">
-                                </colgroup>
-                                <thead>
-                                    <tr>
-                                        <th>Nome da Tabela</th>
-                                        <th class="price-column">Crédito Consumação (R$)</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
                         </div>
-                        <form id="addPriceTableForm" class="inline-form">
-                            <input type="text" id="tableName" placeholder="Nome da Nova Tabela" required>
-                            <input type="number" id="tableConsumable" placeholder="Crédito Consumação (R$)" step="0.01" min="0" value="0.00">
-                            <button type="submit" class="btn btn-primary">Adicionar Tabela</button>
-                        </form>
-                    </div>
                 </section>
             </div>
         </main>
     </div>
 
     <div id="save-notification" class="notification"></div>
-
-    </body>
+</body>
 </html>
