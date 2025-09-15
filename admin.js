@@ -251,11 +251,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.body.addEventListener('click', e => {
+            // Lógica para abrir/fechar accordions
             const header = e.target.closest('.collapsible-card > .card-header');
             if (header) {
                 header.closest('.collapsible-card')?.classList.toggle('collapsed');
                 return;
             }
+
+            // Lógica para botões de exclusão
             const button = e.target.closest('button[data-action]');
             if (button) {
                 const { action, id } = button.dataset;
@@ -354,25 +357,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     async function updatePriceTableDetail(tableId, field, value) {
-        const table = priceTables.find(t => t.id == tableId);
-        const oldName = table ? table.name : null;
-        if (table) { table[field] = value; }
         const { error } = await supabase.from('price_tables').update({ [field]: value }).eq('id', tableId);
         if (error) {
             showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
             fetchData();
         } else {
+            const table = priceTables.find(t => t.id == tableId);
+            const oldName = table ? table.name : null;
+            if (table) { table[field] = value; }
             if (field === 'name' && oldName !== value) { renderAdminCatalog(); }
         }
     }
 
     async function updateServiceDetail(serviceId, field, value) {
-        const service = services.find(s => s.id == serviceId);
-        if (service) { service[field] = value; }
         const { error } = await supabase.from('services').update({ [field]: value }).eq('id', serviceId);
         if (error) {
             showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
             fetchData();
+        } else {
+            const service = services.find(s => s.id == serviceId);
+            if (service) { service[field] = value; }
         }
     }
 
@@ -406,13 +410,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- FUNÇÕES UTILITÁRIAS ---
-    function showFlash(inputElement) {
-        if(inputElement) {
-            inputElement.classList.add('success-flash');
-            setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
-        }
-    }
-
     function showNotification(message, isError = false) {
         if (!notification) return;
         notification.textContent = message;
