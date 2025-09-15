@@ -14,11 +14,18 @@
             <h1 id="main-title">Gerador de Propostas</h1>
             <div class="header-actions">
                 <button id="save-quote-btn" class="btn btn-save">Salvar</button>
-                <a href="admin.html" id="admin-link" class="btn" style="display: none;">⚙️ Gerenciar</a>
-                <button id="logout-btn" class="btn" style="display: none; background-color: #6c757d;">Sair</button>
+                <a href="admin.html" id="admin-link" class="btn" style="display: none;">⚙️ Admin</a>
                 <a href="login.html" id="login-link" class="btn" style="display: none;">Login Admin</a>
-                <button id="export-xlsx-btn" class="btn">Exportar XLSX</button>
-                <button id="print-btn" class="btn">Exportar PDF</button>
+                
+                <div id="export-btn-container" class="export-container">
+                    <button id="export-btn" class="btn">Exportar</button>
+                    <div id="export-menu" class="export-menu">
+                        <div id="export-pdf-option">Como PDF</div>
+                        <div id="export-xlsx-option">Como XLSX</div>
+                    </div>
+                </div>
+
+                <button id="logout-btn" class="btn" style="display: none; background-color: #6c757d;">Sair</button>
             </div>
         </header>
 
