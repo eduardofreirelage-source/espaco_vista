@@ -236,7 +236,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- EVENT LISTENERS ---
     function addEventListeners() {
-        // Listener para abas
         const tabsNav = document.querySelector('.tabs-nav');
         tabsNav?.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab-btn');
@@ -251,7 +250,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Listener para accordions e botões de exclusão (delegado ao body)
         document.body.addEventListener('click', e => {
             const header = e.target.closest('.collapsible-card > .card-header');
             if (header) {
@@ -267,7 +265,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Listeners para formulários de adição
         addServiceForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value };
@@ -284,7 +281,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
         });
         
-        // Listeners para edição inline
         adminCatalogContainer?.addEventListener('input', (e) => {
             if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); }
         });
@@ -316,11 +312,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (debounceTimers[timerKey]) { clearTimeout(debounceTimers[timerKey]); }
         const action = () => {
             if (inputElement.classList.contains('service-detail-input')) {
-                updateServiceDetail(serviceId, inputElement.dataset.field, inputElement.value, inputElement);
+                updateServiceDetail(serviceId, inputElement.dataset.field, inputElement.value);
             } else if (inputElement.classList.contains('service-price-input')) {
                 const price = parseFloat(inputElement.value) || 0;
                 if (!useDebounce) { inputElement.value = price.toFixed(2); }
-                updateServicePrice(serviceId, inputElement.dataset.tableId, price, inputElement);
+                updateServicePrice(serviceId, inputElement.dataset.tableId, price);
             }
         };
         if (useDebounce) { debounceTimers[timerKey] = setTimeout(action, 500); } else { action(); }
@@ -339,7 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 value = parseFloat(value) || 0;
                 if (!useDebounce) { inputElement.value = value.toFixed(2); }
             }
-            updatePriceTableDetail(tableId, field, value, inputElement);
+            updatePriceTableDetail(tableId, field, value);
         };
         if (useDebounce) { debounceTimers[timerKey] = setTimeout(action, 500); } else { action(); }
     }
@@ -358,8 +354,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     async function updatePriceTableDetail(tableId, field, value) {
-        if (!tableId || !field) return;
-        if (field === 'name' && !value.trim()) { /* ... */ return; }
         const table = priceTables.find(t => t.id == tableId);
         const oldName = table ? table.name : null;
         if (table) { table[field] = value; }
@@ -373,8 +367,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function updateServiceDetail(serviceId, field, value) {
-        if (!serviceId || !field) return;
-        if (field === 'name' && !value.trim()) { /* ... */ return; }
         const service = services.find(s => s.id == serviceId);
         if (service) { service[field] = value; }
         const { error } = await supabase.from('services').update({ [field]: value }).eq('id', serviceId);
@@ -385,7 +377,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function updateServicePrice(serviceId, tableId, price) {
-        if (!serviceId || !tableId) return;
         const recordToUpsert = { service_id: serviceId, price_table_id: tableId, price: price };
         const { data, error } = await supabase.from('service_prices').upsert(recordToUpsert, { onConflict: 'service_id, price_table_id' }).select().single();
         if (error) {
@@ -416,8 +407,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- FUNÇÕES UTILITÁRIAS ---
     function showFlash(inputElement) {
-        inputElement.classList.add('success-flash');
-        setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
+        if(inputElement) {
+            inputElement.classList.add('success-flash');
+            setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
+        }
     }
 
     function showNotification(message, isError = false) {
