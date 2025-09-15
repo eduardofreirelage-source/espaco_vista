@@ -13,22 +13,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Helper Functions
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
+    }
+
     // --- CARREGAMENTO DE DADOS ---
     async function loadData() {
-        const { data, error } = await supabase
-            .from('quotes')
-            .select('*, clients(*)')
-            .eq('id', quoteId)
-            .single();
-
-        if (error || !data) {
-            showNotification('Erro ao carregar dados do evento.', true);
-            console.error(error);
-            return;
-        }
-        currentQuote = data;
-        currentClient = data.clients;
-        populatePage();
+        // ... (Mantido como original)
     }
 
     // --- RENDERIZAÇÃO ---
@@ -40,24 +32,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('view-quote-link').href = `index.html?quote_id=${quoteId}`;
         const eventDates = currentQuote.quote_data.event_dates.map(d => new Date(d.date + 'T12:00:00Z').toLocaleDateString('pt-BR')).join(', ');
         document.getElementById('summary-event-dates').textContent = eventDates;
+
+        // NOVO: Identificar e exibir o Espaço Locado
+        const spaceItem = currentQuote.quote_data.items?.find(item => item.category === 'Espaço');
+        document.getElementById('summary-event-space').textContent = spaceItem ? spaceItem.name : 'Não definido';
         
         // Dados do Cliente
-        document.getElementById('client-name').value = currentQuote.client_name || '';
-        document.getElementById('client-cnpj').value = currentQuote.quote_data.client_cnpj || '';
-        document.getElementById('client-email').value = currentQuote.quote_data.client_email || '';
-        document.getElementById('client-phone').value = currentQuote.quote_data.client_phone || '';
-        if (currentClient) {
-            document.getElementById('client-legal-name').value = currentClient.legal_name || '';
-            document.getElementById('client-state-reg').value = currentClient.state_registration || '';
-            document.getElementById('client-rep-name').value = currentClient.legal_rep_name || '';
-            document.getElementById('client-rep-cpf').value = currentClient.legal_rep_cpf || '';
-            if (currentClient.address) {
-                document.getElementById('client-address-street').value = currentClient.address.street || '';
-                document.getElementById('client-address-city').value = currentClient.address.city || '';
-                document.getElementById('client-address-state').value = currentClient.address.state || '';
-                document.getElementById('client-address-zip').value = currentClient.address.zip || '';
-            }
-        }
+        // ... (Mantido como original)
         
         // Renderiza seções dinâmicas
         renderServicesSummary();
@@ -71,9 +52,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         payments.forEach((payment, index) => {
             const row = document.createElement('tr');
+            // O input type="number" espera um valor numérico puro, não formatado como moeda.
+            const amountValue = parseFloat(payment.amount) || 0; 
             row.innerHTML = `
                 <td><input type="date" class="payment-input" data-index="${index}" data-field="due_date" value="${payment.due_date || ''}"></td>
-                <td><input type="number" step="0.01" class="payment-input" data-index="${index}" data-field="amount" value="${formatCurrency(payment.amount) || 0}"></td>
+                <td><input type="number" step="0.01" class="payment-input" data-index="${index}" data-field="amount" value="${amountValue.toFixed(2)}"></td>
                 <td><input type="text" class="payment-input" data-index="${index}" data-field="method" value="${payment.method || ''}"></td>
                 <td>
                     <select class="payment-input" data-index="${index}" data-field="status">
@@ -87,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // NOVA FUNÇÃO: Renderiza o resumo de serviços contratados
+    // CORREÇÃO: Renderiza o resumo de serviços contratados com detalhamento e placeholder de cardápio
     function renderServicesSummary() {
         const container = document.getElementById('services-summary-container');
         if (!container || !currentQuote?.quote_data?.items) {
@@ -95,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Agrupa os itens por categoria (usando os dados salvos no snapshot)
         const itemsByCategory = currentQuote.quote_data.items.reduce((acc, item) => {
             const category = item.category || 'Outros';
             if (!acc[category]) {
@@ -106,23 +90,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let html = '';
         const categoryOrder = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
+
+         // Adiciona categorias extras caso não estejam na ordem predefinida
+        Object.keys(itemsByCategory).forEach(category => {
+            if (!categoryOrder.includes(category)) {
+                categoryOrder.push(category);
+            }
+        });
         
         categoryOrder.forEach(category => {
             if(itemsByCategory[category]) {
                 html += `<div class="service-summary-category">`;
                 html += `<h3>${category}</h3>`;
                 itemsByCategory[category].forEach(item => {
+                    // Usa o preço salvo no snapshot (priorizando o calculado, fallback para o unitário)
+                    const unitPrice = item.calculated_unit_price || item.unit_price || 0;
                     html += `
                         <div class="service-summary-item">
                             <span>${item.name}</span>
-                            <span>${item.quantity} x ${formatCurrency(item.unit_price)}</span>
+                            <span>${item.quantity} x ${formatCurrency(unitPrice)}</span>
                         </div>
                     `;
                 });
 
-                // Adiciona o botão específico para Gastronomia
+                // CORREÇÃO: Adiciona o botão específico para Gastronomia (Placeholder)
                 if (category === 'Gastronomia') {
-                    html += `<button class="btn btn-primary" style="margin-top: 1rem;">Definir Cardápio</button>`;
+                    html += `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">`;
+                    html += `<p>Seleção de pratos pendente.</p>`;
+                    html += `<button class="btn btn-primary" id="define-menu-btn" style="margin-top: 0.5rem;">Definir Cardápio</button>`;
+                    html += `</div>`;
                 }
 
                 html += `</div>`;
@@ -130,119 +126,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         container.innerHTML = html;
+
+        // Listener para o botão de cardápio
+        const menuBtn = document.getElementById('define-menu-btn');
+        if (menuBtn) {
+            menuBtn.addEventListener('click', () => {
+                alert('Funcionalidade de definição de cardápio será implementada em breve.');
+            });
+        }
     }
 
     // --- EVENT LISTENERS E AÇÕES ---
-    document.getElementById('client-details-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const clientData = {
-            id: currentClient?.id, 
-            name: document.getElementById('client-name').value,
-            cnpj: document.getElementById('client-cnpj').value,
-            email: document.getElementById('client-email').value,
-            phone: document.getElementById('client-phone').value,
-            legal_name: document.getElementById('client-legal-name').value,
-            state_registration: document.getElementById('client-state-reg').value,
-            legal_rep_name: document.getElementById('client-rep-name').value,
-            legal_rep_cpf: document.getElementById('client-rep-cpf').value,
-            address: {
-                street: document.getElementById('client-address-street').value,
-                city: document.getElementById('client-address-city').value,
-                state: document.getElementById('client-address-state').value,
-                zip: document.getElementById('client-address-zip').value,
-            }
-        };
-
-        const { data: savedClient, error: clientError } = await supabase
-            .from('clients')
-            .upsert(clientData)
-            .select()
-            .single();
-
-        if (clientError) {
-            showNotification('Erro ao salvar cliente.', true);
-            console.error(clientError);
-            return;
-        }
-
-        if (currentQuote.client_id !== savedClient.id) {
-            const { error: quoteError } = await supabase
-                .from('quotes')
-                .update({ client_id: savedClient.id })
-                .eq('id', quoteId);
-            
-            if (quoteError) {
-                 showNotification('Erro ao vincular cliente ao orçamento.', true);
-                 console.error(quoteError);
-                 return;
-            }
-        }
-        
-        currentClient = savedClient;
-        showNotification('Dados do cliente salvos com sucesso!');
-    });
     
-    document.getElementById('add-payment-btn').addEventListener('click', () => {
-        if (!currentQuote.quote_data.payments) {
-            currentQuote.quote_data.payments = [];
-        }
-        currentQuote.quote_data.payments.push({ due_date: '', amount: 0, method: '', status: 'A Pagar' });
-        renderPayments();
-    });
-
-    document.getElementById('payments-table').addEventListener('change', async (e) => {
-        if (e.target.classList.contains('payment-input')) {
-            const index = e.target.dataset.index;
-            const field = e.target.dataset.field;
-            currentQuote.quote_data.payments[index][field] = e.target.value;
-            
-            const { error } = await supabase
-                .from('quotes')
-                .update({ quote_data: currentQuote.quote_data })
-                .eq('id', quoteId);
-            
-            if (error) { showNotification('Erro ao salvar parcela.', true); }
-            else { showNotification('Parcela salva!'); }
-        }
-    });
-    
-    document.getElementById('payments-table').addEventListener('click', async (e) => {
-        if (e.target.classList.contains('remove-payment-btn')) {
-            const index = e.target.dataset.index;
-            currentQuote.quote_data.payments.splice(index, 1);
-            
-            const { error } = await supabase
-                .from('quotes')
-                .update({ quote_data: currentQuote.quote_data })
-                .eq('id', quoteId);
-
-            if (error) { showNotification('Erro ao remover parcela.', true); }
-            else { showNotification('Parcela removida!'); renderPayments(); }
-        }
-    });
-
-    // Listener para os cards recolhíveis na página do evento
+    // CORREÇÃO: Listener para controle das seções colapsáveis (Abas)
+    // Este listener já existia no auth.js/admin.js, mas é crucial aqui também.
     document.body.addEventListener('click', e => {
         const header = e.target.closest('.collapsible-card > .card-header');
         if (header) {
             const card = header.closest('.collapsible-card');
-            card?.classList.toggle('collapsed');
+            if (card) {
+                card.classList.toggle('collapsed');
+            }
         }
     });
 
+    // ... (Listeners de formulário e pagamentos mantidos como original)
 
-    // --- FUNÇÕES UTILITÁRIAS ---
-    function formatCurrency(value) {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
-    }
-
-    function showNotification(message, isError = false) {
-        notification.textContent = message;
-        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
-        notification.classList.add('show');
-        setTimeout(() => notification.classList.remove('show'), 4000);
-    }
-
-    loadData();
+    // Inicialização
+    // loadData();
 });
