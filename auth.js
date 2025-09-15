@@ -1,7 +1,11 @@
-
 import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Evita a execução em páginas não administrativas que possam ter o script linkado por engano
+    if (!document.getElementById('admin-catalog-container') && !document.getElementById('quotes-table')) {
+        return;
+    }
+    
     // =================================================================
     // VERIFICAÇÃO DE ACESSO
     // =================================================================
@@ -15,24 +19,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
     // ESTADO E ELEMENTOS DO DOM
     // =================================================================
-    let services = [], priceTables = [], servicePrices = [], quotes = [], events = [];
+    let services = [], priceTables = [], servicePrices = [], quotes = [];
     
     const adminCatalogContainer = document.getElementById('admin-catalog-container');
     const priceTablesTbody = document.getElementById('price-tables-list')?.querySelector('tbody');
     const quotesTbody = document.getElementById('quotes-table')?.querySelector('tbody');
     const eventsTbody = document.getElementById('events-table')?.querySelector('tbody');
     const analyticsContainer = document.getElementById('analytics-container');
+    const analyticsNotice = document.getElementById('analytics-notice');
     const addServiceForm = document.getElementById('addServiceForm');
     const addPriceTableForm = document.getElementById('addPriceTableForm');
     const notification = document.getElementById('save-notification');
+    const calendarStatusFilter = document.getElementById('calendar-status-filter');
     
     let debounceTimers = {};
-    let calendarInstance = null; // Para garantir que o calendário seja renderizado apenas uma vez
+    let calendarInstance = null; 
 
     // --- INICIALIZAÇÃO ---
     async function initialize() {
         await fetchData();
         addEventListeners();
+        // Garante que o calendário seja renderizado na aba correta ao carregar
+        if (document.querySelector('.tab-btn[data-tab="calendar"].active')) {
+            initializeCalendar();
+        }
     }
 
     async function fetchData() {
@@ -53,7 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             priceTables = tablesRes.data || [];
             servicePrices = pricesRes.data || [];
             quotes = quotesRes.data || [];
-            events = quotes.filter(q => q.status === 'Ganho');
 
             renderAll();
         } catch (error) {
@@ -76,7 +85,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderQuotesTable() {
         if (!quotesTbody) return;
-        quotesTbody.innerHTML = '';
+        quotesTbody.innerHTML = '<thead><tr><th>Cliente</th><th>Criação</th><th>Status</th><th class="actions">Ações</th></tr></thead><tbody></tbody>';
+        const tbody = quotesTbody.querySelector('tbody');
         const statusOptions = ['Rascunho', 'Em analise', 'Ganho', 'Perdido'];
 
         quotes.forEach(quote => {
@@ -96,18 +106,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td>${selectHTML}</td>
                 <td class="actions">
                     <a href="index.html?quote_id=${quote.id}" class="btn" title="Editar Orçamento">Editar</a>
-                    <a href="index.html?quote_id=${quote.id}&print=true" target="_blank" class="btn" title="Exportar PDF">PDF</a>
+                    <a href="evento.html?quote_id=${quote.id}" class="btn" title="Gerenciar Evento" style="${quote.status === 'Ganho' ? '' : 'display:none;'}">Gerenciar</a>
                     <button class="btn-remove" data-action="delete-quote" data-id="${quote.id}" title="Excluir Orçamento">&times;</button>
                 </td>
             `;
-            quotesTbody.appendChild(row);
+            tbody.appendChild(row);
         });
     }
 
-    // NOVA FUNÇÃO para renderizar a tabela de eventos ganhos
     function renderEventsTable() {
         if (!eventsTbody) return;
-        eventsTbody.innerHTML = '';
+        eventsTbody.innerHTML = '<thead><tr><th>Cliente</th><th>Data do Evento</th><th>Valor Total</th><th class="actions">Ações</th></tr></thead><tbody></tbody>';
+        const tbody = eventsTbody.querySelector('tbody');
+        const events = quotes.filter(q => q.status === 'Ganho');
 
         events.forEach(event => {
             const row = document.createElement('tr');
@@ -123,12 +134,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <a href="evento.html?quote_id=${event.id}" class="btn" title="Gerenciar Evento">Gerenciar</a>
                 </td>
             `;
-            eventsTbody.appendChild(row);
+            tbody.appendChild(row);
         });
     }
 
     function renderAnalytics() {
-        if (!analyticsContainer) return;
+        if (!analyticsContainer || !analyticsNotice) return;
         
         const now = new Date();
         const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -140,6 +151,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const createdAt = new Date(q.created_at);
             return createdAt >= startOfPreviousMonth && createdAt <= endOfPreviousMonth;
         });
+        
+        if (currentMonthQuotes.length === 0) {
+            analyticsNotice.textContent = 'Nenhuma proposta encontrada para o mês atual.';
+            analyticsNotice.style.display = 'block';
+        } else {
+            analyticsNotice.style.display = 'none';
+        }
 
         const currentMetrics = aggregateQuoteMetrics(currentMonthQuotes);
         const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
@@ -152,12 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function aggregateQuoteMetrics(quoteArray) {
-        const initialMetrics = {
-            'Ganho': { count: 0, value: 0 },
-            'Perdido': { count: 0, value: 0 },
-            'Em analise': { count: 0, value: 0 },
-            'Rascunho': { count: 0, value: 0 }
-        };
+        const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } };
         return quoteArray.reduce((acc, quote) => {
             if (acc[quote.status]) {
                 acc[quote.status].count++;
@@ -186,9 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function calculatePercentageChange(current, previous) {
-        if (previous === 0) {
-            return current > 0 ? '+∞%' : '0%';
-        }
+        if (previous === 0) { return current > 0 ? '+∞%' : '0%'; }
         const change = ((current - previous) / previous) * 100;
         return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
     }
@@ -217,12 +228,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             acc[service.category].push(service);
             return acc;
         }, {});
-        const orderedCategories = Object.keys(servicesByCategory).sort((a, b) => {
-             const order = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
-             return order.indexOf(a) - order.indexOf(b);
-        });
+        const orderedCategories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
 
         orderedCategories.forEach(category => {
+            if (!servicesByCategory[category]) return;
+
             const categoryWrapper = document.createElement('div');
             categoryWrapper.innerHTML = `
                 <details class="category-accordion" open>
@@ -231,18 +241,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </summary>
                     <div class="table-container">
                         <table class="editable-table">
-                            <colgroup>
-                                <col style="width: 38%;">
-                                <col style="width: 14%;">
-                                ${priceTables.map(() => `<col style="width: ${ (100-38-14-8) / (priceTables.length || 1)}%;">`).join('')}
-                                <col style="width: 8%;">
-                            </colgroup>
                             <thead>
                                 <tr>
                                     <th>Nome</th>
                                     <th>Unidade</th>
                                     ${priceTables.map(pt => `<th class="price-column">${pt.name}</th>`).join('')}
-                                    <th>Ações</th>
+                                    <th class="actions">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -277,36 +281,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- LÓGICA DO CALENDÁRIO ---
-    async function initializeCalendar() {
+    function initializeCalendar() {
         const calendarEl = document.getElementById('calendar');
         if (!calendarEl || calendarInstance) return;
-
-        const calendarEvents = [];
-        events.forEach(quote => {
-            if (quote.quote_data && quote.quote_data.event_dates) {
-                quote.quote_data.event_dates.forEach(eventDate => {
-                    calendarEvents.push({
-                        title: quote.client_name,
-                        start: eventDate.date, 
-                        allDay: true
-                    });
-                });
-            }
-        });
 
         calendarInstance = new FullCalendar.Calendar(calendarEl, {
             locale: 'pt-br',
             initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,listWeek'
-            },
-            events: calendarEvents,
-            eventColor: '#8B0000'
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+            events: [],
+            eventColor: '#8B0000',
+            eventClick: (info) => {
+                const { quoteId, spaceName, clientName } = info.event.extendedProps;
+                if (confirm(`Cliente: ${clientName}\nEspaço: ${spaceName}\n\nClique em OK para gerenciar este evento.`)) {
+                    window.location.href = `evento.html?quote_id=${quoteId}`;
+                }
+            }
         });
-
+        
+        updateCalendarEvents();
         calendarInstance.render();
+    }
+
+    function updateCalendarEvents() {
+        if (!calendarInstance) return;
+
+        const selectedStatus = calendarStatusFilter.value;
+        let filteredQuotes = quotes;
+
+        if (selectedStatus !== 'Todos') {
+            filteredQuotes = quotes.filter(q => q.status === selectedStatus);
+        }
+
+        const calendarEvents = [];
+        filteredQuotes.forEach(quote => {
+            if (quote.quote_data && quote.quote_data.items) {
+                const spaceItems = quote.quote_data.items.filter(item => {
+                    const service = services.find(s => s.id === item.service_id);
+                    return service && service.category === 'Espaço';
+                });
+
+                spaceItems.forEach(item => {
+                    const service = services.find(s => s.id === item.service_id);
+                    if (item.event_date && service) {
+                         calendarEvents.push({
+                            title: `${quote.client_name} (${service.name})`,
+                            start: item.event_date,
+                            allDay: true,
+                            extendedProps: {
+                                quoteId: quote.id,
+                                spaceName: service.name,
+                                clientName: quote.client_name
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        
+        calendarInstance.removeAllEvents();
+        calendarInstance.addEventSource(calendarEvents);
     }
     
     // --- EVENT LISTENERS ---
@@ -324,7 +358,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             clickedTab.classList.add('active');
             document.getElementById(`tab-content-${tabId}`).classList.add('active');
 
-            // Inicializa o calendário SE for a aba de calendário e ainda não foi inicializado
             if (tabId === 'calendar') {
                 initializeCalendar();
             }
@@ -345,24 +378,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupTabEvents();
         setupCollapsibleEvents();
 
-        addServiceForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value };
-            const { error } = await supabase.from('services').insert([newService]);
-            if(error) { showNotification(`Erro: ${error.message}`, true); } 
-            else { showNotification('Serviço adicionado!'); e.target.reset(); fetchData(); }
-        });
-        
-        addPriceTableForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newTable = { name: document.getElementById('tableName').value, consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0 };
-            const { error } = await supabase.from('price_tables').insert([newTable]);
-            if(error) { showNotification(`Erro: ${error.message}`, true); } 
-            else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
-        });
+        addServiceForm?.addEventListener('submit', async (e) => { e.preventDefault(); const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value }; const { error } = await supabase.from('services').insert([newService]); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço adicionado!'); e.target.reset(); fetchData(); } });
+        addPriceTableForm?.addEventListener('submit', async (e) => { e.preventDefault(); const newTable = { name: document.getElementById('tableName').value, consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0 }; const { error } = await supabase.from('price_tables').insert([newTable]); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); } });
 
         document.body.addEventListener('click', e => {
-            const button = e.target.closest('button');
+            const button = e.target.closest('button[data-action]');
             if (!button) return;
             const { action, id } = button.dataset;
             if (action === 'delete-service') deleteService(id);
@@ -370,31 +390,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (action === 'delete-quote') deleteQuote(id);
         });
         
-        adminCatalogContainer?.addEventListener('input', (e) => {
-            if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); }
-        });
-        adminCatalogContainer?.addEventListener('change', (e) => {
-            if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) { handleServiceEdit(e.target, false); }
-        });
-
-        priceTablesTbody?.addEventListener('input', (e) => {
-            if (e.target.matches('.price-table-input[data-field="name"]')) { handlePriceTableEdit(e.target, true); }
-        });
-        priceTablesTbody?.addEventListener('change', (e) => {
-            if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) { handlePriceTableEdit(e.target, false); }
-        });
-
-        quotesTbody?.addEventListener('change', async (e) => {
-            if (e.target.classList.contains('status-select')) {
-                const quoteId = e.target.dataset.id;
-                const newStatus = e.target.value;
-                await updateQuoteStatus(quoteId, newStatus);
-            }
-        });
+        adminCatalogContainer?.addEventListener('input', (e) => { if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); } });
+        adminCatalogContainer?.addEventListener('change', (e) => { if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) { handleServiceEdit(e.target, false); } });
+        priceTablesTbody?.addEventListener('input', (e) => { if (e.target.matches('.price-table-input[data-field="name"]')) { handlePriceTableEdit(e.target, true); } });
+        priceTablesTbody?.addEventListener('change', (e) => { if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) { handlePriceTableEdit(e.target, false); } });
+        quotesTbody?.addEventListener('change', async (e) => { if (e.target.classList.contains('status-select')) { const quoteId = e.target.dataset.id; const newStatus = e.target.value; await updateQuoteStatus(quoteId, newStatus); } });
+        calendarStatusFilter?.addEventListener('change', updateCalendarEvents);
     }
 
-    // --- FUNÇÕES DE LÓGICA E CRUD (sem alterações significativas, mantidas como estavam) ---
-    // ... (O restante das funções como handleServiceEdit, handlePriceTableEdit, updateQuoteStatus, etc., permanecem as mesmas)
     function handleServiceEdit(inputElement, useDebounce) {
         const row = inputElement.closest('tr');
         if (!row) return;
@@ -437,84 +440,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             showNotification(`Erro ao atualizar status: ${error.message}`, true);
         } else {
             showNotification('Status atualizado com sucesso!');
-            // Recarrega os dados para garantir consistência em todas as abas
-            fetchData();
+            await fetchData(); // Recarrega todos os dados para garantir consistência
         }
     }
     
     async function updatePriceTableDetail(tableId, field, value, inputElement) {
-        if (!tableId || !field) return;
-        if (field === 'name' && !value.trim()) {
-            showNotification('O nome da lista não pode ficar vazio.', true);
-            fetchData(); return;
-        }
+        if (!tableId || !field) return; if (field === 'name' && !value.trim()) { showNotification('O nome da lista não pode ficar vazio.', true); fetchData(); return; }
         const { error } = await supabase.from('price_tables').update({ [field]: value }).eq('id', tableId);
-        if (error) {
-            showNotification(`Erro ao atualizar: ${error.message}`, true);
-            fetchData();
-        } else {
-            showFlash(inputElement);
-            if (field === 'name') { renderAdminCatalog(); }
-        }
+        if (error) { showNotification(`Erro ao atualizar: ${error.message}`, true); fetchData(); } 
+        else { showFlash(inputElement); if (field === 'name') { fetchData(); } }
     }
 
     async function updateServiceDetail(serviceId, field, value, inputElement) {
-        if (!serviceId || !field) return;
-        if (field === 'name' && !value.trim()) {
-            showNotification('O nome do serviço não pode ficar vazio.', true);
-            fetchData(); return;
-        }
+        if (!serviceId || !field) return; if (field === 'name' && !value.trim()) { showNotification('O nome do serviço não pode ficar vazio.', true); fetchData(); return; }
         const { error } = await supabase.from('services').update({ [field]: value }).eq('id', serviceId);
-        if (error) {
-            showNotification(`Erro ao atualizar: ${error.message}`, true);
-            fetchData();
-        } else {
-            showFlash(inputElement);
-        }
+        if (error) { showNotification(`Erro ao atualizar: ${error.message}`, true); fetchData(); } 
+        else { showFlash(inputElement); }
     }
 
     async function updateServicePrice(serviceId, tableId, price, inputElement) {
-        if (!serviceId || !tableId) return;
-        const recordToUpsert = { service_id: serviceId, price_table_id: tableId, price: price };
+        if (!serviceId || !tableId) return; const recordToUpsert = { service_id: serviceId, price_table_id: tableId, price: price };
         const { error } = await supabase.from('service_prices').upsert(recordToUpsert, { onConflict: 'service_id, price_table_id' });
-        if (error) {
-            showNotification(`Erro ao atualizar preço: ${error.message}`, true);
-            fetchData();
-        } else {
-            showFlash(inputElement);
-        }
+        if (error) { showNotification(`Erro ao atualizar preço: ${error.message}`, true); fetchData(); } 
+        else { showFlash(inputElement); }
     }
 
-    async function deleteService(id) {
-        if (!confirm('Tem certeza? Isso excluirá o serviço e todos os seus preços.')) return;
-        const { error } = await supabase.from('services').delete().eq('id', id);
-        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço excluído.'); fetchData(); }
-    }
-    
-    async function deletePriceTable(id) {
-        if (!confirm('Tem certeza? Isso excluirá a lista e todos os preços associados a ela.')) return;
-        const { error } = await supabase.from('price_tables').delete().eq('id', id);
-        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços excluída.'); fetchData(); }
-    }
-    
-    async function deleteQuote(id) {
-        if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
-        const { error } = await supabase.from('quotes').delete().eq('id', id);
-        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Orçamento excluído.'); fetchData(); }
-    }
+    async function deleteService(id) { if (!confirm('Tem certeza? Isso excluirá o serviço e todos os seus preços.')) return; const { error } = await supabase.from('services').delete().eq('id', id); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço excluído.'); fetchData(); } }
+    async function deletePriceTable(id) { if (!confirm('Tem certeza? Isso excluirá a lista e todos os preços associados a ela.')) return; const { error } = await supabase.from('price_tables').delete().eq('id', id); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços excluída.'); fetchData(); } }
+    async function deleteQuote(id) { if (!confirm('Tem certeza que deseja excluir este orçamento?')) return; const { error } = await supabase.from('quotes').delete().eq('id', id); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Orçamento excluído.'); fetchData(); } }
 
-    function showFlash(inputElement) {
-        inputElement.classList.add('success-flash');
-        setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
-    }
-
-    function showNotification(message, isError = false) {
-        if (!notification) return;
-        notification.textContent = message;
-        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
-        notification.classList.add('show');
-        setTimeout(() => notification.classList.remove('show'), 5000);
-    }
+    function showFlash(inputElement) { inputElement.classList.add('success-flash'); setTimeout(() => inputElement.classList.remove('success-flash'), 1500); }
+    function showNotification(message, isError = false) { if (!notification) return; notification.textContent = message; notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)'; notification.classList.add('show'); setTimeout(() => notification.classList.remove('show'), 5000); }
 
     initialize();
 });
