@@ -271,7 +271,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .kpi-comparison .percentage.increase { color: #3c763d; background-color: #dff0d8; }
 .kpi-comparison .percentage.decrease { color: #a94442; background-color: #f2dede; }
 .kpi-sub-value { margin-top: 0.2rem; color: var(--subtle-text-color); }
-#analytics-notice { padding: 1rem; background-color: #f0f0f0; border-radius: 6px; text-align: center; color: var(--subtle-text-color); }
+.analytics-notice { padding: 1rem; background-color: #f0f0f0; border-radius: 6px; text-align: center; color: var(--subtle-text-color); }
 
 
 /* Página de Gestão de Evento */
@@ -280,6 +280,32 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     flex-direction: column;
     gap: 1.5rem;
 }
+
+/* Novo layout para o Resumo do Evento */
+.event-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.summary-box {
+    background-color: #f9f9f9;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+}
+.summary-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--subtle-text-color);
+    margin-bottom: 0.25rem;
+}
+.summary-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--heading-color);
+}
+
+
 #payments-table { width: 100%; table-layout: auto; border-collapse: collapse;}
 #payments-table th, #payments-table td { border-bottom: 1px solid var(--border-color); padding: 0.8rem; text-align: left;}
 #payments-table input, #payments-table select { width: 100%; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; }
