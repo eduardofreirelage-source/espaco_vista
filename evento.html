@@ -19,48 +19,93 @@
             <section class="card">
                 <div class="card-header"><h2>Resumo do Evento</h2></div>
                 <div class="card-content">
-                    <p><strong>Cliente:</strong> <span id="summary-client-name"></span></p>
-                    <p><strong>Datas:</strong> <span id="summary-event-dates"></span></p>
-                    <p><strong>Espaço Locado:</strong> <span id="summary-event-space"></span></p> 
-                    <p><strong>Nº de Convidados:</strong> <span id="summary-guest-count"></span></p>
-                    <p><strong>Valor Total:</strong> <strong id="summary-total-value"></strong></p>
-                    <a href="#" id="view-quote-link" target="_blank" class="btn btn-primary" style="margin-top: 1rem;">Ver Proposta Original</a>
+                    <div class="event-summary-grid">
+                        <div class="summary-box">
+                            <span class="summary-label">Cliente</span>
+                            <span id="summary-client-name" class="summary-value"></span>
+                        </div>
+                        <div class="summary-box">
+                            <span class="summary-label">Nº de Convidados</span>
+                            <span id="summary-guest-count" class="summary-value"></span>
+                        </div>
+                        <div class="summary-box">
+                            <span class="summary-label">Datas</span>
+                            <span id="summary-event-dates" class="summary-value"></span>
+                        </div>
+                        <div class="summary-box">
+                            <span class="summary-label">Valor Total</span>
+                            <strong id="summary-total-value" class="summary-value"></strong>
+                        </div>
+                    </div>
+                    <a href="#" id="view-quote-link" target="_blank" class="btn btn-primary" style="margin-top: 1.5rem;">Ver Proposta Original</a>
                 </div>
             </section>
+            
+            <section class="card collapsible-card collapsed">
+                 <div class="card-header">
+                     <h2>Serviços Contratados e Cardápio</h2>
+                     <span class="collapse-icon"></span>
+                 </div>
+                <div id="services-summary-container" class="card-content">
+                    </div>
+            </section>
 
-            <section class="card">
+            <section class="card collapsible-card collapsed">
                 <div class="card-header"><h2>Gestão Financeira</h2></div>
                 <div class="card-content">
-                    <table id="payments-table" class="quote-table">
-                        <thead><tr><th>Vencimento</th><th>Valor (R$)</th><th>Forma de Pag.</th><th>Status</th><th>Ações</th></tr></thead>
+                    <table id="payments-table">
+                        <thead><tr><th>Vencimento</th><th>Valor</th><th>Forma de Pag.</th><th>Status</th><th>Ações</th></tr></thead>
                         <tbody></tbody>
                     </table>
                     <button id="add-payment-btn" class="btn btn-primary" style="margin-top: 1rem;">+ Adicionar Parcela</button>
                 </div>
             </section>
-
-            <section class="card collapsible-card collapsed full-width">
-                <div class="card-header">
-                    <h2>Serviços Contratados e Cardápio</h2>
-                     <span class="collapse-icon"></span>
-                </div>
-                <div id="services-summary-container" class="card-content">
-                    </div>
-            </section>
             
-            <section class="card collapsible-card collapsed full-width">
+            <section class="card collapsible-card collapsed">
                  <div class="card-header">
                      <h2>Dados Completos do Cliente</h2>
                      <span class="collapse-icon"></span>
                  </div>
                 <form id="client-details-form" class="card-content">
-                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Alterações do Cliente</button>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Nome Fantasia</label><input type="text" id="client-name"></div>
+                        <div class="form-group"><label>CNPJ</label><input type="text" id="client-cnpj"></div>
+                        <div class="form-group"><label>Razão Social</label><input type="text" id="client-legal-name"></div>
+                        <div class="form-group"><label>Inscrição Estadual</label><input type="text" id="client-state-reg"></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="client-email"></div>
+                        <div class="form-group"><label>Telefone</label><input type="tel" id="client-phone"></div>
+                        <div class="form-group"><label>Endereço (Rua, Nro)</label><input type="text" id="client-address-street"></div>
+                        <div class="form-group"><label>Cidade</label><input type="text" id="client-address-city"></div>
+                        <div class="form-group"><label>Estado</label><input type="text" id="client-address-state"></div>
+                        <div class="form-group"><label>CEP</label><input type="text" id="client-address-zip"></div>
+                        <div class="form-group"><label>Nome do Rep. Legal</label><input type="text" id="client-rep-name"></div>
+                        <div class="form-group"><label>CPF do Rep. Legal</label><input type="text" id="client-rep-cpf"></div>
+                    </div>
+                    <button type="submit" class="btn" style="margin-top: 1rem;">Salvar Dados do Cliente</button>
                 </form>
             </section>
             
+            <section class="card collapsible-card collapsed">
+                 <div class="card-header">
+                    <h2>Gestão do Contrato</h2>
+                    <span class="collapse-icon"></span>
+                </div>
+                 <div class="card-content">
+                    <div class="form-group">
+                        <label>Status do Contrato</label>
+                        <select id="contract-status">
+                            <option>Aguardando Geração</option>
+                            <option>Enviado para Assinatura</option>
+                            <option>Contrato Assinado</option>
+                        </select>
+                    </div>
+                    <button id="generate-contract-btn" class="btn" style="margin-top: 1rem;">Gerar Contrato (Preview)</button>
+                 </div>
+            </section>
+
         </main>
     </div>
-
     <div id="save-notification" class="notification"></div>
+    <script type="module" src="evento.js"></script>
 </body>
 </html>
