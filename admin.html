@@ -3,43 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin - Sistema de Orçamentos</title>
+    <title>Painel Administrativo - Sistema de Orçamentos</title>
     <link rel="stylesheet" href="styles.css">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Painel de Administração</h1>
+            <h1>Painel Administrativo</h1>
             <div class="header-actions">
-                <a href="index.html" class="btn">← Voltar para Orçamentos</a>
-                <a href="calendario.html" class="btn">Calendário</a>
+                <a href="index.html" class="btn">← Ir para o Gerador</a>
                 <button id="logout-btn" class="btn" style="background-color: #6c757d;">Sair</button>
             </div>
         </header>
 
         <main>
-            <div class="tabs-nav">
+            <nav class="tabs-nav">
                 <button class="tab-btn active" data-tab="quotes">Orçamentos</button>
-                <button class="tab-btn" data-tab="events">Eventos</button>
-                <button class="tab-btn" data-tab="analytics">Analítico</button>
-                <button class="tab-btn" data-tab="settings">Cadastros</button>
-            </div>
+                <button class="tab-btn" data-tab="events">Eventos (Ganhos)</button>
+                <button class="tab-btn" data-tab="calendar">Calendário</button>
+                <button class="tab-btn" data-tab="analytics">Analytics</button>
+                <button class="tab-btn" data-tab="catalogs">Cadastros</button>
+            </nav>
 
             <div id="tab-content-quotes" class="tab-content active">
                 <section class="card">
-                    <div class="card-header">
-                        <h2>Orçamentos Salvos</h2>
-                    </div>
-                    <div class="card-content" id="quotes-list-container">
-                        <table id="quotes-table">
+                    <div class="card-header"><h2>Todos os Orçamentos</h2></div>
+                    <div class="card-content table-container">
+                        <table id="quotes-table" class="quote-table">
                             <colgroup>
-                                <col style="width: 40%;">
+                                <col style="width: 35%;">
                                 <col style="width: 15%;">
                                 <col style="width: 20%;">
-                                <col style="width: 25%;">
+                                <col style="width: 30%;">
                             </colgroup>
-                            <thead><tr><th>Cliente</th><th>Data de Criação</th><th>Status</th><th>Ações</th></tr></thead>
-                            <tbody></tbody>
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Data Criação</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
                         </table>
                     </div>
                 </section>
@@ -47,68 +54,106 @@
 
             <div id="tab-content-events" class="tab-content">
                 <section class="card">
-                    <div class="card-header">
-                        <h2>Eventos Ganhos</h2>
-                    </div>
-                    <div class="card-content">
-                        <table id="events-table">
-                             <colgroup>
+                     <div class="card-header"><h2>Eventos Ganhos</h2></div>
+                     <div class="card-content table-container">
+                         <table id="events-table" class="quote-table">
+                            <colgroup>
                                 <col style="width: 40%;">
-                                <col style="width: 15%;">
                                 <col style="width: 20%;">
-                                <col style="width: 25%;">
+                                <col style="width: 20%;">
+                                <col style="width: 20%;">
                             </colgroup>
-                            <thead><tr><th>Cliente</th><th>Data de Criação</th><th>Status</th><th>Ações</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+                             <thead>
+                                 <tr>
+                                     <th>Cliente / Evento</th>
+                                     <th>Data do Evento</th>
+                                     <th>Valor Total</th>
+                                     <th>Ações</th>
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                 </tbody>
+                         </table>
+                     </div>
                 </section>
             </div>
             
-            <div id="tab-content-analytics" class="tab-content">
-                <div class="analytics-grid" id="analytics-container"></div>
+            <div id="tab-content-calendar" class="tab-content">
+                <section class="card">
+                    <div class="card-header"><h2>Calendário de Eventos (Ganhos)</h2></div>
+                    <div class="card-content">
+                        <div id="calendar"></div>
+                    </div>
+                </section>
             </div>
 
-            <div id="tab-content-settings" class="tab-content">
-                <section class="card collapsible-card collapsed">
+            <div id="tab-content-analytics" class="tab-content">
+                <section id="analytics-container" class="analytics-grid">
+                    </section>
+            </div>
+
+            <div id="tab-content-catalogs" class="tab-content">
+                <section class="card collapsible-card">
                     <div class="card-header">
                         <h2>Catálogo de Serviços</h2>
                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
-                        <div id="admin-catalog-container"></div>
+                        <div id="admin-catalog-container" class="table-container"></div>
                         <form id="addServiceForm" class="inline-form">
-                            <input type="text" id="serviceName" placeholder="Nome do novo serviço" required>
-                            <select id="serviceCategory" required><option value="" disabled selected>Categoria</option><option>Espaço</option><option>Gastronomia</option><option>Equipamentos</option><option>Serviços / Outros</option></select>
-                            <select id="serviceUnit" required><option value="" disabled selected>Unidade</option><option>unidade</option><option>diaria</option><option>por_pessoa</option></select>
+                            <input type="text" id="serviceName" placeholder="Nome do Serviço" required>
+                            <select id="serviceCategory" required>
+                                <option value="Espaço">Espaço</option>
+                                <option value="Gastronomia">Gastronomia</option>
+                                <option value="Equipamentos">Equipamentos</option>
+                                <option value="Serviços / Outros">Serviços / Outros</option>
+                            </select>
+                            <select id="serviceUnit" required>
+                                <option value="unidade">unidade</option>
+                                <option value="diaria">diária</option>
+                                <option value="por_pessoa">por pessoa</option>
+                            </select>
                             <button type="submit" class="btn btn-primary">Adicionar Serviço</button>
                         </form>
                     </div>
                 </section>
 
-                <section class="card collapsible-card collapsed">
+                <section class="card collapsible-card">
                     <div class="card-header">
                         <h2>Listas de Preços</h2>
-                        <span class="collapse-icon"></span>
+                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
-                        <table id="price-tables-list" class="editable-table">
-                            <thead><tr><th>Nome da Lista</th><th>Consumação (R$)</th><th>Ações</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
+                        <div id="price-tables-list" class="table-container">
+                             <table class="editable-table">
+                                 <colgroup>
+                                    <col style="width: 60%;">
+                                    <col style="width: 30%;">
+                                    <col style="width: 10%;">
+                                 </colgroup>
+                                 <thead>
+                                     <tr>
+                                         <th>Nome da Lista</th>
+                                         <th class="price-column">Crédito Consumível (R$)</th>
+                                         <th>Ações</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody></tbody>
+                             </table>
+                        </div>
                         <form id="addPriceTableForm" class="inline-form">
                             <input type="text" id="tableName" placeholder="Nome da nova lista" required>
-                            <input type="number" id="tableConsumable" placeholder="Valor consumação" step="0.01" min="0" required>
-                            <button type="submit" class="btn btn-primary">Adicionar</button>
+                            <input type="number" step="0.01" min="0" id="tableConsumable" placeholder="Crédito consumível" value="0">
+                            <button type="submit" class="btn btn-primary">Adicionar Lista</button>
                         </form>
                     </div>
                 </section>
             </div>
+
         </main>
     </div>
 
     <div id="save-notification" class="notification"></div>
     <script type="module" src="auth.js"></script>
-    <script type="module" src="admin.js"></script>
 </body>
 </html>
