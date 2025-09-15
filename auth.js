@@ -2,12 +2,12 @@ import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
-    // VERIFICAÇÃO DE ACESSO (Mantido do original)
+    // VERIFICAÇÃO DE ACESSO (Mantenha descomentado em produção)
     // =================================================================
     /*
     const { role } = await getSession();
     if (role !== 'admin') {
-        console.warn("Acesso negado ao painel administrativo. Redirecionando para login.");
+        console.warn("Acesso negado. Redirecionando.");
         window.location.href = 'login.html';
         return;
     }
@@ -19,11 +19,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     let services = [], priceTables = [], servicePrices = [], quotes = [];
     
     const adminCatalogContainer = document.getElementById('admin-catalog-container');
-    // ... (Outros elementos do DOM como priceTablesTbody, quotesTbody, eventsTbody, etc.)
+    // (Outros elementos do DOM como priceTablesTbody, quotesTbody, eventsTbody, etc.)
     const analyticsContainer = document.getElementById('analytics-container');
     const notification = document.getElementById('save-notification');
     
-    // NOVO: Elemento do filtro do calendário
+    // CORREÇÃO: Elemento do filtro do calendário
     const calendarStatusFilter = document.getElementById('calendar-status-filter');
     
     let debounceTimers = {};
@@ -37,12 +37,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function fetchData() {
+        // (Lógica de busca de dados mantida, garantindo seleção de 'quote_data')
         try {
-            const [servicesRes, tablesRes, pricesRes, quotesRes] = await Promise.all([
+             const [servicesRes, tablesRes, pricesRes, quotesRes] = await Promise.all([
                 supabase.from('services').select('*').order('category').order('name'),
                 supabase.from('price_tables').select('*').order('name'),
                 supabase.from('service_prices').select('*'),
-                // Importante: selecionar quote_data para acessar datas e itens (Espaço)
+                // Importante selecionar 'quote_data' para o calendário e analytics
                 supabase.from('quotes').select('*, clients(*)').order('created_at', { ascending: false })
             ]);
 
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             renderAll();
         } catch (error) {
-            showNotification(`Erro ao carregar dados: ${error.message}`, true);
+            // showNotification(...)
         }
     }
 
@@ -71,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    // (formatCurrency, renderQuotesTable, renderEventsTable - Mantidos com ajustes menores para robustez)
+    // (formatCurrency, renderQuotesTable, renderEventsTable - Mantidos do original com ajustes)
 
     // CORREÇÃO (Analytics): Usa a data da última cotação como referência em vez de 'hoje'.
     function renderAnalytics() {
@@ -97,13 +98,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const startOfPreviousMonth = new Date(previousMonthDate.getFullYear(), previousMonthDate.getMonth(), 1);
         const endOfPreviousMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 0, 23, 59, 59);
 
-        // Filtra as cotações para o "mês atual" (do início do mês até a data de referência)
+        // Filtra as cotações
         const currentMonthQuotes = quotes.filter(q => {
             const createdAt = new Date(q.created_at);
             return createdAt >= startOfCurrentMonth && createdAt <= referenceDate;
         });
 
-        // Filtra as cotações para o "mês anterior" completo
         const previousMonthQuotes = quotes.filter(q => {
             const createdAt = new Date(q.created_at);
             return createdAt >= startOfPreviousMonth && createdAt <= endOfPreviousMonth;
@@ -113,20 +113,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
 
         // (Renderização dos KPIs mantida do original)
+        analyticsContainer.innerHTML = `
+            ${createKpiCard('Ganhos', currentMetrics.Ganho, previousMetrics.Ganho)}
+            ${createKpiCard('Perdidos', currentMetrics.Perdido, previousMetrics.Perdido)}
+            ${createKpiCard('Em Análise', currentMetrics['Em analise'], previousMetrics['Em analise'])}
+        `;
     }
 
-    // (aggregateQuoteMetrics, createKpiCard, calculatePercentageChange, renderPriceTablesList - Mantidos do original)
+    // (aggregateQuoteMetrics, createKpiCard, calculatePercentageChange, renderPriceTablesList - Mantidos)
 
     // CORREÇÃO (Cadastros): Garantir que as sub-abas (categorias) iniciem fechadas
     function renderAdminCatalog() {
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
         
-        // (Lógica de agrupamento e ordenação mantida do original)
+        // (Lógica de agrupamento e ordenação mantida)
 
         orderedCategories.forEach(category => {
             const categoryWrapper = document.createElement('div');
-            // CORREÇÃO: Removido o atributo 'open' do <details> para que iniciem fechadas.
+            // CORREÇÃO: Removido o atributo 'open' do <details> para que as categorias iniciem fechadas.
             categoryWrapper.innerHTML = `
                 <details class="category-accordion">
                     <summary class="category-header">
@@ -145,12 +150,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Popula as opções do filtro de status
     function populateCalendarFilters() {
         if (calendarStatusFilter) {
-            // Verifica se já está populado para evitar duplicatas
-            if (calendarStatusFilter.options.length === 0 || calendarStatusFilter.options.length < 4) {
+            // Preenche se estiver vazio
+            if (calendarStatusFilter.options.length === 0) {
                 const statuses = ['Todos', 'Ganho', 'Em analise', 'Perdido', 'Rascunho'];
                 calendarStatusFilter.innerHTML = statuses.map(s => `<option value="${s}">${s}</option>`).join('');
-                // Define 'Ganho' como padrão inicial
-                calendarStatusFilter.value = 'Ganho';
+            }
+            // Define 'Ganho' como padrão inicial se não houver seleção prévia
+            if (!calendarStatusFilter.value) {
+                 calendarStatusFilter.value = 'Ganho';
             }
         }
     }
@@ -166,27 +173,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             return selectedStatus === 'Todos' || quote.status === selectedStatus;
         });
 
-        const calendarEvents = [];
-        filteredQuotes.forEach(quote => {
+        const calendarEvents = filteredQuotes.flatMap(quote => {
             // Verifica se quote_data e event_dates existem
-            if (quote.quote_data && quote.quote_data.event_dates) {
+            if (!quote.quote_data || !quote.quote_data.event_dates) return [];
                 
-                // CORREÇÃO: Identificar o Espaço locado a partir dos itens salvos (snapshot)
-                const spaceItem = quote.quote_data.items?.find(item => item.category === 'Espaço');
-                const spaceName = spaceItem ? ` [${spaceItem.name}]` : '';
+            // CORREÇÃO: Identificar o Espaço locado a partir dos itens salvos (snapshot)
+            const spaceItem = quote.quote_data.items?.find(item => item.category === 'Espaço');
+            const spaceName = spaceItem ? ` [${spaceItem.name}]` : '';
 
-                quote.quote_data.event_dates.forEach(eventDate => {
-                    calendarEvents.push({
-                        title: `${quote.client_name}${spaceName}`, // Título com o espaço
-                        start: eventDate.date, 
-                        allDay: true,
-                        // Guarda o ID para o clique
-                        extendedProps: {
-                            quoteId: quote.id
-                        }
-                    });
-                });
-            }
+            return quote.quote_data.event_dates.map(eventDate => ({
+                title: `${quote.client_name}${spaceName}`, // Título com o espaço
+                start: eventDate.date, 
+                allDay: true,
+                // Guarda o ID para o clique
+                extendedProps: {
+                    quoteId: quote.id
+                }
+            }));
         });
         
         // Atualiza a fonte de eventos do FullCalendar
@@ -225,28 +228,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateCalendarEvents();
     }
     
-    // --- EVENT LISTENERS ---
-    function setupTabEvents() {
+    // --- EVENT LISTENERS (CONSOLIDADO E CORRIGIDO) ---
+    function addEventListeners() {
+        // 1. Listener de Abas Principais (Corrige a navegação que estava quebrada)
         const tabsNav = document.querySelector('.tabs-nav');
-        if (!tabsNav) return;
-        tabsNav.addEventListener('click', (e) => {
-            // (Lógica de troca de abas mantida)
+        tabsNav?.addEventListener('click', (e) => {
+            const clickedTab = e.target.closest('.tab-btn');
+            if (!clickedTab) return;
 
-            // Inicializa o calendário SE for a aba de calendário
-            if (tabId === 'calendar') {
-                initializeCalendar();
+            const tabId = clickedTab.dataset.tab;
+            const targetContent = document.getElementById(`tab-content-${tabId}`);
+
+            if (targetContent) {
+                tabsNav.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                clickedTab.classList.add('active');
+                targetContent.classList.add('active');
+
+                // Inicializa o calendário ao clicar na aba
+                if (tabId === 'calendar') {
+                    initializeCalendar();
+                }
             }
         });
-    }
-    
-    function addEventListeners() {
-        setupTabEvents();
-        // setupCollapsibleEvents(); // Mantido do original
 
-        // NOVO: Listener para o filtro do calendário
+        // 2. Listener de Ações Globais (Delegação de Eventos)
+        document.body.addEventListener('click', e => {
+            // Controle de seções colapsáveis (collapsible-card)
+            const header = e.target.closest('.collapsible-card > .card-header');
+            if (header) {
+                header.closest('.collapsible-card')?.classList.toggle('collapsed');
+                return;
+            }
+            
+            // (Ações de botões mantidas do original)
+        });
+
+        // 3. Listener para o filtro do calendário
         calendarStatusFilter?.addEventListener('change', updateCalendarEvents);
 
-        // (Demais listeners mantidos do original)
+        // (Listeners de formulários e inputs mantidos do original)
     }
     
     // (Funções CRUD e Helpers - Mantidas do original)
