@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 /* =================================================================
@@ -222,7 +221,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: 1px solid transparent; }
 
 .table-container { overflow-x: auto; }
-.editable-table, #quotes-table { table-layout: fixed; width: 100%; }
+.editable-table, #quotes-table, #events-table { table-layout: fixed; width: 100%; }
 .editable-table th, .editable-table td { padding: 0.5rem; text-align: center; vertical-align: middle; }
 .editable-table th:first-child, .editable-table td:first-child { text-align: left; }
 .editable-table input, .editable-table select { padding: 0.5rem; margin: -0.5rem; border: 1px solid transparent; background-color: inherit; border-radius: 4px; transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s; text-align: center; }
@@ -235,14 +234,13 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .inline-form { border-top: 1px solid var(--border-color); margin-top: 1rem; padding-top: 1rem; display: flex; gap: 1rem; align-items: flex-end; }
 .inline-form input, .inline-form select { flex-grow: 1; }
 .actions { text-align: center; white-space: nowrap; }
-.status { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600; background-color: #eee; }
 
-#quotes-table { width: 100%; table-layout: fixed; }
-#quotes-table th, #quotes-table td { vertical-align: middle; text-align: center; }
-#quotes-table th:first-child, #quotes-table td:first-child { text-align: left; }
-#quotes-table .actions { display: flex; gap: 0.5rem; justify-content: center; align-items: center; }
-#quotes-table .actions .btn, #quotes-table .actions .btn-remove { padding: 0.2rem 0.8rem; height: 28px; }
+#quotes-table th, #quotes-table td, #events-table th, #events-table td { vertical-align: middle; text-align: center; }
+#quotes-table th:first-child, #quotes-table td:first-child, #events-table th:first-child, #events-table td:first-child { text-align: left; }
+#quotes-table .actions, #events-table .actions { display: flex; gap: 0.5rem; justify-content: center; align-items: center; }
+#quotes-table .actions .btn, #quotes-table .actions .btn-remove, #events-table .actions .btn { padding: 0.2rem 0.8rem; height: 28px; }
 .status-select { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); background-color: #eee; height: 28px; -webkit-appearance: none; -moz-appearance: none; text-align: center; cursor: pointer; }
+.status-pill.won { background-color: var(--success-color); color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-weight: 600; font-size: 0.8rem; display: inline-block; }
 
 .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
 .kpi-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; box-shadow: var(--shadow); }
@@ -253,3 +251,42 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .kpi-comparison .percentage.increase { color: #3c763d; background-color: #dff0d8; }
 .kpi-comparison .percentage.decrease { color: #a94442; background-color: #f2dede; }
 .kpi-sub-value { margin-top: 0.2rem; color: var(--subtle-text-color); }
+
+/* Página de Gestão de Evento */
+.event-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+        "summary financial"
+        "clientdetails contract";
+    gap: 1.5rem;
+    align-items: start;
+}
+
+#event-summary-card { grid-area: summary; }
+#financial-card { grid-area: financial; }
+#client-details-card { grid-area: clientdetails; }
+#contract-card { grid-area: contract; }
+
+#payments-table {
+    width: 100%;
+    table-layout: auto;
+}
+#payments-table input, #payments-table select {
+    width: 100%;
+    padding: 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+/* Página do Calendário */
+#calendar {
+    height: 80vh;
+}
+.fc .fc-button-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: rgba(139, 0, 0, 0.1);
+}
