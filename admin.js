@@ -26,41 +26,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let debounceTimers = {};
 
     // =================================================================
-    // INICIALIZAÇÃO
-    // =================================================================
-    async function initialize() {
-        await fetchData();
-        addEventListeners();
-    }
-
-    async function fetchData() {
-        try {
-            const [servicesRes, tablesRes, pricesRes, quotesRes] = await Promise.all([
-                supabase.from('services').select('*').order('category').order('name'),
-                supabase.from('price_tables').select('*').order('name'),
-                supabase.from('service_prices').select('*'),
-                supabase.from('quotes').select('id, client_name, created_at, status, total_value').order('created_at', { ascending: false })
-            ]);
-
-            if (servicesRes.error) throw servicesRes.error;
-            if (tablesRes.error) throw tablesRes.error;
-            if (pricesRes.error) throw pricesRes.error;
-            if (quotesRes.error) throw quotesRes.error;
-
-            services = servicesRes.data || [];
-            priceTables = tablesRes.data || [];
-            servicePrices = pricesRes.data || [];
-            quotes = quotesRes.data || [];
-
-            renderAll();
-        } catch (error) {
-            showNotification(`Erro ao carregar dados: ${error.message}`, true);
-        }
-    }
-
-    // =================================================================
     // FUNÇÕES DE RENDERIZAÇÃO
     // =================================================================
+    
     function renderAll() {
         renderPriceTablesList();
         renderAdminCatalog();
@@ -236,6 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- EVENT LISTENERS ---
     function addEventListeners() {
+        // Listener para abas
         const tabsNav = document.querySelector('.tabs-nav');
         tabsNav?.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab-btn');
@@ -250,15 +219,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // Listener para accordions e botões de exclusão (delegado ao body)
         document.body.addEventListener('click', e => {
-            // Lógica para abrir/fechar accordions
             const header = e.target.closest('.collapsible-card > .card-header');
             if (header) {
                 header.closest('.collapsible-card')?.classList.toggle('collapsed');
                 return;
             }
-
-            // Lógica para botões de exclusão
             const button = e.target.closest('button[data-action]');
             if (button) {
                 const { action, id } = button.dataset;
@@ -268,6 +235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // Listeners para formulários de adição
         addServiceForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value };
@@ -284,6 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
         });
         
+        // Listeners para edição inline
         adminCatalogContainer?.addEventListener('input', (e) => {
             if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); }
         });
