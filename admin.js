@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let quotes = [];
 
     // ELEMENTOS DO DOM
-    const adminCatalogContainer = document.getElementById('admin-catalog-container'); // MODIFICADO: Novo container
+    const adminCatalogContainer = document.getElementById('admin-catalog-container');
     const priceTablesList = document.getElementById('price-tables-list');
     const priceTablesTbody = priceTablesList?.querySelector('tbody');
 
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- RENDERIZAÇÃO ---
     function renderAll() {
         if (priceTablesTbody) renderPriceTablesList();
-        if (adminCatalogContainer) renderAdminCatalog(); // MODIFICADO: Chama a nova função
+        if (adminCatalogContainer) renderAdminCatalog();
         if (quotesTbody) renderQuotesTable();
     }
 
@@ -86,11 +86,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         </select>`;
     }
 
-    // NOVA FUNÇÃO: Recria o catálogo de serviços usando o layout de accordion
+    // MODIFICADO: Adiciona <colgroup> para definir a largura das colunas
     function renderAdminCatalog() {
-        adminCatalogContainer.innerHTML = ''; // Limpa o container
+        adminCatalogContainer.innerHTML = '';
 
-        // Agrupa os serviços por categoria
         const servicesByCategory = services.reduce((acc, service) => {
             if (!acc[service.category]) {
                 acc[service.category] = [];
@@ -99,27 +98,44 @@ document.addEventListener('DOMContentLoaded', async () => {
             return acc;
         }, {});
 
-        // Ordena as categorias
         const orderedCategories = Object.keys(servicesByCategory).sort((a, b) => {
              const order = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
              return order.indexOf(a) - order.indexOf(b);
         });
 
-        // Cria um accordion para cada categoria
         orderedCategories.forEach(category => {
             const details = document.createElement('details');
             details.className = 'category-accordion';
             details.open = true;
 
-            // Cria o cabeçalho (summary)
             const summary = document.createElement('summary');
             summary.className = 'category-header';
             summary.innerHTML = `<h3 class="category-title">${category}</h3>`;
             
-            // Cria a tabela para os serviços da categoria
             const table = document.createElement('table');
-            table.className = 'editable-table'; // Usa a classe de edição existente
+            table.className = 'editable-table';
             
+            // NOVO: Define as larguras das colunas para manter a consistência
+            const colgroup = document.createElement('colgroup');
+            const priceColumnCount = priceTables.length;
+            const nameWidth = 38;
+            const unitWidth = 14;
+            const actionsWidth = 8;
+            const availableWidthForPrices = 100 - nameWidth - unitWidth - actionsWidth;
+            const priceColumnWidth = priceColumnCount > 0 ? availableWidthForPrices / priceColumnCount : 0;
+
+            let colgroupHTML = `
+                <col style="width: ${nameWidth}%;">
+                <col style="width: ${unitWidth}%;">
+            `;
+            priceTables.forEach(() => {
+                colgroupHTML += `<col style="width: ${priceColumnWidth}%;">`;
+            });
+            colgroupHTML += `<col style="width: ${actionsWidth}%;">`;
+            colgroup.innerHTML = colgroupHTML;
+            table.appendChild(colgroup);
+
+
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             headerRow.innerHTML = `<th>Nome</th><th>Unidade</th>`;
@@ -249,7 +265,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (action === 'delete-quote') deleteQuote(id);
         });
         
-        // MODIFICADO: O listener agora é no container dos accordions
         if (adminCatalogContainer) {
             adminCatalogContainer.addEventListener('input', (e) => {
                 if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); }
