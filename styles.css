@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 /* =================================================================
@@ -192,3 +193,63 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .client-view .col-unit-price, .client-view .col-discount, .client-view .col-total-price { display: none !important; }
 .client-view #priceTableSelect, .client-view label[for="priceTableSelect"] { display: none !important; }
 .client-view .form-group:has(#priceTableSelect) { display: none !important; }
+.client-view { padding-bottom: 1rem !important; }
+.client-view #export-btn-container, .client-view .duplicate-item-btn { display: none !important; }
+
+/* =================================================================
+   ESTILOS ESPECÍFICOS DO PAINEL DE ADMINISTRAÇÃO E EXPORTAÇÃO
+   ================================================================= */
+
+.export-container { position: relative; }
+.export-menu { display: none; position: absolute; top: 100%; right: 0; background-color: white; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100; width: 150px; padding: 0.5rem 0; }
+.export-menu.show { display: block; }
+.export-menu div { padding: 0.6rem 1rem; cursor: pointer; }
+.export-menu div:hover { background-color: var(--secondary-color); }
+
+.tabs-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; }
+.tab-btn { padding: 1rem 1.5rem; cursor: pointer; background: none; border: none; border-bottom: 3px solid transparent; font-size: 1rem; font-weight: 500; color: #666; transition: color 0.2s, border-color 0.2s; margin-bottom: -1px; }
+.tab-btn:hover { color: var(--text-color); background-color: #fdfdfd; }
+.tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.collapsible-card > .card-header { cursor: pointer; }
+.collapsible-card:not(.collapsed) > .card-header { border-bottom: 1px solid var(--border-color); }
+.collapse-icon { font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
+.collapsible-card.collapsed .collapse-icon::before { content: '+'; }
+.collapsible-card:not(.collapsed) .collapse-icon::before { content: '−'; }
+.collapsible-card .card-content { overflow: hidden; transition: max-height 0.4s ease-out, padding 0.4s ease-out, border-top 0.4s ease-out; max-height: 2000px; padding-top: 1.5rem; padding-bottom: 1.5rem; border-top: 1px solid var(--border-color); }
+.collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: 1px solid transparent; }
+
+.table-container { overflow-x: auto; }
+.editable-table, #quotes-table { table-layout: fixed; width: 100%; }
+.editable-table th, .editable-table td { padding: 0.5rem; text-align: center; vertical-align: middle; }
+.editable-table th:first-child, .editable-table td:first-child { text-align: left; }
+.editable-table input, .editable-table select { padding: 0.5rem; margin: -0.5rem; border: 1px solid transparent; background-color: inherit; border-radius: 4px; transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s; text-align: center; }
+.editable-table td:first-child input { text-align: left; }
+.editable-table tr:hover input, .editable-table tr:hover select { border-color: #eee; }
+.editable-table input:focus, .editable-table select:focus { border-color: var(--primary-color); background-color: white; outline: none; box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2); }
+.editable-table .category-header th { background-color: #f9f9f9; color: var(--primary-color); font-size: 0.95rem; font-weight: 600; text-align: left; padding: 0.8rem 1.2rem; border-top: 2px solid #eee; border-bottom: 1px solid var(--border-color); }
+
+.success-flash { animation: success-flash-anim 1.5s ease-out; }
+.inline-form { border-top: 1px solid var(--border-color); margin-top: 1rem; padding-top: 1rem; display: flex; gap: 1rem; align-items: flex-end; }
+.inline-form input, .inline-form select { flex-grow: 1; }
+.actions { text-align: center; white-space: nowrap; }
+.status { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600; background-color: #eee; }
+
+#quotes-table { width: 100%; table-layout: fixed; }
+#quotes-table th, #quotes-table td { vertical-align: middle; text-align: center; }
+#quotes-table th:first-child, #quotes-table td:first-child { text-align: left; }
+#quotes-table .actions { display: flex; gap: 0.5rem; justify-content: center; align-items: center; }
+#quotes-table .actions .btn, #quotes-table .actions .btn-remove { padding: 0.2rem 0.8rem; height: 28px; }
+.status-select { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); background-color: #eee; height: 28px; -webkit-appearance: none; -moz-appearance: none; text-align: center; cursor: pointer; }
+
+.analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+.kpi-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; box-shadow: var(--shadow); }
+.kpi-title { font-weight: 600; color: var(--subtle-text-color); margin-bottom: 0.5rem; }
+.kpi-value { font-size: 2rem; font-weight: 600; color: var(--heading-color); }
+.kpi-comparison { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; font-weight: 500; }
+.kpi-comparison .percentage { font-size: 1rem; padding: 0.2rem 0.5rem; border-radius: 6px; }
+.kpi-comparison .percentage.increase { color: #3c763d; background-color: #dff0d8; }
+.kpi-comparison .percentage.decrease { color: #a94442; background-color: #f2dede; }
+.kpi-sub-value { margin-top: 0.2rem; color: var(--subtle-text-color); }
