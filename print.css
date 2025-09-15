@@ -5,12 +5,12 @@
     
     #print-output, #print-output * { visibility: visible; }
     
-    /* CORREÇÃO: Garante que o container de impressão tenha altura e não esconda o conteúdo. */
     #print-output { 
         position: absolute; 
         left: 0; 
         top: 0; 
         width: 100%;
+        display: block !important; /* <-- LINHA ADICIONADA PARA CORRIGIR O PROBLEMA */
         height: auto !important;
         overflow: visible !important;
     }
