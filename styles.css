@@ -471,3 +471,128 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     color: white;
     cursor: not-allowed;
 }
+
+/* =================================================================
+   NOVO: Estilos para a Interface de Gestão de Cardápios
+   ================================================================= */
+
+.menu-management-container {
+    display: flex;
+    gap: 2rem;
+    min-height: 400px;
+}
+
+.menu-list-column {
+    flex-basis: 300px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-color);
+    padding-right: 2rem;
+}
+
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.menu-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.menu-list-item:hover {
+    background-color: #f9f9f9;
+    border-color: #ccc;
+}
+
+.menu-list-item.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.menu-list-item.active .btn-remove {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+}
+.menu-list-item.active .btn-remove:hover {
+    background-color: white;
+    color: var(--danger-color);
+}
+
+
+.menu-detail-column {
+    flex-grow: 1;
+}
+
+.menu-select-prompt {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--subtle-text-color);
+    background-color: #fcfcfc;
+    border-radius: 8px;
+}
+
+.menu-items-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.menu-items-box {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: #fcfcfc;
+}
+
+.menu-items-box h4 {
+    margin-top: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.menu-item-list {
+    margin-top: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.menu-item:last-child {
+    border-bottom: none;
+}
+
+.empty-list-notice {
+    color: var(--subtle-text-color);
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.btn-slim {
+    padding: 0.2rem 0.5rem;
+    width: auto;
+    height: auto;
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 1rem;
+}
