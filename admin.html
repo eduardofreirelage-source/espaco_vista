@@ -166,10 +166,11 @@
 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header">
-                        <h2>Itens de Cardápio (Gastronomia)</h2>
+                        <h2>1. Cadastro de Itens (Pratos, Sobremesas, etc.)</h2>
                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
+                        <p class="hint">Cadastre aqui todos os pratos individuais que podem compor um cardápio.</p>
                         <div class="table-container">
                              <table id="gastronomy-items-table" class="editable-table">
                                  <thead>
@@ -183,7 +184,7 @@
                              </table>
                         </div>
                         <form id="addGastronomyItemForm" class="inline-form">
-                           <input type="text" id="gastronomyItemName" placeholder="Nome do item (ex: Mini quiche)" required>
+                           <input type="text" id="gastronomyItemName" placeholder="Nome do item (ex: Strogonoff)" required>
                             <select id="gastronomyItemUnit" required>
                                 <option value="unidade">unidade</option>
                                 <option value="por_pessoa">por pessoa</option>
@@ -196,13 +197,14 @@
                 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header">
-                        <h2>Gestão de Cardápios</h2>
+                        <h2>2. Montagem de Cardápios (Agrupar Itens)</h2>
                          <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
                         <div class="menu-management-container">
                             <div class="menu-list-column">
-                                <h4>Cardápios Cadastrados</h4>
+                                <h4>Nomes de Cardápios</h4>
+                                <p class="hint">Crie os nomes dos cardápios (ex: Almoço, Jantar, Brunch) e selecione um para editar.</p>
                                 <div id="menu-list" class="menu-list"></div>
                                 <form id="addMenuForm" class="inline-form" style="margin-top: 1rem;">
                                     <input type="text" id="menuName" placeholder="Nome do novo cardápio" required>
@@ -214,11 +216,11 @@
                                 <h3>Editando: <strong id="editing-menu-name"></strong></h3>
                                 <div class="menu-items-grid">
                                     <div class="menu-items-box">
-                                        <h4>Itens neste Cardápio</h4>
+                                        <h4>Itens Adicionados a este Cardápio</h4>
                                         <div id="current-menu-items" class="menu-item-list"></div>
                                     </div>
                                     <div class="menu-items-box">
-                                        <h4>Itens Disponíveis</h4>
+                                        <h4>Itens Disponíveis para Adicionar</h4>
                                         <input type="text" id="available-item-search" placeholder="Buscar item..." class="form-group" style="width: 100%; padding: 0.5rem">
                                         <div id="available-gastronomy-items" class="menu-item-list"></div>
                                     </div>
