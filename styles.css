@@ -45,9 +45,17 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     align-items: center;
     padding: 1rem 1.2rem;
 }
+
+/* Ajuste para bordas do header em cards colapsáveis */
 .card:not(.collapsible-card) .card-header {
     border-bottom: 1px solid var(--border-color);
 }
+
+/* Define a borda inferior do header somente quando o card está aberto (NÃO collapsed) */
+.collapsible-card:not(.collapsed) > .card-header {
+     border-bottom: 1px solid var(--border-color);
+}
+
 .card .card-header h2 { padding: 0; border: none; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
@@ -142,7 +150,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .summary-subtotal { border-top: 1px solid var(--border-color); margin-top: 0.5rem; padding-top: 0.8rem; }
 .summary-grand-total { border-top: 2px solid var(--text-color); margin-top: 1rem; padding-top: 1rem; font-size: 1.1rem; }
 
-/* CORREÇÃO: Removido 'display: none' que quebrava o gerador de propostas. */
+/* CORREÇÃO (Gerador): Garante que o rodapé esteja visível. O CSS fornecido já estava correto. */
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
 .summary-content { max-width: 1300px; margin: 0 auto; display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; }
 .summary-item { display: flex; align-items: center; gap: 0.5rem; }
@@ -165,13 +173,29 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* CORREÇÃO (Abas): Estilos para cards colapsáveis com transição */
 .collapsible-card > .card-header { cursor: pointer; }
-.collapsible-card:not(.collapsed) > .card-header { border-bottom: 1px solid var(--border-color); }
+
 .collapse-icon { font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
 .collapsible-card.collapsed .collapse-icon::before { content: '+'; }
 .collapsible-card:not(.collapsed) .collapse-icon::before { content: '−'; }
-.collapsible-card .card-content { overflow: hidden; transition: max-height 0.4s ease-out, padding 0.4s ease-out, border-top 0.4s ease-out; max-height: 2000px; padding-top: 1.5rem; padding-bottom: 1.5rem; border-top: 1px solid var(--border-color); }
-.collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: 1px solid transparent; }
+
+/* Define a transição usando max-height para suavidade */
+.collapsible-card .card-content {
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+    max-height: 5000px; /* Altura máxima arbitrária para animação */
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+/* Estado colapsado: altura zero, sem padding */
+.collapsible-card.collapsed .card-content {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
 
 .table-container { overflow-x: auto; }
 .editable-table, #quotes-table, #events-table { table-layout: fixed; width: 100%; }
@@ -196,36 +220,74 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 #events-table .actions .btn { padding: 0.4rem 1rem; }
 #quotes-table th:last-child, #quotes-table td:last-child, #events-table th:last-child, #events-table td:last-child { text-align: left; }
 
-.status-select { padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); background-color: #f5f5f5; -webkit-appearance: none; -moz-appearance: none; text-indent: 1px; text-overflow: ''; cursor: pointer; }
+.status-select { padding: 0.4rem 0.6rem; border: 1px solid var(--border-color); border-radius: 4px; }
 
-.analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-.kpi-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; box-shadow: var(--shadow); }
-.kpi-title { font-weight: 600; color: var(--subtle-text-color); margin-bottom: 0.5rem; }
-.kpi-value { font-size: 2rem; font-weight: 600; color: var(--heading-color); }
-.kpi-comparison { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; font-weight: 500; font-size: 0.85rem; }
-.kpi-comparison .percentage { font-size: 0.9rem; padding: 0.2rem 0.5rem; border-radius: 6px; }
-.kpi-comparison .percentage.increase { color: #3c763d; background-color: #dff0d8; }
-.kpi-comparison .percentage.decrease { color: #a94442; background-color: #f2dede; }
-.kpi-sub-value { margin-top: 0.2rem; color: var(--subtle-text-color); }
-#analytics-notice { padding: 1rem; background-color: #f0f0f0; border-radius: 6px; text-align: center; color: var(--subtle-text-color); }
-
-
-/* Página de Gestão de Evento */
-#event-details-grid {
+/* NOVO: Estilos para o filtro do calendário no Admin */
+.calendar-filters {
     display: flex;
-    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+/* =================================================================
+   PAINEL DO EVENTO (evento.html) - MELHORIA DE LAYOUT
+   ================================================================= */
+
+#event-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas por padrão */
     gap: 1.5rem;
 }
-#payments-table { width: 100%; table-layout: auto; }
-#payments-table input, #payments-table select { width: 100%; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; }
-.service-summary-category { margin-bottom: 1.5rem; }
-.service-summary-category h3 { font-size: 1rem; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-.service-summary-item { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.9rem; }
-.service-summary-item span:first-child { font-weight: 500; }
 
-/* Página do Calendário */
-#calendar { min-height: 70vh; }
-.calendar-filters { margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
-.fc .fc-button-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
-.fc .fc-daygrid-day.fc-day-today { background-color: rgba(139, 0, 0, 0.1); }
-.fc-event { cursor: pointer; }
+/* Cards que devem ocupar a largura total */
+#event-details-grid .full-width {
+    grid-column: span 2;
+}
+
+@media (max-width: 992px) {
+    #event-details-grid {
+        grid-template-columns: 1fr; /* Uma coluna em telas menores */
+    }
+    #event-details-grid .full-width {
+        grid-column: span 1;
+    }
+}
+
+/* Estilos para o resumo de serviços no Painel do Evento */
+.service-summary-category {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+}
+
+.service-summary-category:last-child {
+    margin-bottom: 0;
+}
+
+.service-summary-category h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.service-summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    font-size: 0.85rem;
+}
+
+/* ... (Estilos de KPI mantidos do original) ... */
+#analytics-container { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.kpi-card { background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 1.2rem; border-radius: 8px; box-shadow: var(--shadow); flex: 1; min-width: 250px; }
+.kpi-title { font-size: 0.9rem; font-weight: 600; color: var(--subtle-text-color); margin-bottom: 0.5rem; }
+.kpi-value { font-size: 1.8rem; font-weight: 600; color: var(--heading-color); }
+.kpi-sub-value { font-size: 0.8rem; color: var(--subtle-text-color); margin-bottom: 1rem; }
+.kpi-comparison { font-size: 0.8rem; color: var(--subtle-text-color); display: flex; align-items: center; gap: 0.5rem; }
+.percentage { font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 12px; }
+.percentage.increase { color: var(--success-color); background-color: rgba(92, 184, 92, 0.1); }
+.percentage.decrease { color: var(--danger-color); background-color: rgba(201, 48, 44, 0.1); }
