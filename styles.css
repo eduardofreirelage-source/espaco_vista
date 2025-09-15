@@ -124,10 +124,8 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     border-top: 2px solid #eee;
     border-bottom: 1px solid var(--border-color);
 }
-.editable-table td, .editable-table th {
-    vertical-align: middle;
-}
 
+/* MODIFICADO: Ações e Status na tabela de orçamentos */
 #quotes-table .actions {
     display: flex;
     gap: 0.5rem;
@@ -135,8 +133,8 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     align-items: center;
 }
 #quotes-table .actions .btn, #quotes-table .actions .btn-remove {
-    padding: 0.2rem 0.8rem;
-    height: 28px;
+    padding: 0.2rem 0.8rem; /* Padding reduzido para caber melhor */
+    height: 28px; /* Mesma altura do status */
 }
 .status-select {
     padding: 0.2rem 0.6rem;
@@ -152,7 +150,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     cursor: pointer;
 }
 
-/* Aba Analítico */
+/* NOVO: Estilos para a Aba Analítico */
 .analytics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
