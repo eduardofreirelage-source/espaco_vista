@@ -44,12 +44,11 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.2rem;
+}
+.card:not(.collapsible-card) .card-header {
     border-bottom: 1px solid var(--border-color);
 }
-.card .card-header h2 {
-    padding: 0;
-    border: none;
-}
+.card .card-header h2 { padding: 0; border: none; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
 .form-group { margin-bottom: 0.5rem; }
@@ -138,14 +137,25 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .quote-table input, .quote-table select { width: 100%; padding: 0.3rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
 .item-actions { text-align: right; white-space: nowrap; }
 
-.summary-footer { display: none; } /* Oculto pois não está sendo usado no admin */
+.summary-details { padding: 1rem 0; }
+.summary-line { display: flex; justify-content: space-between; padding: 0.3rem 0; }
+.summary-subtotal { border-top: 1px solid var(--border-color); margin-top: 0.5rem; padding-top: 0.8rem; }
+.summary-grand-total { border-top: 2px solid var(--text-color); margin-top: 1rem; padding-top: 1rem; font-size: 1.1rem; }
+
+/* CORREÇÃO: Removido 'display: none' que quebrava o gerador de propostas. */
+.summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
+.summary-content { max-width: 1300px; margin: 0 auto; display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; }
+.summary-item { display: flex; align-items: center; gap: 0.5rem; }
+.summary-item label { font-size: 0.85rem; }
+.summary-item input { width: 100px; padding: 0.3rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
+.summary-total { font-size: 1.1rem; font-weight: 600; }
 
 .notification { position: fixed; top: 20px; right: 20px; padding: 15px 20px; color: white; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1100; display: none; }
 .notification.show { display: block; animation: fadein 0.5s; }
 @keyframes fadein { from {opacity: 0; top: 0px;} to {opacity: 1; top: 20px;} }
 
 /* =================================================================
-   ESTILOS ESPECÍFICOS DO PAINEL DE ADMINISTRAÇÃO
+   ESTILOS ESPECÍFICOS DO PAINEL DE ADMINISTRAÇÃO E EVENTOS
    ================================================================= */
 
 .tabs-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; }
@@ -155,15 +165,16 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-.collapsible-card > .card-header { cursor: pointer; position: relative; }
-.collapsible-card .collapse-icon { transition: transform 0.3s ease; }
+.collapsible-card > .card-header { cursor: pointer; }
+.collapsible-card:not(.collapsed) > .card-header { border-bottom: 1px solid var(--border-color); }
+.collapse-icon { font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
 .collapsible-card.collapsed .collapse-icon::before { content: '+'; }
 .collapsible-card:not(.collapsed) .collapse-icon::before { content: '−'; }
-.collapsible-card .card-content { overflow: hidden; transition: max-height 0.4s ease-out, padding 0.4s ease-out; max-height: 2000px; padding: 1.2rem; }
-.collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; }
+.collapsible-card .card-content { overflow: hidden; transition: max-height 0.4s ease-out, padding 0.4s ease-out, border-top 0.4s ease-out; max-height: 2000px; padding-top: 1.5rem; padding-bottom: 1.5rem; border-top: 1px solid var(--border-color); }
+.collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: 1px solid transparent; }
 
 .table-container { overflow-x: auto; }
-.editable-table { width: 100%; }
+.editable-table, #quotes-table, #events-table { table-layout: fixed; width: 100%; }
 .editable-table th, .editable-table td { padding: 0.5rem; text-align: center; vertical-align: middle; }
 .editable-table th:first-child, .editable-table td:first-child { text-align: left; }
 .editable-table input, .editable-table select { padding: 0.5rem; margin: -0.5rem; border: 1px solid transparent; background-color: inherit; border-radius: 4px; transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s; text-align: center; }
@@ -180,23 +191,10 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 
 .actions { text-align: center; white-space: nowrap; }
 
-/* MELHORIA: Estilos para botões nas tabelas de Orçamentos e Eventos */
-#quotes-table .actions, #events-table .actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-start;
-    align-items: center;
-}
-#quotes-table .actions .btn {
-    padding: 0.3rem 0.9rem;
-}
-#events-table .actions .btn {
-    padding: 0.4rem 1rem;
-}
-#quotes-table th:last-child, #quotes-table td:last-child,
-#events-table th:last-child, #events-table td:last-child {
-    text-align: left;
-}
+#quotes-table .actions, #events-table .actions { display: flex; gap: 0.5rem; justify-content: flex-start; align-items: center; }
+#quotes-table .actions .btn { padding: 0.3rem 0.9rem; }
+#events-table .actions .btn { padding: 0.4rem 1rem; }
+#quotes-table th:last-child, #quotes-table td:last-child, #events-table th:last-child, #events-table td:last-child { text-align: left; }
 
 .status-select { padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); background-color: #f5f5f5; -webkit-appearance: none; -moz-appearance: none; text-indent: 1px; text-overflow: ''; cursor: pointer; }
 
@@ -209,15 +207,25 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .kpi-comparison .percentage.increase { color: #3c763d; background-color: #dff0d8; }
 .kpi-comparison .percentage.decrease { color: #a94442; background-color: #f2dede; }
 .kpi-sub-value { margin-top: 0.2rem; color: var(--subtle-text-color); }
+#analytics-notice { padding: 1rem; background-color: #f0f0f0; border-radius: 6px; text-align: center; color: var(--subtle-text-color); }
+
+
+/* Página de Gestão de Evento */
+#event-details-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+#payments-table { width: 100%; table-layout: auto; }
+#payments-table input, #payments-table select { width: 100%; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; }
+.service-summary-category { margin-bottom: 1.5rem; }
+.service-summary-category h3 { font-size: 1rem; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+.service-summary-item { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.9rem; }
+.service-summary-item span:first-child { font-weight: 500; }
 
 /* Página do Calendário */
-#calendar {
-    min-height: 70vh;
-}
-.fc .fc-button-primary {
-    background-color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-}
-.fc .fc-daygrid-day.fc-day-today {
-    background-color: rgba(139, 0, 0, 0.1);
-}
+#calendar { min-height: 70vh; }
+.calendar-filters { margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+.fc .fc-button-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+.fc .fc-daygrid-day.fc-day-today { background-color: rgba(139, 0, 0, 0.1); }
+.fc-event { cursor: pointer; }
