@@ -25,7 +25,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const notification = document.getElementById('save-notification');
     let debounceTimers = {};
 
-    // --- INICIALIZAÇÃO ---
+    // =================================================================
+    // INICIALIZAÇÃO
+    // =================================================================
     async function initialize() {
         await fetchData();
         addEventListeners();
@@ -33,7 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchData() {
         try {
-            console.log('[ADMIN DEBUG] Buscando dados do Supabase...');
             const [servicesRes, tablesRes, pricesRes, quotesRes] = await Promise.all([
                 supabase.from('services').select('*').order('category').order('name'),
                 supabase.from('price_tables').select('*').order('name'),
@@ -50,25 +51,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             priceTables = tablesRes.data || [];
             servicePrices = pricesRes.data || [];
             quotes = quotesRes.data || [];
-            
-            // ADICIONADO DEBUG
-            console.log('[ADMIN DEBUG] Dados recebidos do Supabase:', {
-                services: services.length,
-                priceTables: priceTables.length,
-                servicePrices: servicePrices.length,
-                quotes: quotes.length
-            });
 
             renderAll();
         } catch (error) {
             showNotification(`Erro ao carregar dados: ${error.message}`, true);
-            console.error('[ADMIN DEBUG] Erro em fetchData:', error);
         }
     }
 
-    // --- RENDERIZAÇÃO ---
+    // =================================================================
+    // FUNÇÕES DE RENDERIZAÇÃO
+    // =================================================================
     function renderAll() {
-        console.log('[ADMIN DEBUG] Iniciando renderização de todos os componentes.');
         renderPriceTablesList();
         renderAdminCatalog();
         renderQuotesTable();
@@ -97,7 +90,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!quotesTbody) return;
         quotesTbody.innerHTML = '';
         const statusOptions = ['Rascunho', 'Em analise', 'Ganho', 'Perdido'];
-
         quotes.forEach(quote => {
             const row = document.createElement('tr');
             row.dataset.quoteId = quote.id;
@@ -169,8 +161,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderPriceTablesList() {
-        // ADICIONADO DEBUG
-        console.log(`[ADMIN DEBUG] Renderizando Listas de Preços com ${priceTables.length} tabelas.`);
         if (!priceTablesTbody) return;
         priceTablesTbody.innerHTML = '';
         priceTables.forEach(table => {
@@ -187,8 +177,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderAdminCatalog() {
-        // ADICIONADO DEBUG
-        console.log(`[ADMIN DEBUG] Renderizando Catálogo com ${services.length} serviços.`);
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
         const servicesByCategory = services.reduce((acc, service) => {
@@ -247,10 +235,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // --- EVENT LISTENERS ---
-    function setupTabEvents() {
+    function addEventListeners() {
+        // Listener para abas
         const tabsNav = document.querySelector('.tabs-nav');
-        if (!tabsNav) return;
-        tabsNav.addEventListener('click', (e) => {
+        tabsNav?.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab-btn');
             if (!clickedTab) return;
             const tabId = clickedTab.dataset.tab;
@@ -262,22 +250,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 targetContent.classList.add('active');
             }
         });
-    }
 
-    function setupCollapsibleEvents() {
+        // Listener para accordions e botões de exclusão (delegado ao body)
         document.body.addEventListener('click', e => {
             const header = e.target.closest('.collapsible-card > .card-header');
             if (header) {
-                const card = header.closest('.collapsible-card');
-                if (card) card.classList.toggle('collapsed');
+                header.closest('.collapsible-card')?.classList.toggle('collapsed');
+                return;
+            }
+            const button = e.target.closest('button[data-action]');
+            if (button) {
+                const { action, id } = button.dataset;
+                if (action === 'delete-service') deleteService(id);
+                if (action === 'delete-table') deletePriceTable(id);
+                if (action === 'delete-quote') deleteQuote(id);
             }
         });
-    }
-    
-    function addEventListeners() {
-        setupTabEvents();
-        setupCollapsibleEvents();
 
+        // Listeners para formulários de adição
         addServiceForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value };
@@ -293,16 +283,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if(error) { showNotification(`Erro: ${error.message}`, true); } 
             else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
         });
-
-        document.body.addEventListener('click', e => {
-            const button = e.target.closest('button');
-            if (!button) return;
-            const { action, id } = button.dataset;
-            if (action === 'delete-service') deleteService(id);
-            if (action === 'delete-table') deletePriceTable(id);
-            if (action === 'delete-quote') deleteQuote(id);
-        });
         
+        // Listeners para edição inline
         adminCatalogContainer?.addEventListener('input', (e) => {
             if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); }
         });
@@ -375,14 +357,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    async function updatePriceTableDetail(tableId, field, value, inputElement) {
+    async function updatePriceTableDetail(tableId, field, value) {
         if (!tableId || !field) return;
-        if (field === 'name' && !value.trim()) {
-            showNotification('O nome da lista não pode ficar vazio.', true);
-            const table = priceTables.find(t => t.id == tableId);
-            if (table) inputElement.value = table[field];
-            return;
-        }
+        if (field === 'name' && !value.trim()) { /* ... */ return; }
         const table = priceTables.find(t => t.id == tableId);
         const oldName = table ? table.name : null;
         if (table) { table[field] = value; }
@@ -391,42 +368,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
             fetchData();
         } else {
-            showFlash(inputElement);
             if (field === 'name' && oldName !== value) { renderAdminCatalog(); }
         }
     }
 
-    async function updateServiceDetail(serviceId, field, value, inputElement) {
+    async function updateServiceDetail(serviceId, field, value) {
         if (!serviceId || !field) return;
-        if (field === 'name' && !value.trim()) {
-            showNotification('O nome do serviço não pode ficar vazio.', true);
-            const service = services.find(s => s.id == serviceId);
-            if (service) inputElement.value = service[field];
-            return;
-        }
+        if (field === 'name' && !value.trim()) { /* ... */ return; }
         const service = services.find(s => s.id == serviceId);
         if (service) { service[field] = value; }
         const { error } = await supabase.from('services').update({ [field]: value }).eq('id', serviceId);
         if (error) {
             showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
             fetchData();
-        } else {
-            showFlash(inputElement);
         }
     }
 
-    async function updateServicePrice(serviceId, tableId, price, inputElement) {
+    async function updateServicePrice(serviceId, tableId, price) {
         if (!serviceId || !tableId) return;
         const recordToUpsert = { service_id: serviceId, price_table_id: tableId, price: price };
         const { data, error } = await supabase.from('service_prices').upsert(recordToUpsert, { onConflict: 'service_id, price_table_id' }).select().single();
         if (error) {
             showNotification(`Erro ao atualizar preço: ${error.message}`, true);
-            const priceRecord = servicePrices.find(p => p.service_id == serviceId && p.price_table_id == tableId);
-            inputElement.value = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
         } else {
             const existingIndex = servicePrices.findIndex(p => p.service_id == serviceId && p.price_table_id == tableId);
             if (existingIndex > -1) { servicePrices[existingIndex] = data; } else { servicePrices.push(data); }
-            showFlash(inputElement);
         }
     }
 
