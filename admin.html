@@ -196,58 +196,41 @@
                 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header">
-                        <h2>Cardápios</h2>
+                        <h2>Gestão de Cardápios</h2>
                          <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
-                        <h3>Gestão de Cardápios</h3>
-                        <div class="table-container">
-                            <table id="menus-table" class="editable-table">
-                                <thead>
-                                    <tr>
-                                        <th>Nome do Cardápio</th>
-                                        <th>Descrição</th>
-                                        <th class="actions">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                        <form id="addMenuForm" class="inline-form">
-                           <input type="text" id="menuName" placeholder="Nome do novo cardápio" required>
-                           <input type="text" id="menuDescription" placeholder="Descrição (opcional)">
-                           <button type="submit" class="btn btn-primary">Adicionar Cardápio</button>
-                        </form>
-                        
-                        <hr style="margin: 2rem 0; border-color: var(--border-color); border-style: dashed;">
-
-                        <h3>Itens do Cardápio</h3>
-                        <div class="form-group">
-                            <label for="select-menu-to-edit">Selecione um cardápio para ver ou adicionar itens</label>
-                            <select id="select-menu-to-edit"><option value="">-- Selecione --</option></select>
-                        </div>
-                        
-                        <div id="menu-items-section" style="display: none;">
-                            <div class="table-container" style="margin-top: 1rem;">
-                                <table id="menu-items-table" class="editable-table">
-                                    <thead><tr><th>Item de Gastronomia</th><th class="actions">Ação</th></tr></thead>
-                                    <tbody></tbody>
-                                </table>
+                        <div class="menu-management-container">
+                            <div class="menu-list-column">
+                                <h4>Cardápios Cadastrados</h4>
+                                <div id="menu-list" class="menu-list"></div>
+                                <form id="addMenuForm" class="inline-form" style="margin-top: 1rem;">
+                                    <input type="text" id="menuName" placeholder="Nome do novo cardápio" required>
+                                    <button type="submit" class="btn btn-primary" title="Adicionar Cardápio">+</button>
+                                </form>
                             </div>
-                            <form id="add-item-to-menu-form" class="inline-form">
-                                <div class="form-group" style="flex-grow: 2;">
-                                    <label for="gastronomy-item-select">Adicionar item de gastronomia</label>
-                                    <select id="gastronomy-item-select" required></select>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Adicionar Item</button>
-                            </form>
-                        </div>
 
+                            <div id="menu-detail-column" class="menu-detail-column" style="display: none;">
+                                <h3>Editando: <strong id="editing-menu-name"></strong></h3>
+                                <div class="menu-items-grid">
+                                    <div class="menu-items-box">
+                                        <h4>Itens neste Cardápio</h4>
+                                        <div id="current-menu-items" class="menu-item-list"></div>
+                                    </div>
+                                    <div class="menu-items-box">
+                                        <h4>Itens Disponíveis</h4>
+                                        <input type="text" id="available-item-search" placeholder="Buscar item..." class="form-group" style="width: 100%; padding: 0.5rem">
+                                        <div id="available-gastronomy-items" class="menu-item-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="menu-select-prompt" class="menu-select-prompt">
+                                <p>← Selecione ou crie um cardápio para começar.</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
-
             </div>
-
         </main>
     </div>
 
