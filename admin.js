@@ -1,484 +1,756 @@
+
 import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
-    // VERIFICAÇÃO DE ACESSO
+    // ESTADO GLOBAL E CONFIGURAÇÃO
     // =================================================================
-    const { role } = await getSession();
-    if (role !== 'admin') {
-        console.warn("Acesso negado ao painel administrativo. Redirecionando para login.");
-        window.location.href = 'login.html';
-        return;
-    }
+    let services = [];
+    let priceTables = [];
+    let servicePrices = [];
+    let currentQuote = {
+        id: null,
+        client_name: '',
+        client_cnpj: '',
+        client_email: '',
+        client_phone: '',
+        guest_count: 100,
+        price_table_id: null,
+        event_dates: [],
+        items: [],
+        discount_general: 0,
+        status: 'Rascunho'
+    };
+    let userRole = 'client';
+    let isDirty = false;
 
-    // =================================================================
-    // ESTADO E ELEMENTOS DO DOM
-    // =================================================================
-    let services = [], priceTables = [], servicePrices = [], quotes = [];
-    
-    const adminCatalogContainer = document.getElementById('admin-catalog-container');
-    const priceTablesTbody = document.getElementById('price-tables-list')?.querySelector('tbody');
-    const quotesTbody = document.getElementById('quotes-table')?.querySelector('tbody');
-    const eventsTbody = document.getElementById('events-table')?.querySelector('tbody');
-    const analyticsContainer = document.getElementById('analytics-container');
-    const addServiceForm = document.getElementById('addServiceForm');
-    const addPriceTableForm = document.getElementById('addPriceTableForm');
+    const CATEGORY_ORDER = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços e Outros'];
+
     const notification = document.getElementById('save-notification');
-    let debounceTimers = {};
+    const catalogModal = document.getElementById('catalogModal');
 
     // =================================================================
     // INICIALIZAÇÃO
     // =================================================================
     async function initialize() {
+        await checkUserRole();
         await fetchData();
-        addEventListeners();
+        populatePriceTables();
+        setupEventListeners();
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const quoteId = urlParams.get('quote_id');
+        const autoPrint = urlParams.get('print') === 'true';
+
+        if (quoteId) {
+            await loadQuote(quoteId);
+        } 
+        
+        renderQuote();
+        setDirty(false);
+
+        if (autoPrint) {
+            if (userRole === 'admin') {
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.delete('print');
+                window.history.replaceState({}, document.title, newUrl);
+
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            } else {
+                console.warn("Acesso de impressão negado para clientes.");
+                 window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+    }
+
+    async function checkUserRole() {
+        const { role } = await getSession();
+        userRole = role;
+
+        const adminLink = document.getElementById('admin-link');
+        const logoutBtn = document.getElementById('logout-btn');
+        const loginLink = document.getElementById('login-link');
+        const mainTitle = document.getElementById('main-title');
+        const saveBtn = document.getElementById('save-quote-btn');
+
+        if (userRole === 'admin') {
+            document.body.classList.remove('client-view');
+            if(adminLink) adminLink.style.display = 'inline-block';
+            if(logoutBtn) logoutBtn.style.display = 'inline-block';
+            if(loginLink) loginLink.style.display = 'none';
+            if(mainTitle) mainTitle.textContent = 'Gerador de Propostas (Admin)';
+        } else {
+            document.body.classList.add('client-view');
+            if(adminLink) adminLink.style.display = 'none';
+            if(logoutBtn) logoutBtn.style.display = 'none';
+            if(loginLink) loginLink.style.display = 'inline-block';
+            if(mainTitle) mainTitle.textContent = 'Solicitação de Orçamento (Cliente)';
+            if(saveBtn) saveBtn.textContent = 'Enviar Solicitação';
+            currentQuote.status = 'Solicitado';
+        }
     }
 
     async function fetchData() {
         try {
-            const [servicesRes, tablesRes, pricesRes, quotesRes] = await Promise.all([
-                supabase.from('services').select('*').order('category').order('name'),
-                supabase.from('price_tables').select('*').order('name'),
-                supabase.from('service_prices').select('*'),
-                supabase.from('quotes').select('id, client_name, created_at, status, total_value, quote_data').order('created_at', { ascending: false })
-            ]);
-
+            const servicesRes = await supabase.from('services').select('*').order('category').order('name');
             if (servicesRes.error) throw servicesRes.error;
-            if (tablesRes.error) throw tablesRes.error;
-            if (pricesRes.error) throw pricesRes.error;
-            if (quotesRes.error) throw quotesRes.error;
-
             services = servicesRes.data || [];
-            priceTables = tablesRes.data || [];
-            servicePrices = pricesRes.data || [];
-            quotes = quotesRes.data || [];
 
-            renderAll();
+            if (userRole === 'admin') {
+                const [tablesRes, pricesRes] = await Promise.all([
+                    supabase.from('price_tables').select('*').order('name'),
+                    supabase.from('service_prices').select('*')
+                ]);
+                if (tablesRes.error) throw tablesRes.error;
+                if (pricesRes.error) throw pricesRes.error;
+                priceTables = tablesRes.data || [];
+                servicePrices = pricesRes.data || [];
+            } else {
+                priceTables = [];
+                servicePrices = [];
+            }
         } catch (error) {
-            showNotification(`Erro ao carregar dados: ${error.message}`, true);
-        }
-    }
-
-    // =================================================================
-    // FUNÇÕES DE RENDERIZAÇÃO
-    // =================================================================
-    function renderAll() {
-        renderPriceTablesList();
-        renderAdminCatalog();
-        renderQuotesTable();
-        renderEventsTable();
-        renderAnalytics();
-    }
-
-    function createCategorySelect(currentCategory) {
-        const categories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
-        return `<select class="service-detail-input" data-field="category">${categories.map(cat => `<option value="${cat}" ${cat === currentCategory ? 'selected' : ''}>${cat}</option>`).join('')}</select>`;
-    }
-
-    function createUnitSelect(currentUnit) {
-        const units = ['unidade', 'diaria', 'por_pessoa'];
-        return `<select class="service-detail-input" data-field="unit">${units.map(unit => `<option value="${unit}" ${unit === currentUnit ? 'selected' : ''}>${unit}</option>`).join('')}</select>`;
-    }
-    
-    function formatCurrency(value) {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
-    }
-
-    function renderQuotesTable() {
-        if (!quotesTbody) return;
-        quotesTbody.innerHTML = '';
-        const statusOptions = ['Rascunho', 'Em analise', 'Ganho', 'Perdido'];
-
-        quotes.forEach(quote => {
-            const row = document.createElement('tr');
-            row.dataset.quoteId = quote.id;
-            const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
-            const selectHTML = `<select class="status-select" data-id="${quote.id}">${statusOptions.map(opt => `<option value="${opt}" ${quote.status === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>`;
-            
-            let actionsHTML = `
-                <a href="index.html?quote_id=${quote.id}" class="btn" title="Editar Orçamento">Editar</a>
-                <a href="index.html?quote_id=${quote.id}&print=true" target="_blank" class="btn" title="Exportar PDF">Exportar</a>
-                <button class="btn-remove" data-action="delete-quote" data-id="${quote.id}" title="Excluir Orçamento">&times;</button>
-            `;
-
-            if (quote.status && quote.status.toLowerCase() === 'ganho') {
-                actionsHTML += `<a href="evento.html?quote_id=${quote.id}" class="btn btn-primary">Gerenciar Evento</a>`;
-            }
-
-            row.innerHTML = `
-                <td>${quote.client_name || 'Rascunho sem nome'}</td>
-                <td>${createdAt}</td>
-                <td>${selectHTML}</td>
-                <td class="actions">${actionsHTML}</td>
-            `;
-            quotesTbody.appendChild(row);
-        });
-    }
-
-    function renderEventsTable() {
-        if (!eventsTbody) return;
-        eventsTbody.innerHTML = '';
-
-        const wonQuotes = quotes.filter(q => q.status && q.status.toLowerCase() === 'ganho');
-
-        wonQuotes.forEach(quote => {
-            const row = document.createElement('tr');
-            const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
-            const statusHTML = `<span class="status-pill won">${quote.status}</span>`;
-            const actionsHTML = `<a href="evento.html?quote_id=${quote.id}" class="btn btn-primary">Gerenciar Evento</a>`;
-
-            row.innerHTML = `
-                <td>${quote.client_name}</td>
-                <td>${createdAt}</td>
-                <td>${statusHTML}</td>
-                <td class="actions">${actionsHTML}</td>
-            `;
-            eventsTbody.appendChild(row);
-        });
-    }
-
-    function renderAnalytics() {
-        if (!analyticsContainer) return;
-        const now = new Date();
-        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-        const currentMonthQuotes = quotes.filter(q => new Date(q.created_at) >= startOfCurrentMonth);
-        const previousMonthQuotes = quotes.filter(q => new Date(q.created_at) >= startOfPreviousMonth && new Date(q.created_at) <= endOfPreviousMonth);
-        const currentMetrics = aggregateQuoteMetrics(currentMonthQuotes);
-        const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
-        analyticsContainer.innerHTML = `
-            ${createKpiCard('Ganhos', currentMetrics.Ganho, previousMetrics.Ganho)}
-            ${createKpiCard('Perdidos', currentMetrics.Perdido, previousMetrics.Perdido)}
-            ${createKpiCard('Em Análise', currentMetrics['Em analise'], previousMetrics['Em analise'])}
-        `;
-    }
-
-    function aggregateQuoteMetrics(quoteArray) {
-        const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } };
-        return quoteArray.reduce((acc, quote) => {
-            if (acc[quote.status]) {
-                acc[quote.status].count++;
-                acc[quote.status].value += parseFloat(quote.total_value || 0);
-            }
-            return acc;
-        }, initialMetrics);
-    }
-
-    function createKpiCard(title, current, previous) {
-        const percentageChange = calculatePercentageChange(current.value, previous.value);
-        const trendClass = percentageChange.startsWith('+') && percentageChange.length > 2 ? 'increase' : percentageChange.startsWith('-') ? 'decrease' : '';
-        const trendIndicator = trendClass ? `<span class="percentage ${trendClass}">${percentageChange}</span>` : '';
-        return `
-            <div class="kpi-card">
-                <div class="kpi-title">${title} (Mês Atual)</div>
-                <div class="kpi-value">${formatCurrency(current.value)}</div>
-                <div class="kpi-sub-value">${current.count} propostas</div>
-                <div class="kpi-comparison">
-                    ${trendIndicator}
-                    <span>em relação ao mês anterior (${formatCurrency(previous.value)})</span>
-                </div>
-            </div>
-        `;
-    }
-
-    function calculatePercentageChange(current, previous) {
-        if (previous === 0) return current > 0 ? '+∞%' : '0%';
-        const change = ((current - previous) / previous) * 100;
-        return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
-    }
-
-    function renderPriceTablesList() {
-        if (!priceTablesTbody) return;
-        priceTablesTbody.innerHTML = '';
-        priceTables.forEach(table => {
-            const row = document.createElement('tr');
-            row.dataset.tableId = table.id;
-            const consumable = parseFloat(table.consumable_credit || 0).toFixed(2);
-            row.innerHTML = `
-                <td><input type="text" class="price-table-input" data-field="name" value="${table.name}"></td>
-                <td class="price-column"><input type="number" step="0.01" min="0" class="price-table-input" data-field="consumable_credit" value="${consumable}"></td>
-                <td class="actions"><button class="btn-remove" data-action="delete-table" data-id="${table.id}" title="Excluir Lista">&times;</button></td>
-            `;
-            priceTablesTbody.appendChild(row);
-        });
-    }
-
-    function renderAdminCatalog() {
-        if (!adminCatalogContainer) return;
-        adminCatalogContainer.innerHTML = '';
-        const servicesByCategory = services.reduce((acc, service) => {
-            if (!acc[service.category]) { acc[service.category] = []; }
-            acc[service.category].push(service);
-            return acc;
-        }, {});
-        const orderedCategories = Object.keys(servicesByCategory).sort((a, b) => {
-             const order = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
-             return order.indexOf(a) - order.indexOf(b);
-        });
-        orderedCategories.forEach(category => {
-            const details = document.createElement('details');
-            details.className = 'category-accordion';
-            details.open = true;
-            const summary = document.createElement('summary');
-            summary.className = 'category-header';
-            summary.innerHTML = `<h3 class="category-title">${category}</h3>`;
-            const table = document.createElement('table');
-            table.className = 'editable-table';
-            const colgroup = document.createElement('colgroup');
-            const priceColumnCount = priceTables.length;
-            const nameWidth = 38, unitWidth = 14, actionsWidth = 8;
-            const availableWidthForPrices = 100 - nameWidth - unitWidth - actionsWidth;
-            const priceColumnWidth = priceColumnCount > 0 ? availableWidthForPrices / priceColumnCount : 0;
-            let colgroupHTML = `<col style="width: ${nameWidth}%;"><col style="width: ${unitWidth}%;">`;
-            priceTables.forEach(() => { colgroupHTML += `<col style="width: ${priceColumnWidth}%;">`; });
-            colgroupHTML += `<col style="width: ${actionsWidth}%;">`;
-            colgroup.innerHTML = colgroupHTML;
-            table.appendChild(colgroup);
-            const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
-            headerRow.innerHTML = `<th>Nome</th><th>Unidade</th>`;
-            priceTables.forEach(pt => headerRow.innerHTML += `<th class="price-column">${pt.name}</th>`);
-            headerRow.innerHTML += `<th>Ações</th>`;
-            thead.appendChild(headerRow);
-            const tbody = document.createElement('tbody');
-            servicesByCategory[category].forEach(service => {
-                const row = document.createElement('tr');
-                row.dataset.serviceId = service.id;
-                let priceColumns = '';
-                priceTables.forEach(table => {
-                    const priceRecord = servicePrices.find(p => p.service_id === service.id && p.price_table_id === table.id);
-                    const price = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
-                    priceColumns += `<td class="price-column"><input type="number" step="0.01" min="0" class="service-price-input" data-table-id="${table.id}" value="${price}"></td>`;
-                });
-                row.innerHTML = `<td><input type="text" class="service-detail-input" data-field="name" value="${service.name}"></td><td>${createUnitSelect(service.unit)}</td>${priceColumns}<td class="actions"><button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button></td>`;
-                tbody.appendChild(row);
-            });
-            table.appendChild(thead);
-            table.appendChild(tbody);
-            details.appendChild(summary);
-            details.appendChild(table);
-            adminCatalogContainer.appendChild(details);
-        });
-    }
-    
-    // --- EVENT LISTENERS ---
-    function addEventListeners() {
-        const tabsNav = document.querySelector('.tabs-nav');
-        tabsNav?.addEventListener('click', (e) => {
-            const clickedTab = e.target.closest('.tab-btn');
-            if (!clickedTab) return;
-            const tabId = clickedTab.dataset.tab;
-            const targetContent = document.getElementById(`tab-content-${tabId}`);
-            tabsNav.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            clickedTab.classList.add('active');
-            if (targetContent) {
-                targetContent.classList.add('active');
-            }
-        });
-
-        document.body.addEventListener('click', e => {
-            const header = e.target.closest('.collapsible-card > .card-header');
-            if (header) {
-                header.closest('.collapsible-card')?.classList.toggle('collapsed');
-                return;
-            }
-            const button = e.target.closest('button[data-action]');
-            if (button) {
-                const { action, id } = button.dataset;
-                if (action === 'delete-service') deleteService(id);
-                if (action === 'delete-table') deletePriceTable(id);
-                if (action === 'delete-quote') deleteQuote(id);
-            }
-        });
-
-        addServiceForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value };
-            const { error } = await supabase.from('services').insert([newService]);
-            if(error) { showNotification(`Erro: ${error.message}`, true); } 
-            else { showNotification('Serviço adicionado!'); e.target.reset(); fetchData(); }
-        });
-        
-        addPriceTableForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newTable = { name: document.getElementById('tableName').value, consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0 };
-            const { error } = await supabase.from('price_tables').insert([newTable]);
-            if(error) { showNotification(`Erro: ${error.message}`, true); } 
-            else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); }
-        });
-        
-        adminCatalogContainer?.addEventListener('input', (e) => {
-            if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); }
-        });
-        adminCatalogContainer?.addEventListener('change', (e) => {
-            if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) { handleServiceEdit(e.target, false); }
-        });
-
-        priceTablesTbody?.addEventListener('input', (e) => {
-            if (e.target.matches('.price-table-input[data-field="name"]')) { handlePriceTableEdit(e.target, true); }
-        });
-        priceTablesTbody?.addEventListener('change', (e) => {
-            if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) { handlePriceTableEdit(e.target, false); }
-        });
-
-        quotesTbody?.addEventListener('change', async (e) => {
-            if (e.target.classList.contains('status-select')) {
-                const quoteId = e.target.dataset.id;
-                const newStatus = e.target.value;
-                await updateQuoteStatus(quoteId, newStatus);
-            }
-        });
-    }
-
-    function handleServiceEdit(inputElement, useDebounce) {
-        const row = inputElement.closest('tr');
-        if (!row) return;
-        const serviceId = row.dataset.serviceId;
-        const timerKey = `service-${serviceId}-${inputElement.dataset.field || inputElement.dataset.tableId}`;
-        if (debounceTimers[timerKey]) { clearTimeout(debounceTimers[timerKey]); }
-        const action = () => {
-            if (inputElement.classList.contains('service-detail-input')) {
-                updateServiceDetail(serviceId, inputElement.dataset.field, inputElement.value);
-            } else if (inputElement.classList.contains('service-price-input')) {
-                const price = parseFloat(inputElement.value) || 0;
-                if (!useDebounce) { inputElement.value = price.toFixed(2); }
-                updateServicePrice(serviceId, inputElement.dataset.tableId, price);
-            }
-        };
-        if (useDebounce) { debounceTimers[timerKey] = setTimeout(action, 500); } else { action(); }
-    }
-
-    function handlePriceTableEdit(inputElement, useDebounce) {
-        const row = inputElement.closest('tr');
-        if (!row) return;
-        const tableId = row.dataset.tableId;
-        const field = inputElement.dataset.field;
-        const timerKey = `table-${tableId}-${field}`;
-        if (debounceTimers[timerKey]) { clearTimeout(debounceTimers[timerKey]); }
-        const action = () => {
-            let value = inputElement.value;
-            if (field === 'consumable_credit') {
-                value = parseFloat(value) || 0;
-                if (!useDebounce) { inputElement.value = value.toFixed(2); }
-            }
-            updatePriceTableDetail(tableId, field, value);
-        };
-        if (useDebounce) { debounceTimers[timerKey] = setTimeout(action, 500); } else { action(); }
-    }
-
-    // --- FUNÇÕES DE AÇÃO (CRUD) ---
-    async function updateQuoteStatus(id, status) {
-        const { error } = await supabase.from('quotes').update({ status: status }).eq('id', id);
-        if (error) {
-            showNotification(`Erro ao atualizar status: ${error.message}`, true);
-        } else {
-            showNotification('Status atualizado com sucesso!');
-            const quote = quotes.find(q => q.id == id);
-            if(quote) quote.status = status;
-            if (status.toLowerCase() === 'ganho') {
-                await createBookingsForQuote(id);
-            }
-            renderAnalytics();
-            renderQuotesTable();
-            renderEventsTable();
+            console.error("Erro ao carregar dados:", error);
+            showNotification("Erro ao carregar dados iniciais.", true);
         }
     }
     
-    async function createBookingsForQuote(quoteId) {
-        await supabase.from('bookings').delete().eq('quote_id', quoteId);
-        const quote = quotes.find(q => q.id === quoteId);
-        if (!quote || !quote.quote_data) return;
-        const { items, event_dates } = quote.quote_data;
-        if (!items || !event_dates) return;
-        const spaceItems = items.filter(item => {
-            const service = services.find(s => s.id === item.service_id);
-            return service && service.category === 'Espaço';
-        });
-        const newBookings = [];
-        spaceItems.forEach(item => {
-            const eventDate = event_dates.find(d => d.date === item.event_date);
-            if (eventDate) {
-                const service = services.find(s => s.id === item.service_id);
-                newBookings.push({
-                    quote_id: quoteId,
-                    resource_id: item.service_id,
-                    start_date: `${eventDate.date}T${eventDate.start}`,
-                    end_date: `${eventDate.date}T${eventDate.end}`,
-                    title: `${quote.client_name} (${service.name})`
-                });
-            }
-        });
-        if (newBookings.length > 0) {
-            const { error } = await supabase.from('bookings').insert(newBookings);
-            if (error) {
-                showNotification('Erro ao criar reserva no calendário.', true);
-                console.error(error);
+    function setDirty(state) {
+        isDirty = state;
+        updateSaveButtonState();
+    }
+
+    function updateSaveButtonState() {
+        const saveBtn = document.getElementById('save-quote-btn');
+        if (!saveBtn) return;
+        if (userRole === 'admin') {
+            if (isDirty) {
+                saveBtn.classList.add('dirty');
+                saveBtn.textContent = 'Salvar Alterações*';
+            } else {
+                saveBtn.classList.remove('dirty');
+                saveBtn.textContent = 'Salvo';
             }
         }
     }
-    
-    async function updatePriceTableDetail(tableId, field, value) {
-        const { error } = await supabase.from('price_tables').update({ [field]: value }).eq('id', tableId);
-        if (error) {
-            showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
-            fetchData();
-        } else {
-            const table = priceTables.find(t => t.id == tableId);
-            const oldName = table ? table.name : null;
-            if (table) { table[field] = value; }
-            if (field === 'name' && oldName !== value) { renderAdminCatalog(); }
-        }
-    }
 
-    async function updateServiceDetail(serviceId, field, value) {
-        const { error } = await supabase.from('services').update({ [field]: value }).eq('id', serviceId);
-        if (error) {
-            showNotification(`Erro ao atualizar ${field}: ${error.message}`, true);
-            fetchData();
-        } else {
-            const service = services.find(s => s.id == serviceId);
-            if (service) { service[field] = value; }
-        }
-    }
-
-    async function updateServicePrice(serviceId, tableId, price) {
-        const recordToUpsert = { service_id: serviceId, price_table_id: tableId, price: price };
-        const { data, error } = await supabase.from('service_prices').upsert(recordToUpsert, { onConflict: 'service_id, price_table_id' }).select().single();
-        if (error) {
-            showNotification(`Erro ao atualizar preço: ${error.message}`, true);
-        } else {
-            const existingIndex = servicePrices.findIndex(p => p.service_id == serviceId && p.price_table_id == tableId);
-            if (existingIndex > -1) { servicePrices[existingIndex] = data; } else { servicePrices.push(data); }
-        }
-    }
-
-    async function deleteService(id) {
-        if (!confirm('Tem certeza? Isso excluirá o serviço e todos os seus preços.')) return;
-        const { error } = await supabase.from('services').delete().eq('id', id);
-        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço excluído.'); fetchData(); }
-    }
-    
-    async function deletePriceTable(id) {
-        if (!confirm('Tem certeza? Isso excluirá a lista e todos os preços associados a ela.')) return;
-        const { error } = await supabase.from('price_tables').delete().eq('id', id);
-        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços excluída.'); fetchData(); }
-    }
-    
-    async function deleteQuote(id) {
-        if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
-        const { error } = await supabase.from('quotes').delete().eq('id', id);
-        if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Orçamento excluído.'); fetchData(); }
-    }
-
-    // --- FUNÇÕES UTILITÁRIAS ---
     function showNotification(message, isError = false) {
         if (!notification) return;
         notification.textContent = message;
         notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
         notification.classList.add('show');
-        setTimeout(() => notification.classList.remove('show'), 5000);
+        setTimeout(() => notification.classList.remove('show'), 4000);
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
+    }
+    
+    function populatePriceTables() {
+        const select = document.getElementById('priceTableSelect');
+        if (!select) return;
+        select.innerHTML = '<option value="">Selecione uma tabela</option>';
+        priceTables.forEach(table => {
+            const option = document.createElement('option');
+            option.value = table.id;
+            option.textContent = table.name;
+            select.appendChild(option);
+        });
+    }
+
+    function syncClientData() {
+        currentQuote.client_name = document.getElementById('clientName')?.value || '';
+        currentQuote.client_cnpj = document.getElementById('clientCnpj')?.value || '';
+        currentQuote.client_email = document.getElementById('clientEmail')?.value || '';
+        currentQuote.client_phone = document.getElementById('clientPhone')?.value || '';
+        currentQuote.guest_count = parseInt(document.getElementById('guestCount')?.value) || 0;
+        
+        if (userRole === 'admin') {
+            currentQuote.price_table_id = document.getElementById('priceTableSelect')?.value || null;
+            currentQuote.discount_general = parseFloat(document.getElementById('discountValue')?.value) || 0;
+        }
+        syncEventDates();
+        setDirty(true);
+    }
+
+    function syncEventDates() {
+        const container = document.getElementById('event-dates-container');
+        if (!container) return;
+        const entries = container.querySelectorAll('.date-entry');
+        currentQuote.event_dates = [];
+        entries.forEach(entry => {
+            const date = entry.querySelector('input[type="date"]').value;
+            const start = entry.querySelector('.start-time').value;
+            const end = entry.querySelector('.end-time').value;
+            if (date) {
+                currentQuote.event_dates.push({ date, start, end });
+            }
+        });
+    }
+
+    function addDateEntry(data = {}) {
+        const container = document.getElementById('event-dates-container');
+        if (!container) return;
+        const div = document.createElement('div');
+        div.className = 'date-entry';
+        const uniqueId = Date.now() + Math.random();
+        div.innerHTML = `
+            <div class="form-group">
+                <label for="event_date_${uniqueId}">Data</label>
+                <input type="date" id="event_date_${uniqueId}" value="${data.date || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="start_time_${uniqueId}">Início</label>
+                <input type="time" class="start-time" id="start_time_${uniqueId}" value="${data.start || '19:00'}">
+            </div>
+            <div class="form-group">
+                <label for="end_time_${uniqueId}">Fim</label>
+                <input type="time" class="end-time" id="end_time_${uniqueId}" value="${data.end || '23:00'}">
+            </div>
+            <button type="button" class="btn-icon remove-date-btn" title="Remover Data">&times;</button>
+        `;
+        container.appendChild(div);
+        updateDateInputs();
+    }
+
+    function updateDateInputs() {
+        document.querySelectorAll('#event-dates-container input').forEach(input => {
+            input.onchange = () => {
+                syncClientData();
+                renderQuote();
+            };
+        });
+    }
+    
+    function calculateQuote() {
+        let consumableSubtotal = 0;
+        let nonConsumableSubtotal = 0;
+        const guestCount = currentQuote.guest_count;
+        const priceTableId = currentQuote.price_table_id;
+        currentQuote.items.forEach(item => {
+            const service = services.find(s => s.id === item.service_id);
+            if (!service) return;
+            let basePrice = 0;
+            if (userRole === 'admin' && priceTableId) {
+                const priceRecord = servicePrices.find(p => p.service_id === item.service_id && p.price_table_id === priceTableId);
+                basePrice = priceRecord ? parseFloat(priceRecord.price) : 0;
+            }
+            let quantity = item.quantity;
+            if (service.unit === 'por_pessoa' && service.category !== 'Gastronomia') {
+                quantity = guestCount;
+                item.quantity = quantity;
+            }
+            const cost = basePrice * quantity;
+            const discountRate = (userRole === 'admin' ? (parseFloat(item.discount_percent) || 0) : 0) / 100;
+            const total = cost * (1 - discountRate);
+            item.calculated_unit_price = basePrice;
+            item.calculated_total = total;
+            if (service.category === 'Serviços e Outros' || service.category === 'Espaço') {
+                nonConsumableSubtotal += total;
+            } else {
+                consumableSubtotal += total;
+            }
+        });
+        const subtotal = consumableSubtotal + nonConsumableSubtotal;
+        const discountGeneral = userRole === 'admin' ? (parseFloat(currentQuote.discount_general) || 0) : 0;
+        let availableConsumableCredit = 0;
+        if (userRole === 'admin' && priceTableId) {
+            const table = priceTables.find(t => t.id === priceTableId);
+            availableConsumableCredit = table ? (parseFloat(table.consumable_credit) || 0) : 0;
+        }
+        const consumableCreditUsed = Math.min(consumableSubtotal, availableConsumableCredit);
+        const total = subtotal - discountGeneral - consumableCreditUsed;
+        return { subtotal, consumableCredit: consumableCreditUsed, discountGeneral, total: Math.max(0, total) };
+    }
+
+    function sortCategories(categories) {
+        return categories.sort((a, b) => {
+            const indexA = CATEGORY_ORDER.indexOf(a);
+            const indexB = CATEGORY_ORDER.indexOf(b);
+            if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+    }
+
+    function renderQuote() {
+        const calculation = calculateQuote();
+        renderCategories();
+        renderSummary(calculation);
+        if (userRole === 'admin') {
+            generatePrintOutput(calculation);
+        }
+        if (catalogModal.style.display === 'block') {
+            updateCatalogButtonsState();
+        }
+    }
+
+    function renderCategories() {
+        const container = document.getElementById('quote-categories-container');
+        if (!container) return;
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
+            const service = services.find(s => s.id === item.service_id);
+            return service?.category;
+        }).filter(Boolean))]);
+        const elementsToRender = [];
+        categoriesInQuote.forEach(category => {
+            let accordion = container.querySelector(`details[data-category="${category}"]`);
+            if (!accordion) {
+                const template = document.getElementById('category-template').content.cloneNode(true);
+                accordion = template.querySelector('details');
+                accordion.dataset.category = category;
+                accordion.querySelector('.category-title').textContent = category;
+            }
+            renderItems(accordion, category);
+            elementsToRender.push(accordion);
+        });
+        container.innerHTML = '';
+        elementsToRender.forEach(element => container.appendChild(element));
+        if (categoriesInQuote.length === 0) {
+            container.innerHTML = '<p style="padding: 1.2rem; text-align: center; color: var(--subtle-text-color);">Nenhum item adicionado ainda. Clique em "+ Adicionar Itens" para começar.</p>';
+        }
+    }
+
+    function renderItems(accordion, category) {
+        const tbody = accordion.querySelector('tbody');
+        tbody.innerHTML = '';
+        const itemsInCategory = currentQuote.items.filter(item => {
+            const service = services.find(s => s.id === item.service_id);
+            return service && service.category === category;
+        }).sort((a, b) => {
+            const serviceA = services.find(s => s.id === a.service_id);
+            const serviceB = services.find(s => s.id === b.service_id);
+            if (!serviceA || !serviceB) return 0;
+            return serviceA.name.localeCompare(serviceB.name);
+        });
+        itemsInCategory.forEach(item => {
+            const service = services.find(s => s.id === item.service_id);
+            if (!service) return;
+            const row = document.createElement('tr');
+            row.dataset.itemId = item.id;
+            const isQuantityLocked = service.unit === 'por_pessoa' && service.category !== 'Gastronomia';
+            row.innerHTML = `
+                <td class="col-item">${service.name}</td>
+                <td class="col-date">${renderDateSelect(item)}</td>
+                <td class="col-qty">
+                    <input type="number" value="${item.quantity}" min="1" class="qty-input" ${isQuantityLocked ? 'disabled' : ''}>
+                </td>
+                <td class="col-unit-price price">${formatCurrency(item.calculated_unit_price)}</td>
+                <td class="col-discount">
+                    <input type="number" value="${item.discount_percent || 0}" min="0" max="100" class="discount-input price-input">
+                </td>
+                <td class="col-total-price price">${formatCurrency(item.calculated_total)}</td>
+                <td class="col-actions item-actions">
+                    <button class="btn-icon duplicate-item-btn" title="Duplicar Item">⧉</button>
+                    <button class="btn-icon obs-btn" title="Observações">${item.observations ? '📝' : '📄'}</button>
+                    <button class="btn-icon remove-item-btn" title="Remover Item">&times;</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderDateSelect(item) {
+        if (currentQuote.event_dates.length === 0) return 'N/A';
+        let options = currentQuote.event_dates.map(d => 
+            `<option value="${d.date}" ${item.event_date === d.date ? 'selected' : ''}>${new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')}</option>`
+        ).join('');
+        return `<select class="date-select">${options}</select>`;
+    }
+
+    function renderSummary(calculation) {
+        const consumableText = "(-) " + formatCurrency(calculation.consumableCredit);
+        document.getElementById('subtotalValue').textContent = formatCurrency(calculation.subtotal);
+        document.getElementById('consumableValue').textContent = consumableText;
+        document.getElementById('discountValue').value = calculation.discountGeneral.toFixed(2);
+        document.getElementById('totalValue').textContent = formatCurrency(calculation.total);
+        document.getElementById('summary-subtotal-value').textContent = formatCurrency(calculation.subtotal);
+        document.getElementById('summary-consumable-value').textContent = consumableText;
+        document.getElementById('summary-discount-value').textContent = formatCurrency(calculation.discountGeneral);
+        document.getElementById('summary-total-value').textContent = formatCurrency(calculation.total);
+        const categoryList = document.getElementById('summary-categories-list');
+        if (!categoryList) return;
+        categoryList.innerHTML = '';
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
+            const service = services.find(s => s.id === item.service_id);
+            return service ? service.category : null;
+        }).filter(Boolean))]);
+        categoriesInQuote.forEach(category => {
+            const categoryTotal = currentQuote.items.reduce((sum, item) => {
+                const service = services.find(s => s.id === item.service_id);
+                if (service && service.category === category) {
+                    return sum + item.calculated_total;
+                }
+                return sum;
+            }, 0);
+            const div = document.createElement('div');
+            div.className = 'summary-line';
+            div.innerHTML = `<span>${category}</span><strong>${formatCurrency(categoryTotal)}</strong>`;
+            categoryList.appendChild(div);
+        });
+    }
+
+    function generatePrintOutput(calculation) {
+        const printOutput = document.getElementById('print-output');
+        if (!printOutput) return;
+        let html = `<div class="print-header"><h1>Proposta Comercial</h1><p>Data da Proposta: ${new Date().toLocaleDateString('pt-BR')}</p></div>`;
+        html += `
+            <div class="print-client-info">
+                <p><strong>Cliente:</strong> ${currentQuote.client_name || 'N/A'}</p>
+                <p><strong>CNPJ:</strong> ${currentQuote.client_cnpj || 'N/A'}</p>
+                <p><strong>E-mail:</strong> ${currentQuote.client_email || 'N/A'}</p>
+                <p><strong>Nº Convidados:</strong> ${currentQuote.guest_count}</p>
+                <p><strong>Datas do Evento:</strong> ${currentQuote.event_dates.map(d => new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')).join(', ')}</p>
+            </div>
+        `;
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
+             const service = services.find(s => s.id === item.service_id);
+             return service?.category;
+        }).filter(Boolean))]);
+        categoriesInQuote.forEach(category => {
+            html += `<h2 class="print-category-title">${category}</h2>`;
+            html += `<table class="print-table"><thead><tr><th>Item</th><th class="center">Data</th><th class="center">Qtde.</th><th class="price">Vlr. Unitário</th><th class="price">Desconto (%)</th><th class="price">Vlr. Total</th></tr></thead><tbody>`;
+            const itemsInCategory = currentQuote.items.filter(item => {
+                const service = services.find(s => s.id === item.service_id);
+                return service && service.category === category;
+            }).sort((a,b) => {
+                 const serviceA = services.find(s => s.id === a.service_id);
+                 const serviceB = services.find(s => s.id === b.service_id);
+                 if (!serviceA || !serviceB) return 0;
+                 return serviceA.name.localeCompare(serviceB.name);
+            });
+            itemsInCategory.forEach(item => {
+                const service = services.find(s => s.id === item.service_id);
+                if (!service) return;
+                const formattedDate = item.event_date ? new Date(item.event_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/A';
+                html += `
+                    <tr>
+                        <td>${service.name}${item.observations ? `<div class="print-item-obs">${item.observations}</div>` : ''}</td>
+                        <td class="center">${formattedDate}</td>
+                        <td class="center">${item.quantity}</td>
+                        <td class="price">${formatCurrency(item.calculated_unit_price)}</td>
+                        <td class="price">${item.discount_percent || 0}%</td>
+                        <td class="price">${formatCurrency(item.calculated_total)}</td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table>`;
+        });
+        html += `
+            <div class="print-summary">
+                <table>
+                    <tr><td class="total-label">Subtotal:</td><td class="total-value">${formatCurrency(calculation.subtotal)}</td></tr>
+                    <tr><td class="total-label">Consumação Inclusa:</td><td class="total-value">(-) ${formatCurrency(calculation.consumableCredit)}</td></tr>
+                    <tr><td class="total-label">Desconto Geral:</td><td class="total-value">(-) ${formatCurrency(calculation.discountGeneral)}</td></tr>
+                    <tr class="grand-total"><td class="total-label">VALOR TOTAL:</td><td class="total-value">${formatCurrency(calculation.total)}</td></tr>
+                </table>
+            </div>
+        `;
+        printOutput.innerHTML = html;
+    }
+
+    let activeCategory = 'Todos';
+    let searchQuery = '';
+
+    function openCatalogModal() {
+        if (currentQuote.event_dates.length === 0) {
+            alert("Por favor, adicione pelo menos uma data de evento antes de adicionar itens.");
+            return;
+        }
+        activeCategory = 'Todos';
+        searchQuery = '';
+        document.getElementById('catalog-search').value = '';
+        renderCatalog();
+        catalogModal.style.display = 'block';
+        document.getElementById('catalog-search').focus();
+    }
+
+    function closeCatalogModal() {
+        catalogModal.style.display = 'none';
+    }
+
+    function renderCatalog() {
+        renderCatalogCategories();
+        renderCatalogItems();
+    }
+
+    function renderCatalogCategories() {
+        const container = document.getElementById('catalog-categories');
+        const categories = ['Todos', ...new Set(services.map(s => s.category))].sort((a, b) => a === 'Todos' ? -1 : b === 'Todos' ? 1 : a.localeCompare(b));
+        container.innerHTML = categories.map(category => `<div class="catalog-category-tab ${category === activeCategory ? 'active' : ''}" data-category="${category}">${category}</div>`).join('');
+    }
+
+    function renderCatalogItems() {
+        const container = document.getElementById('catalog-items');
+        let filteredServices = services;
+        if (activeCategory !== 'Todos') {
+            filteredServices = filteredServices.filter(s => s.category === activeCategory);
+        }
+        if (searchQuery) {
+            filteredServices = filteredServices.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+        const defaultDate = currentQuote.event_dates[0]?.date;
+        container.innerHTML = filteredServices.map(service => {
+            const isAdded = currentQuote.items.some(item => item.service_id === service.id && item.event_date === defaultDate);
+            return `<div class="catalog-item"><span class="catalog-item-name">${service.name}</span><button class="btn btn-primary btn-add-item ${isAdded ? 'btn-added' : ''}" data-service-id="${service.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? 'Adicionado ✔' : 'Adicionar'}</button></div>`;
+        }).join('');
+    }
+
+    function updateCatalogButtonsState() {
+        const container = document.getElementById('catalog-items');
+        if (!container) return;
+        const defaultDate = currentQuote.event_dates[0]?.date;
+        container.querySelectorAll('.btn-add-item').forEach(button => {
+            const serviceId = button.dataset.serviceId;
+            const isAdded = currentQuote.items.some(item => item.service_id === serviceId && item.event_date === defaultDate);
+            if (isAdded) {
+                button.classList.add('btn-added');
+                button.disabled = true;
+                button.textContent = 'Adicionado ✔';
+            } else {
+                button.classList.remove('btn-added');
+                button.disabled = false;
+                button.textContent = 'Adicionar';
+            }
+        });
+    }
+
+    function addItemsToQuote(serviceId) {
+        if (currentQuote.event_dates.length === 0) return;
+        const defaultDate = currentQuote.event_dates[0].date;
+        const existing = currentQuote.items.find(item => item.service_id === serviceId && item.event_date === defaultDate);
+        if (existing) return;
+        const service = services.find(s => s.id === serviceId);
+        if (!service) return;
+        let initialQuantity = 1;
+        if (service.category === 'Gastronomia') {
+            initialQuantity = currentQuote.guest_count > 0 ? currentQuote.guest_count : 1;
+        }
+        const newItem = { id: Date.now() + '-' + serviceId, service_id: serviceId, quantity: initialQuantity, discount_percent: 0, event_date: defaultDate, observations: '' };
+        currentQuote.items.push(newItem);
+        setDirty(true);
+        renderQuote();
+    }
+
+    function updateItem(itemId, field, value) {
+        const item = currentQuote.items.find(i => i.id === itemId);
+        if (item) {
+            if (field === 'quantity' || field === 'discount_percent') {
+                item[field] = parseFloat(value) || 0;
+            } else {
+                item[field] = value;
+            }
+            setDirty(true);
+            renderQuote();
+        }
+    }
+
+    function removeItem(itemId) {
+        currentQuote.items = currentQuote.items.filter(i => i.id !== itemId);
+        setDirty(true);
+        renderQuote();
+    }
+
+    function showObsPopover(button, itemId) {
+        const popover = document.getElementById('obs-popover');
+        if (!popover) return;
+        const item = currentQuote.items.find(i => i.id === itemId);
+        if (!item) return;
+        popover.innerHTML = `<textarea id="obs-text">${item.observations || ''}</textarea><button id="save-obs-btn" class="btn">Salvar Observação</button>`;
+        const rect = button.getBoundingClientRect();
+        popover.style.position = 'absolute';
+        popover.style.top = `${window.scrollY + rect.top}px`;
+        popover.style.left = rect.left < 310 ? `${rect.right + 10}px` : `${rect.left - 310}px`;
+        popover.classList.add('show');
+        document.getElementById('save-obs-btn').onclick = () => {
+            const text = document.getElementById('obs-text').value;
+            updateItem(itemId, 'observations', text);
+            popover.classList.remove('show');
+            renderQuote(); 
+        };
+    }
+
+    function duplicateItem(itemId) {
+        const originalItemIndex = currentQuote.items.findIndex(i => i.id === itemId);
+        if (originalItemIndex === -1) return;
+        const originalItem = currentQuote.items[originalItemIndex];
+        const duplicatedItem = JSON.parse(JSON.stringify(originalItem));
+        duplicatedItem.id = Date.now() + '-dup-' + (originalItem.service_id || originalItemIndex);
+        currentQuote.items.splice(originalItemIndex + 1, 0, duplicatedItem);
+        setDirty(true);
+        renderQuote();
+    }
+    
+    function exportToXLSX() {
+        if (userRole !== 'admin') { return; }
+        const clientName = currentQuote.client_name || 'Cliente';
+        const fileName = `Proposta - ${clientName.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
+        const calculation = calculateQuote();
+        const data = [
+            ["Proposta Comercial"], [], ["DADOS DO CLIENTE"], ["Nome", currentQuote.client_name], ["CNPJ", currentQuote.client_cnpj], ["E-mail", currentQuote.client_email], ["Telefone", currentQuote.client_phone], [],
+            ["DADOS DO EVENTO"], ["Nº de Convidados", currentQuote.guest_count], ["Datas do Evento", currentQuote.event_dates.map(d => new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')).join(', ')], [],
+            ["ITENS DO ORÇAMENTO"], ["Categoria", "Item", "Data", "Qtde.", "Vlr. Unitário", "Desc. (%)", "Vlr. Total", "Observações"]
+        ];
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => { const service = services.find(s => s.id === item.service_id); return service?.category; }).filter(Boolean))]);
+        categoriesInQuote.forEach(category => {
+            const itemsInCategory = currentQuote.items.filter(item => { const service = services.find(s => s.id === item.service_id); return service && service.category === category; }).sort((a,b) => { const serviceA = services.find(s => s.id === a.service_id); const serviceB = services.find(s => s.id === b.service_id); if (!serviceA || !serviceB) return 0; return serviceA.name.localeCompare(serviceB.name); });
+            itemsInCategory.forEach(item => {
+                const service = services.find(s => s.id === item.service_id);
+                if (!service) return;
+                const formattedDate = item.event_date ? new Date(item.event_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/A';
+                data.push([ service.category, service.name, formattedDate, item.quantity, item.calculated_unit_price, item.discount_percent || 0, item.calculated_total, item.observations || '' ]);
+            });
+        });
+        data.push([], [], [null, null, null, null, null, "Subtotal", calculation.subtotal], [null, null, null, null, null, "Consumação Inclusa", -calculation.consumableCredit], [null, null, null, null, null, "Desconto Geral", -calculation.discountGeneral], [null, null, null, null, null, "VALOR TOTAL", calculation.total]);
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        ws['!cols'] = [ { wch: 25 }, { wch: 40 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 50 } ];
+        const currencyFormat = 'R$ #,##0.00';
+        const itemsHeaderRowIndex = 13;
+        for (let i = itemsHeaderRowIndex; i < data.length; i++) {
+            if (data[i].length < 4) continue;
+            const unitPriceCell = ws[XLSX.utils.encode_cell({ c: 4, r: i })];
+            if (unitPriceCell && typeof unitPriceCell.v === 'number') { unitPriceCell.t = 'n'; unitPriceCell.z = currencyFormat; }
+            const totalCell = ws[XLSX.utils.encode_cell({ c: 6, r: i })];
+            if (totalCell && typeof totalCell.v === 'number') { totalCell.t = 'n'; totalCell.z = currencyFormat; }
+        }
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Proposta");
+        XLSX.writeFile(wb, fileName);
+    }
+    
+    function setupEventListeners() {
+        const exportBtn = document.getElementById('export-btn');
+        const exportMenu = document.getElementById('export-menu');
+        if(exportBtn && exportMenu) {
+            exportBtn.addEventListener('click', (e) => { e.stopPropagation(); exportMenu.classList.toggle('show'); });
+            document.getElementById('export-pdf-option')?.addEventListener('click', () => { if (userRole === 'admin') { window.print(); } exportMenu.classList.remove('show'); });
+            document.getElementById('export-xlsx-option')?.addEventListener('click', () => { exportToXLSX(); exportMenu.classList.remove('show'); });
+        }
+        document.addEventListener('click', (e) => {
+            if (exportMenu && exportMenu.classList.contains('show') && !exportBtn.contains(e.target)) { exportMenu.classList.remove('show'); }
+            const popover = document.getElementById('obs-popover');
+            if (popover && popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('obs-btn')) { popover.classList.remove('show'); }
+        });
+        document.querySelectorAll('#clientName, #clientCnpj, #clientEmail, #clientPhone').forEach(input => { input.addEventListener('change', syncClientData); });
+        document.querySelectorAll('#guestCount, #priceTableSelect').forEach(input => { input.addEventListener('change', () => { syncClientData(); renderQuote(); }); });
+        document.getElementById('add-date-btn')?.addEventListener('click', () => { addDateEntry(); syncClientData(); renderQuote(); });
+        document.getElementById('event-dates-container')?.addEventListener('click', (e) => { if (e.target.classList.contains('remove-date-btn')) { e.target.closest('.date-entry').remove(); syncClientData(); renderQuote(); } });
+        document.getElementById('quote-categories-container')?.addEventListener('change', (e) => {
+            const row = e.target.closest('tr'); if (!row) return; const itemId = row.dataset.itemId;
+            if (e.target.classList.contains('qty-input')) { updateItem(itemId, 'quantity', e.target.value); }
+            else if (e.target.classList.contains('discount-input')) { if (userRole === 'admin') { updateItem(itemId, 'discount_percent', e.target.value); } else { e.target.value = 0; } }
+            else if (e.target.classList.contains('date-select')) { updateItem(itemId, 'event_date', e.target.value); }
+        });
+        document.getElementById('quote-categories-container')?.addEventListener('click', (e) => {
+            const row = e.target.closest('tr'); if (row) {
+                const itemId = row.dataset.itemId;
+                if (e.target.classList.contains('duplicate-item-btn')) { duplicateItem(itemId); return; }
+                if (e.target.classList.contains('remove-item-btn')) { removeItem(itemId); return; }
+                else if (e.target.classList.contains('obs-btn')) { e.stopPropagation(); showObsPopover(e.target, itemId); return; }
+            }
+        });
+        document.getElementById('discountValue')?.addEventListener('change', (e) => { currentQuote.discount_general = parseFloat(e.target.value) || 0; setDirty(true); renderQuote(); });
+        document.getElementById('save-quote-btn')?.addEventListener('click', saveQuote);
+        document.getElementById('open-catalog-btn')?.addEventListener('click', openCatalogModal);
+        document.getElementById('close-catalog-btn')?.addEventListener('click', closeCatalogModal);
+        window.addEventListener('click', (event) => { if (event.target == catalogModal) { closeCatalogModal(); } });
+        let searchTimeout;
+        document.getElementById('catalog-search')?.addEventListener('input', (e) => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { searchQuery = e.target.value; renderCatalogItems(); }, 300); });
+        document.getElementById('catalog-categories')?.addEventListener('click', (e) => { const tab = e.target.closest('.catalog-category-tab'); if (tab) { activeCategory = tab.dataset.category; renderCatalog(); } });
+        document.getElementById('catalog-items')?.addEventListener('click', (e) => { const button = e.target.closest('.btn-add-item'); if (button && !button.disabled) { const serviceId = button.dataset.serviceId; addItemsToQuote(serviceId); } });
+    }
+
+    async function saveQuote() {
+        syncClientData();
+        if (currentQuote.items.length === 0 && document.getElementById('quote-categories-container').children.length > 0) {
+            showNotification("Adicione itens antes de salvar ou enviar.", true);
+            return;
+        }
+        const calculation = calculateQuote();
+        const quoteDataObject = {
+            client_cnpj: currentQuote.client_cnpj, client_email: currentQuote.client_email, client_phone: currentQuote.client_phone,
+            guest_count: currentQuote.guest_count, price_table_id: currentQuote.price_table_id, event_dates: currentQuote.event_dates,
+            items: currentQuote.items.map(item => { const { id, ...rest } = item; return rest; }),
+            discount_general: currentQuote.discount_general, subtotal_value: calculation.subtotal, consumable_credit_used: calculation.consumableCredit
+        };
+        const finalPayload = { client_name: currentQuote.client_name, status: currentQuote.status, total_value: calculation.total, quote_data: quoteDataObject };
+        if (userRole === 'client') {
+            finalPayload.status = 'Solicitado pelo Cliente';
+            finalPayload.total_value = 0;
+            finalPayload.quote_data.price_table_id = null;
+            finalPayload.quote_data.discount_general = 0;
+            finalPayload.quote_data.subtotal_value = 0;
+            finalPayload.quote_data.consumable_credit_used = 0;
+            finalPayload.quote_data.items.forEach(item => { item.discount_percent = 0; item.calculated_unit_price = 0; item.calculated_total = 0; });
+        } else if (userRole === 'admin' && !isDirty) { return; }
+        try {
+            let result;
+            if (currentQuote.id) {
+                const { data, error } = await supabase.from('quotes').update(finalPayload).eq('id', currentQuote.id).select().single();
+                result = { data, error };
+            } else {
+                const { data, error } = await supabase.from('quotes').insert(finalPayload).select().single();
+                result = { data, error };
+            }
+            if (result.error) throw result.error;
+            const savedData = result.data;
+            currentQuote.id = savedData.id;
+            Object.assign(currentQuote, savedData.quote_data);
+            currentQuote.items = (savedData.quote_data.items || []).map((item, index) => ({ ...item, id: `saved-${savedData.id}-${index}-${item.service_id || index}` }));
+            if (userRole === 'client') {
+                showNotification('Solicitação enviada com sucesso! Entraremos em contato.');
+            } else {
+                showNotification('Orçamento salvo com sucesso!');
+                setDirty(false);
+                if (window.location.search.indexOf('quote_id=') === -1) {
+                     const newUrl = new URL(window.location);
+                     newUrl.searchParams.set('quote_id', savedData.id);
+                     window.history.pushState({}, '', newUrl);
+                }
+            }
+            renderQuote();
+        } catch (error) {
+            console.error("Erro ao salvar orçamento:", error);
+            showNotification(`Erro ao salvar/enviar: ${error.message}`, true);
+        }
+    }
+
+    async function loadQuote(id) {
+        if (userRole === 'client') {
+            window.history.pushState({}, '', window.location.pathname);
+            return;
+        }
+        try {
+            const { data, error } = await supabase.from('quotes').select('*').eq('id', id).single();
+            if (error) throw error;
+            if (!data) throw new Error("Orçamento não encontrado.");
+            const quoteDetails = data.quote_data || {};
+            currentQuote = {
+                ...currentQuote, ...quoteDetails, id: data.id, client_name: data.client_name, status: data.status,
+                items: (quoteDetails.items || []).map((item, index) => ({ ...item, id: `loaded-${id}-${index}-${item.service_id || index}` })),
+            };
+            document.getElementById('clientName').value = currentQuote.client_name || '';
+            document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
+            document.getElementById('clientEmail').value = currentQuote.client_email || '';
+            document.getElementById('clientPhone').value = currentQuote.client_phone || '';
+            document.getElementById('guestCount').value = currentQuote.guest_count || 100;
+            document.getElementById('priceTableSelect').value = currentQuote.price_table_id || '';
+            document.getElementById('discountValue').value = (currentQuote.discount_general || 0).toFixed(2);
+            const datesContainer = document.getElementById('event-dates-container');
+            if (datesContainer) {
+                datesContainer.innerHTML = '';
+                if (currentQuote.event_dates && currentQuote.event_dates.length > 0) {
+                    currentQuote.event_dates.forEach(dateData => addDateEntry(dateData));
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao carregar orçamento:", error);
+            showNotification(`Erro ao carregar orçamento ID ${id}. Iniciando novo.`, true);
+            window.history.pushState({}, '', window.location.pathname);
+        }
     }
 
     initialize();
