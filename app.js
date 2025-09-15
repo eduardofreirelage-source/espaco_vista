@@ -1,3 +1,4 @@
+
 import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -95,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const servicesRes = await supabase.from('services').select('*').order('category').order('name');
             if (servicesRes.error) throw servicesRes.error;
-            services = servicesRes.data || [];
+            services = servicesRes.data;
 
             if (userRole === 'admin') {
                 const [tablesRes, pricesRes] = await Promise.all([
@@ -104,8 +105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ]);
                 if (tablesRes.error) throw tablesRes.error;
                 if (pricesRes.error) throw pricesRes.error;
-                priceTables = tablesRes.data || [];
-                servicePrices = pricesRes.data || [];
+                priceTables = tablesRes.data;
+                servicePrices = pricesRes.data;
             } else {
                 priceTables = [];
                 servicePrices = [];
@@ -138,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function showNotification(message, isError = false) {
         if (!notification) return;
         notification.textContent = message;
-        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        notification.style.backgroundColor = isError ? 'var(--danger-color, #dc3545)' : 'var(--success-color, #28a745)';
         notification.classList.add('show');
         setTimeout(() => notification.classList.remove('show'), 4000);
     }
@@ -192,9 +193,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function addDateEntry(data = {}) {
         const container = document.getElementById('event-dates-container');
         if (!container) return;
+
         const div = document.createElement('div');
         div.className = 'date-entry';
         const uniqueId = Date.now() + Math.random();
+
         div.innerHTML = `
             <div class="form-group">
                 <label for="event_date_${uniqueId}">Data</label>
@@ -228,41 +231,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         let nonConsumableSubtotal = 0;
         const guestCount = currentQuote.guest_count;
         const priceTableId = currentQuote.price_table_id;
+
         currentQuote.items.forEach(item => {
             const service = services.find(s => s.id === item.service_id);
             if (!service) return;
+
             let basePrice = 0;
             if (userRole === 'admin' && priceTableId) {
                 const priceRecord = servicePrices.find(p => p.service_id === item.service_id && p.price_table_id === priceTableId);
                 basePrice = priceRecord ? parseFloat(priceRecord.price) : 0;
             }
+            
             let quantity = item.quantity;
             if (service.unit === 'por_pessoa' && service.category !== 'Gastronomia') {
                 quantity = guestCount;
                 item.quantity = quantity;
             }
+
             const cost = basePrice * quantity;
             const discountRate = (userRole === 'admin' ? (parseFloat(item.discount_percent) || 0) : 0) / 100;
             const total = cost * (1 - discountRate);
+
             item.calculated_unit_price = basePrice;
             item.calculated_total = total;
+            
             if (service.category === 'Serviços e Outros' || service.category === 'Espaço') {
                 nonConsumableSubtotal += total;
             } else {
                 consumableSubtotal += total;
             }
         });
+
         const subtotal = consumableSubtotal + nonConsumableSubtotal;
         const discountGeneral = userRole === 'admin' ? (parseFloat(currentQuote.discount_general) || 0) : 0;
+        
         let availableConsumableCredit = 0;
         if (userRole === 'admin' && priceTableId) {
             const table = priceTables.find(t => t.id === priceTableId);
             availableConsumableCredit = table ? (parseFloat(table.consumable_credit) || 0) : 0;
         }
+
         const consumableCreditUsed = Math.min(consumableSubtotal, availableConsumableCredit);
         const total = subtotal - discountGeneral - consumableCreditUsed;
+
         return { subtotal, consumableCredit: consumableCreditUsed, discountGeneral, total: Math.max(0, total) };
     }
+
+
+    // =================================================================
+    // RENDERIZAÇÃO DO ORÇAMENTO
+    // =================================================================
 
     function sortCategories(categories) {
         return categories.sort((a, b) => {
@@ -274,27 +292,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             return indexA - indexB;
         });
     }
-
+    
     function renderQuote() {
         const calculation = calculateQuote();
-        renderCategories();
+        renderCategories(calculation);
         renderSummary(calculation);
+
         if (userRole === 'admin') {
             generatePrintOutput(calculation);
         }
+
         if (catalogModal.style.display === 'block') {
             updateCatalogButtonsState();
         }
     }
 
-    function renderCategories() {
+    function renderCategories(calculation) {
         const container = document.getElementById('quote-categories-container');
         if (!container) return;
+
         const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
             const service = services.find(s => s.id === item.service_id);
             return service?.category;
         }).filter(Boolean))]);
+
         const elementsToRender = [];
+
         categoriesInQuote.forEach(category => {
             let accordion = container.querySelector(`details[data-category="${category}"]`);
             if (!accordion) {
@@ -306,8 +329,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderItems(accordion, category);
             elementsToRender.push(accordion);
         });
+
         container.innerHTML = '';
         elementsToRender.forEach(element => container.appendChild(element));
+
         if (categoriesInQuote.length === 0) {
             container.innerHTML = '<p style="padding: 1.2rem; text-align: center; color: var(--subtle-text-color);">Nenhum item adicionado ainda. Clique em "+ Adicionar Itens" para começar.</p>';
         }
@@ -316,6 +341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderItems(accordion, category) {
         const tbody = accordion.querySelector('tbody');
         tbody.innerHTML = '';
+
         const itemsInCategory = currentQuote.items.filter(item => {
             const service = services.find(s => s.id === item.service_id);
             return service && service.category === category;
@@ -325,12 +351,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!serviceA || !serviceB) return 0;
             return serviceA.name.localeCompare(serviceB.name);
         });
+
         itemsInCategory.forEach(item => {
             const service = services.find(s => s.id === item.service_id);
             if (!service) return;
+
             const row = document.createElement('tr');
             row.dataset.itemId = item.id;
             const isQuantityLocked = service.unit === 'por_pessoa' && service.category !== 'Gastronomia';
+
             row.innerHTML = `
                 <td class="col-item">${service.name}</td>
                 <td class="col-date">${renderDateSelect(item)}</td>
@@ -354,29 +383,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderDateSelect(item) {
         if (currentQuote.event_dates.length === 0) return 'N/A';
+        
         let options = currentQuote.event_dates.map(d => 
             `<option value="${d.date}" ${item.event_date === d.date ? 'selected' : ''}>${new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')}</option>`
         ).join('');
+
         return `<select class="date-select">${options}</select>`;
     }
 
     function renderSummary(calculation) {
         const consumableText = "(-) " + formatCurrency(calculation.consumableCredit);
-        document.getElementById('subtotalValue').textContent = formatCurrency(calculation.subtotal);
-        document.getElementById('consumableValue').textContent = consumableText;
-        document.getElementById('discountValue').value = calculation.discountGeneral.toFixed(2);
-        document.getElementById('totalValue').textContent = formatCurrency(calculation.total);
-        document.getElementById('summary-subtotal-value').textContent = formatCurrency(calculation.subtotal);
-        document.getElementById('summary-consumable-value').textContent = consumableText;
-        document.getElementById('summary-discount-value').textContent = formatCurrency(calculation.discountGeneral);
-        document.getElementById('summary-total-value').textContent = formatCurrency(calculation.total);
+        if(document.getElementById('subtotalValue')) document.getElementById('subtotalValue').textContent = formatCurrency(calculation.subtotal);
+        if(document.getElementById('consumableValue')) document.getElementById('consumableValue').textContent = consumableText;
+        if(document.getElementById('discountValue')) document.getElementById('discountValue').value = calculation.discountGeneral.toFixed(2);
+        if(document.getElementById('totalValue')) document.getElementById('totalValue').textContent = formatCurrency(calculation.total);
+
+        if(document.getElementById('summary-subtotal-value')) document.getElementById('summary-subtotal-value').textContent = formatCurrency(calculation.subtotal);
+        if(document.getElementById('summary-consumable-value')) document.getElementById('summary-consumable-value').textContent = consumableText;
+        if(document.getElementById('summary-discount-value')) document.getElementById('summary-discount-value').textContent = formatCurrency(calculation.discountGeneral);
+        if(document.getElementById('summary-total-value')) document.getElementById('summary-total-value').textContent = formatCurrency(calculation.total);
+
         const categoryList = document.getElementById('summary-categories-list');
         if (!categoryList) return;
+
         categoryList.innerHTML = '';
+        
         const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
             const service = services.find(s => s.id === item.service_id);
             return service ? service.category : null;
         }).filter(Boolean))]);
+
         categoriesInQuote.forEach(category => {
             const categoryTotal = currentQuote.items.reduce((sum, item) => {
                 const service = services.find(s => s.id === item.service_id);
@@ -385,6 +421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 return sum;
             }, 0);
+
             const div = document.createElement('div');
             div.className = 'summary-line';
             div.innerHTML = `<span>${category}</span><strong>${formatCurrency(categoryTotal)}</strong>`;
@@ -392,10 +429,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // =================================================================
+    // LÓGICA DE GERAÇÃO DO PDF (IMPRESSÃO)
+    // =================================================================
+
     function generatePrintOutput(calculation) {
         const printOutput = document.getElementById('print-output');
         if (!printOutput) return;
-        let html = `<div class="print-header"><h1>Proposta Comercial</h1><p>Data da Proposta: ${new Date().toLocaleDateString('pt-BR')}</p></div>`;
+
+        let html = `
+            <div class="print-header">
+                <h1>Proposta Comercial</h1>
+                <p>Data da Proposta: ${new Date().toLocaleDateString('pt-BR')}</p>
+            </div>
+        `;
+
         html += `
             <div class="print-client-info">
                 <p><strong>Cliente:</strong> ${currentQuote.client_name || 'N/A'}</p>
@@ -405,29 +453,52 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <p><strong>Datas do Evento:</strong> ${currentQuote.event_dates.map(d => new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')).join(', ')}</p>
             </div>
         `;
+
         const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
              const service = services.find(s => s.id === item.service_id);
              return service?.category;
         }).filter(Boolean))]);
+
         categoriesInQuote.forEach(category => {
             html += `<h2 class="print-category-title">${category}</h2>`;
-            html += `<table class="print-table"><thead><tr><th>Item</th><th class="center">Data</th><th class="center">Qtde.</th><th class="price">Vlr. Unitário</th><th class="price">Desconto (%)</th><th class="price">Vlr. Total</th></tr></thead><tbody>`;
+            html += `
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th class="center">Data</th>
+                            <th class="center">Qtde.</th>
+                            <th class="price">Vlr. Unitário</th>
+                            <th class="price">Desconto (%)</th>
+                            <th class="price">Vlr. Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
             const itemsInCategory = currentQuote.items.filter(item => {
                 const service = services.find(s => s.id === item.service_id);
                 return service && service.category === category;
-            }).sort((a,b) => {
+            });
+            
+            itemsInCategory.sort((a,b) => {
                  const serviceA = services.find(s => s.id === a.service_id);
                  const serviceB = services.find(s => s.id === b.service_id);
                  if (!serviceA || !serviceB) return 0;
                  return serviceA.name.localeCompare(serviceB.name);
             });
+
             itemsInCategory.forEach(item => {
                 const service = services.find(s => s.id === item.service_id);
                 if (!service) return;
+
                 const formattedDate = item.event_date ? new Date(item.event_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/A';
+                
                 html += `
                     <tr>
-                        <td>${service.name}${item.observations ? `<div class="print-item-obs">${item.observations}</div>` : ''}</td>
+                        <td>
+                            ${service.name}
+                            ${item.observations ? `<div class="print-item-obs">${item.observations}</div>` : ''}
+                        </td>
                         <td class="center">${formattedDate}</td>
                         <td class="center">${item.quantity}</td>
                         <td class="price">${formatCurrency(item.calculated_unit_price)}</td>
@@ -436,21 +507,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </tr>
                 `;
             });
+
             html += `</tbody></table>`;
         });
+
         html += `
             <div class="print-summary">
                 <table>
-                    <tr><td class="total-label">Subtotal:</td><td class="total-value">${formatCurrency(calculation.subtotal)}</td></tr>
-                    <tr><td class="total-label">Consumação Inclusa:</td><td class="total-value">(-) ${formatCurrency(calculation.consumableCredit)}</td></tr>
-                    <tr><td class="total-label">Desconto Geral:</td><td class="total-value">(-) ${formatCurrency(calculation.discountGeneral)}</td></tr>
-                    <tr class="grand-total"><td class="total-label">VALOR TOTAL:</td><td class="total-value">${formatCurrency(calculation.total)}</td></tr>
+                    <tr>
+                        <td class="total-label">Subtotal:</td>
+                        <td class="total-value">${formatCurrency(calculation.subtotal)}</td>
+                    </tr>
+                    <tr>
+                        <td class="total-label">Consumação Inclusa:</td>
+                        <td class="total-value">(-) ${formatCurrency(calculation.consumableCredit)}</td>
+                    </tr>
+                    <tr>
+                        <td class="total-label">Desconto Geral:</td>
+                        <td class="total-value">(-) ${formatCurrency(calculation.discountGeneral)}</td>
+                    </tr>
+                    <tr class="grand-total">
+                        <td class="total-label">VALOR TOTAL:</td>
+                        <td class="total-value">${formatCurrency(calculation.total)}</td>
+                    </tr>
                 </table>
             </div>
         `;
+
         printOutput.innerHTML = html;
     }
 
+
+    // =================================================================
+    // LÓGICA DO MODAL DE CATÁLOGO
+    // =================================================================
     let activeCategory = 'Todos';
     let searchQuery = '';
 
@@ -459,9 +549,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Por favor, adicione pelo menos uma data de evento antes de adicionar itens.");
             return;
         }
+        
         activeCategory = 'Todos';
         searchQuery = '';
         document.getElementById('catalog-search').value = '';
+
         renderCatalog();
         catalogModal.style.display = 'block';
         document.getElementById('catalog-search').focus();
@@ -479,32 +571,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderCatalogCategories() {
         const container = document.getElementById('catalog-categories');
         const categories = ['Todos', ...new Set(services.map(s => s.category))].sort((a, b) => a === 'Todos' ? -1 : b === 'Todos' ? 1 : a.localeCompare(b));
-        container.innerHTML = categories.map(category => `<div class="catalog-category-tab ${category === activeCategory ? 'active' : ''}" data-category="${category}">${category}</div>`).join('');
+        
+        container.innerHTML = categories.map(category => `
+            <div class="catalog-category-tab ${category === activeCategory ? 'active' : ''}" data-category="${category}">
+                ${category}
+            </div>
+        `).join('');
     }
 
     function renderCatalogItems() {
         const container = document.getElementById('catalog-items');
+        
         let filteredServices = services;
+
         if (activeCategory !== 'Todos') {
             filteredServices = filteredServices.filter(s => s.category === activeCategory);
         }
+
         if (searchQuery) {
             filteredServices = filteredServices.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
         }
+
         const defaultDate = currentQuote.event_dates[0]?.date;
+
         container.innerHTML = filteredServices.map(service => {
             const isAdded = currentQuote.items.some(item => item.service_id === service.id && item.event_date === defaultDate);
-            return `<div class="catalog-item"><span class="catalog-item-name">${service.name}</span><button class="btn btn-primary btn-add-item ${isAdded ? 'btn-added' : ''}" data-service-id="${service.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? 'Adicionado ✔' : 'Adicionar'}</button></div>`;
-        }).join('');
+
+            return `
+            <div class="catalog-item">
+                <span class="catalog-item-name">${service.name}</span>
+                <button class="btn btn-primary btn-add-item ${isAdded ? 'btn-added' : ''}" data-service-id="${service.id}" ${isAdded ? 'disabled' : ''}>
+                    ${isAdded ? 'Adicionado ✔' : 'Adicionar'}
+                </button>
+            </div>
+        `}).join('');
     }
 
     function updateCatalogButtonsState() {
         const container = document.getElementById('catalog-items');
         if (!container) return;
+
         const defaultDate = currentQuote.event_dates[0]?.date;
+
         container.querySelectorAll('.btn-add-item').forEach(button => {
             const serviceId = button.dataset.serviceId;
             const isAdded = currentQuote.items.some(item => item.service_id === serviceId && item.event_date === defaultDate);
+
             if (isAdded) {
                 button.classList.add('btn-added');
                 button.disabled = true;
@@ -517,19 +629,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // =================================================================
+    // GERENCIAMENTO DE ITENS
+    // =================================================================
+    
     function addItemsToQuote(serviceId) {
         if (currentQuote.event_dates.length === 0) return;
+
         const defaultDate = currentQuote.event_dates[0].date;
+
         const existing = currentQuote.items.find(item => item.service_id === serviceId && item.event_date === defaultDate);
-        if (existing) return;
+        if (existing) {
+            return;
+        }
+        
         const service = services.find(s => s.id === serviceId);
-        if (!service) return;
+        if (!service) {
+            console.error("Serviço não encontrado no catálogo");
+            return;
+        }
+        
         let initialQuantity = 1;
         if (service.category === 'Gastronomia') {
             initialQuantity = currentQuote.guest_count > 0 ? currentQuote.guest_count : 1;
         }
-        const newItem = { id: Date.now() + '-' + serviceId, service_id: serviceId, quantity: initialQuantity, discount_percent: 0, event_date: defaultDate, observations: '' };
+
+        const newItem = {
+            id: Date.now() + '-' + serviceId, 
+            service_id: serviceId,
+            quantity: initialQuantity,
+            discount_percent: 0,
+            event_date: defaultDate,
+            observations: ''
+        };
         currentQuote.items.push(newItem);
+        
         setDirty(true);
         renderQuote();
     }
@@ -556,14 +690,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     function showObsPopover(button, itemId) {
         const popover = document.getElementById('obs-popover');
         if (!popover) return;
+
         const item = currentQuote.items.find(i => i.id === itemId);
         if (!item) return;
-        popover.innerHTML = `<textarea id="obs-text">${item.observations || ''}</textarea><button id="save-obs-btn" class="btn">Salvar Observação</button>`;
+
+        popover.innerHTML = `
+            <textarea id="obs-text">${item.observations || ''}</textarea>
+            <button id="save-obs-btn" class="btn">Salvar Observação</button>
+        `;
+
         const rect = button.getBoundingClientRect();
         popover.style.position = 'absolute';
         popover.style.top = `${window.scrollY + rect.top}px`;
-        popover.style.left = rect.left < 310 ? `${rect.right + 10}px` : `${rect.left - 310}px`;
+        if (rect.left < 310) {
+             popover.style.left = `${rect.right + 10}px`;
+        } else {
+             popover.style.left = `${rect.left - 310}px`;
+        }
+       
         popover.classList.add('show');
+
         document.getElementById('save-obs-btn').onclick = () => {
             const text = document.getElementById('obs-text').value;
             updateItem(itemId, 'observations', text);
@@ -572,19 +718,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
+
     function duplicateItem(itemId) {
         const originalItemIndex = currentQuote.items.findIndex(i => i.id === itemId);
         if (originalItemIndex === -1) return;
+
         const originalItem = currentQuote.items[originalItemIndex];
+        
         const duplicatedItem = JSON.parse(JSON.stringify(originalItem));
+        
         duplicatedItem.id = Date.now() + '-dup-' + (originalItem.service_id || originalItemIndex);
+        
         currentQuote.items.splice(originalItemIndex + 1, 0, duplicatedItem);
+
         setDirty(true);
         renderQuote();
     }
+
+    // =================================================================
+    // LÓGICA DE EXPORTAÇÃO E EVENT LISTENERS
+    // =================================================================
     
     function exportToXLSX() {
-        if (userRole !== 'admin') { return; }
+        if (userRole !== 'admin') {
+            showNotification("Funcionalidade disponível apenas para administradores.", true);
+            return;
+        }
         const clientName = currentQuote.client_name || 'Cliente';
         const fileName = `Proposta - ${clientName.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
         const calculation = calculateQuote();
@@ -593,9 +752,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             ["DADOS DO EVENTO"], ["Nº de Convidados", currentQuote.guest_count], ["Datas do Evento", currentQuote.event_dates.map(d => new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')).join(', ')], [],
             ["ITENS DO ORÇAMENTO"], ["Categoria", "Item", "Data", "Qtde.", "Vlr. Unitário", "Desc. (%)", "Vlr. Total", "Observações"]
         ];
-        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => { const service = services.find(s => s.id === item.service_id); return service?.category; }).filter(Boolean))]);
+        const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
+            const service = services.find(s => s.id === item.service_id);
+            return service?.category;
+        }).filter(Boolean))]);
         categoriesInQuote.forEach(category => {
-            const itemsInCategory = currentQuote.items.filter(item => { const service = services.find(s => s.id === item.service_id); return service && service.category === category; }).sort((a,b) => { const serviceA = services.find(s => s.id === a.service_id); const serviceB = services.find(s => s.id === b.service_id); if (!serviceA || !serviceB) return 0; return serviceA.name.localeCompare(serviceB.name); });
+            const itemsInCategory = currentQuote.items.filter(item => {
+                const service = services.find(s => s.id === item.service_id);
+                return service && service.category === category;
+            }).sort((a,b) => {
+                 const serviceA = services.find(s => s.id === a.service_id);
+                 const serviceB = services.find(s => s.id === b.service_id);
+                 if (!serviceA || !serviceB) return 0;
+                 return serviceA.name.localeCompare(serviceB.name);
+            });;
             itemsInCategory.forEach(item => {
                 const service = services.find(s => s.id === item.service_id);
                 if (!service) return;
@@ -621,61 +791,180 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function setupEventListeners() {
+        // MODIFICADO: Lógica do menu de exportação
         const exportBtn = document.getElementById('export-btn');
         const exportMenu = document.getElementById('export-menu');
         if(exportBtn && exportMenu) {
-            exportBtn.addEventListener('click', (e) => { e.stopPropagation(); exportMenu.classList.toggle('show'); });
-            document.getElementById('export-pdf-option')?.addEventListener('click', () => { if (userRole === 'admin') { window.print(); } exportMenu.classList.remove('show'); });
-            document.getElementById('export-xlsx-option')?.addEventListener('click', () => { exportToXLSX(); exportMenu.classList.remove('show'); });
+            exportBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                exportMenu.classList.toggle('show');
+            });
+            document.getElementById('export-pdf-option')?.addEventListener('click', () => {
+                if (userRole === 'admin') { window.print(); }
+                exportMenu.classList.remove('show');
+            });
+            document.getElementById('export-xlsx-option')?.addEventListener('click', () => {
+                exportToXLSX();
+                exportMenu.classList.remove('show');
+            });
         }
         document.addEventListener('click', (e) => {
-            if (exportMenu && exportMenu.classList.contains('show') && !exportBtn.contains(e.target)) { exportMenu.classList.remove('show'); }
+            if (exportMenu && exportMenu.classList.contains('show') && !exportBtn.contains(e.target)) {
+                exportMenu.classList.remove('show');
+            }
             const popover = document.getElementById('obs-popover');
-            if (popover && popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('obs-btn')) { popover.classList.remove('show'); }
-        });
-        document.querySelectorAll('#clientName, #clientCnpj, #clientEmail, #clientPhone').forEach(input => { input.addEventListener('change', syncClientData); });
-        document.querySelectorAll('#guestCount, #priceTableSelect').forEach(input => { input.addEventListener('change', () => { syncClientData(); renderQuote(); }); });
-        document.getElementById('add-date-btn')?.addEventListener('click', () => { addDateEntry(); syncClientData(); renderQuote(); });
-        document.getElementById('event-dates-container')?.addEventListener('click', (e) => { if (e.target.classList.contains('remove-date-btn')) { e.target.closest('.date-entry').remove(); syncClientData(); renderQuote(); } });
-        document.getElementById('quote-categories-container')?.addEventListener('change', (e) => {
-            const row = e.target.closest('tr'); if (!row) return; const itemId = row.dataset.itemId;
-            if (e.target.classList.contains('qty-input')) { updateItem(itemId, 'quantity', e.target.value); }
-            else if (e.target.classList.contains('discount-input')) { if (userRole === 'admin') { updateItem(itemId, 'discount_percent', e.target.value); } else { e.target.value = 0; } }
-            else if (e.target.classList.contains('date-select')) { updateItem(itemId, 'event_date', e.target.value); }
-        });
-        document.getElementById('quote-categories-container')?.addEventListener('click', (e) => {
-            const row = e.target.closest('tr'); if (row) {
-                const itemId = row.dataset.itemId;
-                if (e.target.classList.contains('duplicate-item-btn')) { duplicateItem(itemId); return; }
-                if (e.target.classList.contains('remove-item-btn')) { removeItem(itemId); return; }
-                else if (e.target.classList.contains('obs-btn')) { e.stopPropagation(); showObsPopover(e.target, itemId); return; }
+            if (popover && popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('obs-btn')) {
+                popover.classList.remove('show');
             }
         });
-        document.getElementById('discountValue')?.addEventListener('change', (e) => { currentQuote.discount_general = parseFloat(e.target.value) || 0; setDirty(true); renderQuote(); });
+
+
+         document.querySelectorAll('#clientName, #clientCnpj, #clientEmail, #clientPhone').forEach(input => {
+            input.addEventListener('change', syncClientData);
+        });
+        
+        document.querySelectorAll('#guestCount, #priceTableSelect').forEach(input => {
+             input.addEventListener('change', () => {
+                syncClientData();
+                renderQuote(); 
+            });
+        });
+
+        document.getElementById('add-date-btn')?.addEventListener('click', () => {
+            addDateEntry();
+            syncClientData();
+            renderQuote();
+        });
+
+        document.getElementById('event-dates-container')?.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-date-btn')) {
+                e.target.closest('.date-entry').remove();
+                syncClientData();
+                renderQuote();
+            }
+        });
+
+        document.getElementById('quote-categories-container')?.addEventListener('change', (e) => {
+            const row = e.target.closest('tr');
+            if (!row) return;
+            const itemId = row.dataset.itemId;
+
+            if (e.target.classList.contains('qty-input')) {
+                updateItem(itemId, 'quantity', e.target.value);
+            } else if (e.target.classList.contains('discount-input')) {
+                 if (userRole === 'admin') {
+                    updateItem(itemId, 'discount_percent', e.target.value);
+                } else {
+                    e.target.value = 0;
+                }
+            } else if (e.target.classList.contains('date-select')) {
+                updateItem(itemId, 'event_date', e.target.value);
+            }
+        });
+
+        document.getElementById('quote-categories-container')?.addEventListener('click', (e) => {
+            const row = e.target.closest('tr');
+            
+            if (row) {
+                const itemId = row.dataset.itemId;
+
+                if (e.target.classList.contains('duplicate-item-btn')) {
+                    duplicateItem(itemId);
+                    return;
+                }
+                
+                if (e.target.classList.contains('remove-item-btn')) {
+                    removeItem(itemId);
+                    return;
+                } else if (e.target.classList.contains('obs-btn')) {
+                    e.stopPropagation();
+                    showObsPopover(e.target, itemId);
+                    return;
+                }
+            }
+        });
+
+        document.getElementById('discountValue')?.addEventListener('change', (e) => {
+            currentQuote.discount_general = parseFloat(e.target.value) || 0;
+            setDirty(true);
+            renderQuote();
+        });
+
         document.getElementById('save-quote-btn')?.addEventListener('click', saveQuote);
+        
         document.getElementById('open-catalog-btn')?.addEventListener('click', openCatalogModal);
         document.getElementById('close-catalog-btn')?.addEventListener('click', closeCatalogModal);
-        window.addEventListener('click', (event) => { if (event.target == catalogModal) { closeCatalogModal(); } });
+        
+        window.addEventListener('click', (event) => {
+            if (event.target == catalogModal) {
+                closeCatalogModal();
+            }
+        });
+
         let searchTimeout;
-        document.getElementById('catalog-search')?.addEventListener('input', (e) => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { searchQuery = e.target.value; renderCatalogItems(); }, 300); });
-        document.getElementById('catalog-categories')?.addEventListener('click', (e) => { const tab = e.target.closest('.catalog-category-tab'); if (tab) { activeCategory = tab.dataset.category; renderCatalog(); } });
-        document.getElementById('catalog-items')?.addEventListener('click', (e) => { const button = e.target.closest('.btn-add-item'); if (button && !button.disabled) { const serviceId = button.dataset.serviceId; addItemsToQuote(serviceId); } });
+        document.getElementById('catalog-search')?.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                 searchQuery = e.target.value;
+                 renderCatalogItems();
+            }, 300);
+        });
+
+        document.getElementById('catalog-categories')?.addEventListener('click', (e) => {
+            const tab = e.target.closest('.catalog-category-tab');
+            if (tab) {
+                activeCategory = tab.dataset.category;
+                renderCatalog();
+            }
+        });
+
+        document.getElementById('catalog-items')?.addEventListener('click', (e) => {
+            const button = e.target.closest('.btn-add-item');
+            if (button && !button.disabled) {
+                const serviceId = button.dataset.serviceId;
+                addItemsToQuote(serviceId);
+            }
+        });
     }
 
+
+    // =================================================================
+    // PERSISTÊNCIA (SALVAR E CARREGAR)
+    // =================================================================
+    
     async function saveQuote() {
         syncClientData();
+
         if (currentQuote.items.length === 0 && document.getElementById('quote-categories-container').children.length > 0) {
             showNotification("Adicione itens antes de salvar ou enviar.", true);
             return;
         }
+
         const calculation = calculateQuote();
+        
         const quoteDataObject = {
-            client_cnpj: currentQuote.client_cnpj, client_email: currentQuote.client_email, client_phone: currentQuote.client_phone,
-            guest_count: currentQuote.guest_count, price_table_id: currentQuote.price_table_id, event_dates: currentQuote.event_dates,
-            items: currentQuote.items.map(item => { const { id, ...rest } = item; return rest; }),
-            discount_general: currentQuote.discount_general, subtotal_value: calculation.subtotal, consumable_credit_used: calculation.consumableCredit
+            client_cnpj: currentQuote.client_cnpj,
+            client_email: currentQuote.client_email,
+            client_phone: currentQuote.client_phone,
+            guest_count: currentQuote.guest_count,
+            price_table_id: currentQuote.price_table_id,
+            event_dates: currentQuote.event_dates,
+            items: currentQuote.items.map(item => {
+                const { id, ...rest } = item;
+                return rest;
+            }),
+            discount_general: currentQuote.discount_general,
+            subtotal_value: calculation.subtotal,
+            consumable_credit_used: calculation.consumableCredit
         };
-        const finalPayload = { client_name: currentQuote.client_name, status: currentQuote.status, total_value: calculation.total, quote_data: quoteDataObject };
+
+        const finalPayload = {
+            client_name: currentQuote.client_name,
+            status: currentQuote.status,
+            total_value: calculation.total,
+            quote_data: quoteDataObject
+        };
+        
         if (userRole === 'client') {
             finalPayload.status = 'Solicitado pelo Cliente';
             finalPayload.total_value = 0;
@@ -683,8 +972,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             finalPayload.quote_data.discount_general = 0;
             finalPayload.quote_data.subtotal_value = 0;
             finalPayload.quote_data.consumable_credit_used = 0;
-            finalPayload.quote_data.items.forEach(item => { item.discount_percent = 0; item.calculated_unit_price = 0; item.calculated_total = 0; });
-        } else if (userRole === 'admin' && !isDirty) { return; }
+            finalPayload.quote_data.items.forEach(item => {
+                item.discount_percent = 0;
+                item.calculated_unit_price = 0;
+                item.calculated_total = 0;
+            });
+        } else if (userRole === 'admin' && !isDirty) {
+            return; 
+        }
+
         try {
             let result;
             if (currentQuote.id) {
@@ -694,11 +990,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { data, error } = await supabase.from('quotes').insert(finalPayload).select().single();
                 result = { data, error };
             }
+
             if (result.error) throw result.error;
+
             const savedData = result.data;
             currentQuote.id = savedData.id;
             Object.assign(currentQuote, savedData.quote_data);
-            currentQuote.items = (savedData.quote_data.items || []).map((item, index) => ({ ...item, id: `saved-${savedData.id}-${index}-${item.service_id || index}` }));
+            currentQuote.items = (savedData.quote_data.items || []).map((item, index) => ({
+                ...item,
+                id: `saved-${savedData.id}-${index}-${item.service_id || index}`
+            }));
+            
             if (userRole === 'client') {
                 showNotification('Solicitação enviada com sucesso! Entraremos em contato.');
             } else {
@@ -710,7 +1012,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                      window.history.pushState({}, '', newUrl);
                 }
             }
+            
             renderQuote();
+
         } catch (error) {
             console.error("Erro ao salvar orçamento:", error);
             showNotification(`Erro ao salvar/enviar: ${error.message}`, true);
@@ -719,18 +1023,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadQuote(id) {
         if (userRole === 'client') {
+            console.warn("Clientes não podem carregar orçamentos por ID.");
             window.history.pushState({}, '', window.location.pathname);
             return;
         }
+
         try {
             const { data, error } = await supabase.from('quotes').select('*').eq('id', id).single();
             if (error) throw error;
             if (!data) throw new Error("Orçamento não encontrado.");
+
             const quoteDetails = data.quote_data || {};
             currentQuote = {
-                ...currentQuote, ...quoteDetails, id: data.id, client_name: data.client_name, status: data.status,
-                items: (quoteDetails.items || []).map((item, index) => ({ ...item, id: `loaded-${id}-${index}-${item.service_id || index}` })),
+                ...currentQuote,
+                ...quoteDetails,
+                id: data.id,
+                client_name: data.client_name,
+                status: data.status,
+                items: (quoteDetails.items || []).map((item, index) => ({
+                    ...item,
+                    id: `loaded-${id}-${index}-${item.service_id || index}`
+                })),
             };
+
             document.getElementById('clientName').value = currentQuote.client_name || '';
             document.getElementById('clientCnpj').value = currentQuote.client_cnpj || '';
             document.getElementById('clientEmail').value = currentQuote.client_email || '';
@@ -738,6 +1053,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('guestCount').value = currentQuote.guest_count || 100;
             document.getElementById('priceTableSelect').value = currentQuote.price_table_id || '';
             document.getElementById('discountValue').value = (currentQuote.discount_general || 0).toFixed(2);
+
             const datesContainer = document.getElementById('event-dates-container');
             if (datesContainer) {
                 datesContainer.innerHTML = '';
@@ -745,6 +1061,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     currentQuote.event_dates.forEach(dateData => addDateEntry(dateData));
                 }
             }
+            
         } catch (error) {
             console.error("Erro ao carregar orçamento:", error);
             showNotification(`Erro ao carregar orçamento ID ${id}. Iniciando novo.`, true);
