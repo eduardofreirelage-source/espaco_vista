@@ -91,7 +91,7 @@
             <div id="tab-content-catalogs" class="tab-content">
                 <section class="card collapsible-card collapsed">
                     <div class="card-header">
-                        <h2>Catálogo de Serviços</h2>
+                        <h2>Catálogo de Serviços (Completo)</h2>
                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
@@ -160,6 +160,36 @@
                         <form id="addPaymentMethodForm" class="inline-form">
                            <input type="text" id="paymentMethodName" placeholder="Nome da forma de pagamento" required>
                             <button type="submit" class="btn btn-primary">Adicionar Forma de Pag.</button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="card collapsible-card collapsed">
+                    <div class="card-header">
+                        <h2>Itens de Cardápio (Gastronomia)</h2>
+                        <span class="collapse-icon"></span>
+                    </div>
+                    <div class="card-content">
+                        <div class="table-container">
+                             <table id="gastronomy-items-table" class="editable-table">
+                                 <thead>
+                                     <tr>
+                                         <th>Nome do Item</th>
+                                         <th>Unidade</th>
+                                         <th class="actions">Ações</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody></tbody>
+                             </table>
+                        </div>
+                        <form id="addGastronomyItemForm" class="inline-form">
+                           <input type="text" id="gastronomyItemName" placeholder="Nome do item (ex: Mini quiche)" required>
+                            <select id="gastronomyItemUnit" required>
+                                <option value="unidade">unidade</option>
+                                <option value="por_pessoa">por pessoa</option>
+                                <option value="diaria">diária</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Adicionar Item</button>
                         </form>
                     </div>
                 </section>
