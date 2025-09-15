@@ -21,16 +21,11 @@
                 <div class="card-content">
                     <p><strong>Cliente:</strong> <span id="summary-client-name"></span></p>
                     <p><strong>Datas:</strong> <span id="summary-event-dates"></span></p>
+                    <p><strong>Espaço Locado:</strong> <span id="summary-event-space"></span></p> 
                     <p><strong>Nº de Convidados:</strong> <span id="summary-guest-count"></span></p>
                     <p><strong>Valor Total:</strong> <strong id="summary-total-value"></strong></p>
                     <a href="#" id="view-quote-link" target="_blank" class="btn btn-primary" style="margin-top: 1rem;">Ver Proposta Original</a>
                 </div>
-            </section>
-
-            <section class="card">
-                <div class="card-header"><h2>Serviços Contratados</h2></div>
-                <div id="services-summary-container" class="card-content">
-                    </div>
             </section>
 
             <section class="card">
@@ -43,8 +38,17 @@
                     <button id="add-payment-btn" class="btn btn-primary" style="margin-top: 1rem;">+ Adicionar Parcela</button>
                 </div>
             </section>
+
+            <section class="card collapsible-card collapsed full-width">
+                <div class="card-header">
+                    <h2>Serviços Contratados</h2>
+                     <span class="collapse-icon"></span>
+                </div>
+                <div id="services-summary-container" class="card-content">
+                    </div>
+            </section>
             
-            <section class="card collapsible-card collapsed">
+            <section class="card collapsible-card collapsed full-width">
                  <div class="card-header">
                      <h2>Dados Completos do Cliente</h2>
                      <span class="collapse-icon"></span>
@@ -64,31 +68,14 @@
                         <div class="form-group"><label>Nome do Rep. Legal</label><input type="text" id="client-rep-name"></div>
                         <div class="form-group"><label>CPF do Rep. Legal</label><input type="text" id="client-rep-cpf"></div>
                     </div>
-                    <button type="submit" class="btn" style="margin-top: 1rem;">Salvar Dados do Cliente</button>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Alterações do Cliente</button>
                 </form>
             </section>
             
-            <section class="card collapsible-card collapsed">
-                 <div class="card-header">
-                    <h2>Gestão do Contrato</h2>
-                    <span class="collapse-icon"></span>
-                </div>
-                 <div class="card-content">
-                    <div class="form-group">
-                        <label>Status do Contrato</label>
-                        <select id="contract-status">
-                            <option>Aguardando Geração</option>
-                            <option>Enviado para Assinatura</option>
-                            <option>Contrato Assinado</option>
-                        </select>
-                    </div>
-                    <button id="generate-contract-btn" class="btn" style="margin-top: 1rem;">Gerar Contrato (Preview)</button>
-                 </div>
-            </section>
-
         </main>
     </div>
+
     <div id="save-notification" class="notification"></div>
-    <script type="module" src="evento.js"></script>
-</body>
+
+    </body>
 </html>
