@@ -29,7 +29,7 @@ body {
     padding-bottom: 70px; /* Espaço para o rodapé fixo */
 }
 
-.container { max-width: 1600px; margin: 1.5rem auto; padding: 1rem; }
+.container { max-width: 1300px; margin: 1.5rem auto; padding: 1rem; }
 header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
 .header-actions { display: flex; gap: 0.8rem; }
@@ -84,7 +84,12 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .category-accordion[open] .category-header::after { transform: rotate(180deg); }
 .category-title { font-size: 0.95rem; font-weight: 600; color: var(--primary-color); }
 
-.quote-table { width: 100%; border-collapse: collapse; }
+/* Tabela de Orçamento */
+.quote-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    table-layout: fixed; /* ADICIONADO: Força a tabela a respeitar as larguras definidas */
+}
 .quote-table th, .quote-table td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border-color); }
 .quote-table th { font-size: 0.75rem; font-weight: 500; color: var(--subtle-text-color); background-color: #fff; }
 .quote-table tbody tr:last-child td { border-bottom: none; }
@@ -149,7 +154,6 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     max-width: 1600px;
 }
 
-/* Estilos de Abas */
 .tabs-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; }
 .tab-btn { padding: 1rem 1.5rem; cursor: pointer; background: none; border: none; border-bottom: 3px solid transparent; font-size: 1rem; font-weight: 500; color: #666; transition: color 0.2s, border-color 0.2s; margin-bottom: -1px; }
 .tab-btn:hover { color: var(--text-color); background-color: #fdfdfd; }
@@ -157,7 +161,6 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* Estilos para seções expansíveis */
 .collapsible-card > .card-header { cursor: pointer; }
 .collapsible-card:not(.collapsed) > .card-header { border-bottom: 1px solid var(--border-color); }
 .collapse-icon { font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
@@ -166,7 +169,6 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .collapsible-card .card-content { overflow: hidden; transition: max-height 0.4s ease-out, padding 0.4s ease-out, border-top 0.4s ease-out; max-height: 2000px; padding-top: 1.5rem; padding-bottom: 1.5rem; border-top: 1px solid var(--border-color); }
 .collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: 1px solid transparent; }
 
-/* Estilos para tabela editável */
 .table-container { overflow-x: auto; }
 .editable-table th, .editable-table td { padding: 0.5rem; }
 .editable-table input, .editable-table select { padding: 0.5rem; margin: -0.5rem; border: 1px solid transparent; background-color: inherit; border-radius: 4px; transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s; }
@@ -175,11 +177,10 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .price-column { text-align: right; }
 .price-column input { text-align: right; }
 
-/* MODIFICADO: Estilo do cabeçalho de categoria no Admin para ser igual ao da página de orçamento */
 .editable-table .category-header th {
-    background-color: #f9f9f9; /* Fundo mais claro, igual ao do acordeão */
-    color: var(--primary-color);  /* Texto vermelho, igual ao do acordeão */
-    font-size: 0.95rem;          /* Tamanho da fonte igual ao do acordeão */
+    background-color: #f9f9f9;
+    color: var(--primary-color);
+    font-size: 0.95rem;
     font-weight: 600;
     text-align: left;
     padding: 0.8rem 1.2rem;
