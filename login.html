@@ -4,27 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Admin - Sistema de Orçamentos</title>
-    <link rel="stylesheet" href="admin.css"> <style>
+    <link rel="stylesheet" href="styles.css"> 
+    <style>
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            background-color: var(--secondary-color);
         }
         .login-container {
             width: 100%;
             max-width: 400px;
         }
+        .card h2 {
+            text-align: center;
+            padding: 1rem;
+            margin: 0;
+            border-bottom: 1px solid var(--border-color);
+        }
         .card-content {
             padding: 2rem;
         }
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
         }
         label {
             display: block;
             margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+        }
+        .btn {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+        }
+        #errorMessage {
+             min-height: 1.2em; /* Evita que o layout pule quando a msg aparece */
         }
     </style>
 </head>
@@ -42,13 +62,13 @@
                         <label for="password">Senha</label>
                         <input type="password" id="password" required>
                     </div>
-                    <button type="submit" class="btn" style="width: 100%; margin-bottom: 1rem;">Entrar</button>
-                    <a href="index.html" class="btn" style="display: block; text-align: center; background-color: #6c757d;">Acesso Cliente (Orçamento)</a>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">Entrar</button>
+                    <a href="index.html" class="btn" style="display: block; text-align: center; background-color: #6c757d;">Ir para o Gerador</a>
                 </form>
-                <p id="errorMessage" style="color: var(--danger-color); margin-top: 1rem;"></p>
+                <p id="errorMessage" style="color: var(--danger-color); margin-top: 1rem; text-align: center;"></p>
             </div>
         </div>
     </div>
-    <script type="module" src="auth.js"></script>
+    <script type="module" src="login.js"></script>
 </body>
 </html>
