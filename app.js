@@ -254,7 +254,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.calculated_unit_price = basePrice;
             item.calculated_total = total;
             
-            // MODIFICADO: Itens de 'Espaço' e 'Serviços e Outros' não são abatidos pela consumação
             if (service.category === 'Serviços e Outros' || service.category === 'Espaço') {
                 nonConsumableSubtotal += total;
             } else {
@@ -342,20 +341,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tbody = accordion.querySelector('tbody');
         tbody.innerHTML = '';
 
-        const itemIdsInCategory = currentQuote.items.filter(item => {
+        const itemsInCategory = currentQuote.items.filter(item => {
             const service = services.find(s => s.id === item.service_id);
             return service && service.category === category;
-        }).map(item => item.id);
+        }).sort((a, b) => {
+            const serviceA = services.find(s => s.id === a.service_id);
+            const serviceB = services.find(s => s.id === b.service_id);
+            if (!serviceA || !serviceB) return 0;
+            return serviceA.name.localeCompare(serviceB.name);
+        });
 
-        currentQuote.items.forEach(item => {
-            if (!itemIdsInCategory.includes(item.id)) return;
-
+        itemsInCategory.forEach(item => {
             const service = services.find(s => s.id === item.service_id);
             if (!service) return;
 
             const row = document.createElement('tr');
             row.dataset.itemId = item.id;
-
             const isQuantityLocked = service.unit === 'por_pessoa' && service.category !== 'Gastronomia';
 
             row.innerHTML = `
@@ -473,15 +474,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </thead>
                     <tbody>
             `;
-            const itemIdsInCategory = currentQuote.items.filter(item => {
+            const itemsInCategory = currentQuote.items.filter(item => {
                 const service = services.find(s => s.id === item.service_id);
                 return service && service.category === category;
-            }).map(item => item.id);
+            });
+            
+            itemsInCategory.sort((a,b) => {
+                 const serviceA = services.find(s => s.id === a.service_id);
+                 const serviceB = services.find(s => s.id === b.service_id);
+                 if (!serviceA || !serviceB) return 0;
+                 return serviceA.name.localeCompare(serviceB.name);
+            });
 
-
-            currentQuote.items.forEach(item => {
-                if (!itemIdsInCategory.includes(item.id)) return;
-                
+            itemsInCategory.forEach(item => {
                 const service = services.find(s => s.id === item.service_id);
                 if (!service) return;
 
@@ -730,108 +735,89 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =================================================================
-    // LÓGICA DE EXPORTAÇÃO XLSX
+    // LÓGICA DE EXPORTAÇÃO E EVENT LISTENERS
     // =================================================================
+    
     function exportToXLSX() {
         if (userRole !== 'admin') {
             showNotification("Funcionalidade disponível apenas para administradores.", true);
             return;
         }
-
         const clientName = currentQuote.client_name || 'Cliente';
         const fileName = `Proposta - ${clientName.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
         const calculation = calculateQuote();
-
         const data = [
-            ["Proposta Comercial"],
-            [],
-            ["DADOS DO CLIENTE"],
-            ["Nome", currentQuote.client_name],
-            ["CNPJ", currentQuote.client_cnpj],
-            ["E-mail", currentQuote.client_email],
-            ["Telefone", currentQuote.client_phone],
-            [],
-            ["DADOS DO EVENTO"],
-            ["Nº de Convidados", currentQuote.guest_count],
-            ["Datas do Evento", currentQuote.event_dates.map(d => new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')).join(', ')],
-            [],
-            ["ITENS DO ORÇAMENTO"],
-            ["Categoria", "Item", "Data", "Qtde.", "Vlr. Unitário", "Desc. (%)", "Vlr. Total", "Observações"]
+            ["Proposta Comercial"], [], ["DADOS DO CLIENTE"], ["Nome", currentQuote.client_name], ["CNPJ", currentQuote.client_cnpj], ["E-mail", currentQuote.client_email], ["Telefone", currentQuote.client_phone], [],
+            ["DADOS DO EVENTO"], ["Nº de Convidados", currentQuote.guest_count], ["Datas do Evento", currentQuote.event_dates.map(d => new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR')).join(', ')], [],
+            ["ITENS DO ORÇAMENTO"], ["Categoria", "Item", "Data", "Qtde.", "Vlr. Unitário", "Desc. (%)", "Vlr. Total", "Observações"]
         ];
-
         const categoriesInQuote = sortCategories([...new Set(currentQuote.items.map(item => {
             const service = services.find(s => s.id === item.service_id);
             return service?.category;
         }).filter(Boolean))]);
-
         categoriesInQuote.forEach(category => {
             const itemsInCategory = currentQuote.items.filter(item => {
                 const service = services.find(s => s.id === item.service_id);
                 return service && service.category === category;
-            });
-
+            }).sort((a,b) => {
+                 const serviceA = services.find(s => s.id === a.service_id);
+                 const serviceB = services.find(s => s.id === b.service_id);
+                 if (!serviceA || !serviceB) return 0;
+                 return serviceA.name.localeCompare(serviceB.name);
+            });;
             itemsInCategory.forEach(item => {
                 const service = services.find(s => s.id === item.service_id);
                 if (!service) return;
-
                 const formattedDate = item.event_date ? new Date(item.event_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/A';
-                data.push([
-                    service.category,
-                    service.name,
-                    formattedDate,
-                    item.quantity,
-                    item.calculated_unit_price,
-                    item.discount_percent || 0,
-                    item.calculated_total,
-                    item.observations || ''
-                ]);
+                data.push([ service.category, service.name, formattedDate, item.quantity, item.calculated_unit_price, item.discount_percent || 0, item.calculated_total, item.observations || '' ]);
             });
         });
-
-        data.push([]);
-        data.push([]);
-        data.push([null, null, null, null, null, "Subtotal", calculation.subtotal]);
-        data.push([null, null, null, null, null, "Consumação Inclusa", -calculation.consumableCredit]);
-        data.push([null, null, null, null, null, "Desconto Geral", -calculation.discountGeneral]);
-        data.push([null, null, null, null, null, "VALOR TOTAL", calculation.total]);
-
+        data.push([], [], [null, null, null, null, null, "Subtotal", calculation.subtotal], [null, null, null, null, null, "Consumação Inclusa", -calculation.consumableCredit], [null, null, null, null, null, "Desconto Geral", -calculation.discountGeneral], [null, null, null, null, null, "VALOR TOTAL", calculation.total]);
         const ws = XLSX.utils.aoa_to_sheet(data);
-
-        ws['!cols'] = [
-            { wch: 25 }, { wch: 40 }, { wch: 12 }, { wch: 8 },
-            { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 50 }
-        ];
-
+        ws['!cols'] = [ { wch: 25 }, { wch: 40 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 50 } ];
         const currencyFormat = 'R$ #,##0.00';
         const itemsHeaderRowIndex = 13;
         for (let i = itemsHeaderRowIndex; i < data.length; i++) {
             if (data[i].length < 4) continue;
-            
             const unitPriceCell = ws[XLSX.utils.encode_cell({ c: 4, r: i })];
-            if (unitPriceCell && typeof unitPriceCell.v === 'number') {
-                unitPriceCell.t = 'n';
-                unitPriceCell.z = currencyFormat;
-            }
+            if (unitPriceCell && typeof unitPriceCell.v === 'number') { unitPriceCell.t = 'n'; unitPriceCell.z = currencyFormat; }
             const totalCell = ws[XLSX.utils.encode_cell({ c: 6, r: i })];
-            if (totalCell && typeof totalCell.v === 'number') {
-                totalCell.t = 'n';
-                totalCell.z = currencyFormat;
-            }
+            if (totalCell && typeof totalCell.v === 'number') { totalCell.t = 'n'; totalCell.z = currencyFormat; }
         }
-        
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Proposta");
-
         XLSX.writeFile(wb, fileName);
     }
-
-
-
-    // =================================================================
-    // EVENT LISTENERS
-    // =================================================================
     
     function setupEventListeners() {
+        // MODIFICADO: Lógica do menu de exportação
+        const exportBtn = document.getElementById('export-btn');
+        const exportMenu = document.getElementById('export-menu');
+        if(exportBtn && exportMenu) {
+            exportBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                exportMenu.classList.toggle('show');
+            });
+            document.getElementById('export-pdf-option')?.addEventListener('click', () => {
+                if (userRole === 'admin') { window.print(); }
+                exportMenu.classList.remove('show');
+            });
+            document.getElementById('export-xlsx-option')?.addEventListener('click', () => {
+                exportToXLSX();
+                exportMenu.classList.remove('show');
+            });
+        }
+        document.addEventListener('click', (e) => {
+            if (exportMenu && exportMenu.classList.contains('show') && !exportBtn.contains(e.target)) {
+                exportMenu.classList.remove('show');
+            }
+            const popover = document.getElementById('obs-popover');
+            if (popover && popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('obs-btn')) {
+                popover.classList.remove('show');
+            }
+        });
+
+
          document.querySelectorAll('#clientName, #clientCnpj, #clientEmail, #clientPhone').forEach(input => {
             input.addEventListener('change', syncClientData);
         });
@@ -903,23 +889,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderQuote();
         });
 
-        document.addEventListener('click', (e) => {
-            const popover = document.getElementById('obs-popover');
-            if (popover && popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('obs-btn')) {
-                popover.classList.remove('show');
-            }
-        });
-
         document.getElementById('save-quote-btn')?.addEventListener('click', saveQuote);
         
-        document.getElementById('export-xlsx-btn')?.addEventListener('click', exportToXLSX);
-
-        document.getElementById('print-btn')?.addEventListener('click', () => {
-             if (userRole === 'admin') {
-                 window.print();
-             }
-        });
-
         document.getElementById('open-catalog-btn')?.addEventListener('click', openCatalogModal);
         document.getElementById('close-catalog-btn')?.addEventListener('click', closeCatalogModal);
         
@@ -996,7 +967,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (userRole === 'client') {
             finalPayload.status = 'Solicitado pelo Cliente';
             finalPayload.total_value = 0;
-            // Limpa dados sensíveis no objeto JSON
             finalPayload.quote_data.price_table_id = null;
             finalPayload.quote_data.discount_general = 0;
             finalPayload.quote_data.subtotal_value = 0;
