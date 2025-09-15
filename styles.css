@@ -274,3 +274,133 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .export-menu.show { display: block; }
 .export-menu div { padding: 0.8rem 1rem; cursor: pointer; }
 .export-menu div:hover { background-color: #f5f5f5; }
+
+
+/* =================================================================
+   MODAL (Catálogo)
+   ================================================================= */
+
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    border: 1px solid var(--border-color);
+    width: 90%;
+    max-width: 1200px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 { font-size: 1.2rem; }
+
+.close-button {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.close-button:hover,
+.close-button:focus {
+    color: black;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.catalog-modal-content {
+    height: 85vh;
+}
+
+#catalog-search {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.catalog-container {
+    display: flex;
+    height: calc(100% - 60px); /* Adjust for search bar */
+}
+
+.catalog-categories {
+    flex-basis: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+}
+
+.catalog-category-tab {
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.catalog-category-tab:hover {
+    background-color: #f9f9f9;
+}
+
+.catalog-category-tab.active {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.catalog-items {
+    flex-grow: 1;
+    padding-left: 1.5rem;
+    overflow-y: auto;
+}
+
+.catalog-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.catalog-item .btn {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.catalog-item .btn-added {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+    cursor: not-allowed;
+}
