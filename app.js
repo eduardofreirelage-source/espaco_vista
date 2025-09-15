@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderQuote() {
         const calculation = calculateQuote();
-        renderCategories(calculation);
+        renderCategories();
         renderSummary(calculation);
         if (userRole === 'admin') {
             generatePrintOutput(calculation);
