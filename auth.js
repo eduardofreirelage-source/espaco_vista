@@ -2,21 +2,28 @@ import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
-    // VERIFICAÇÃO DE ACESSO
+    // VERIFICAÇÃO DE ACESSO (Mantido do original)
     // =================================================================
-    /* (Código de verificação de acesso mantido como no original) */
+    /*
+    const { role } = await getSession();
+    if (role !== 'admin') {
+        console.warn("Acesso negado ao painel administrativo. Redirecionando para login.");
+        window.location.href = 'login.html';
+        return;
+    }
+    */
 
     // =================================================================
     // ESTADO E ELEMENTOS DO DOM
     // =================================================================
     let services = [], priceTables = [], servicePrices = [], quotes = [];
-    // 'events' é removido do estado global, usaremos 'quotes' filtrados.
     
     const adminCatalogContainer = document.getElementById('admin-catalog-container');
-    // ... (Outros elementos do DOM)
+    // ... (Outros elementos do DOM como priceTablesTbody, quotesTbody, eventsTbody, etc.)
     const analyticsContainer = document.getElementById('analytics-container');
+    const notification = document.getElementById('save-notification');
     
-    // CORREÇÃO: Elemento do filtro do calendário
+    // NOVO: Elemento do filtro do calendário
     const calendarStatusFilter = document.getElementById('calendar-status-filter');
     
     let debounceTimers = {};
@@ -35,11 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 supabase.from('services').select('*').order('category').order('name'),
                 supabase.from('price_tables').select('*').order('name'),
                 supabase.from('service_prices').select('*'),
-                // Importante selecionar ID e quote_data para o calendário e analytics
-                supabase.from('quotes').select('id, *, clients(*)').order('created_at', { ascending: false })
+                // Importante: selecionar quote_data para acessar datas e itens (Espaço)
+                supabase.from('quotes').select('*, clients(*)').order('created_at', { ascending: false })
             ]);
 
-            // ... (Verificação de erros)
+            // (Verificação de erros mantida)
 
             services = servicesRes.data || [];
             priceTables = tablesRes.data || [];
@@ -48,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             renderAll();
         } catch (error) {
-            // showNotification(...)
+            showNotification(`Erro ao carregar dados: ${error.message}`, true);
         }
     }
 
@@ -59,29 +66,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderQuotesTable();
         renderEventsTable();
         renderAnalytics();
-        // Atualiza o calendário se ele já estiver inicializado
         if (calendarInstance) {
             updateCalendarEvents();
         }
     }
     
-    // ... (formatCurrency, renderQuotesTable, renderEventsTable - Mantidos com ajustes necessários para ações)
+    // (formatCurrency, renderQuotesTable, renderEventsTable - Mantidos com ajustes menores para robustez)
 
-    // CORREÇÃO (Analytics): Usa a data da última cotação como referência em vez de hoje.
+    // CORREÇÃO (Analytics): Usa a data da última cotação como referência em vez de 'hoje'.
     function renderAnalytics() {
         if (!analyticsContainer) return;
         
         let referenceDate;
         if (quotes.length > 0) {
-            // Usa a data da cotação mais recente (já que 'quotes' está ordenado por created_at DESC)
+            // Usa a data da cotação mais recente (pois 'quotes' está ordenado por created_at DESC)
             referenceDate = new Date(quotes[0].created_at);
         } else {
-            // Se não houver NENHUMA cotação no sistema, não há o que mostrar.
+            // Se não houver NENHUMA cotação, não há o que mostrar.
             analyticsContainer.innerHTML = '<p>Nenhum dado disponível para análise.</p>';
             return;
         }
 
-        // Define o período "atual" baseado na data de referência
+        // Define o período "atual" (Mês da data de referência)
         const startOfCurrentMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
         
         // Define o período "anterior"
@@ -106,22 +112,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentMetrics = aggregateQuoteMetrics(currentMonthQuotes);
         const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
 
-        /* (Lógica de renderização dos KPIs mantida) */
+        // (Renderização dos KPIs mantida do original)
     }
 
-    // ... (aggregateQuoteMetrics, createKpiCard, calculatePercentageChange, renderPriceTablesList - Mantidos)
+    // (aggregateQuoteMetrics, createKpiCard, calculatePercentageChange, renderPriceTablesList - Mantidos do original)
 
-    // CORREÇÃO (Cadastros): Garantir que as categorias dentro do catálogo iniciem fechadas
+    // CORREÇÃO (Cadastros): Garantir que as sub-abas (categorias) iniciem fechadas
     function renderAdminCatalog() {
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
-        // ... (Lógica de agrupamento e ordenação)
+        
+        // (Lógica de agrupamento e ordenação mantida do original)
 
         orderedCategories.forEach(category => {
             const categoryWrapper = document.createElement('div');
-            // Removido o atributo 'open' do <details> para que as categorias iniciem fechadas.
+            // CORREÇÃO: Removido o atributo 'open' do <details> para que iniciem fechadas.
             categoryWrapper.innerHTML = `
-                <details class="category-accordion"> 
+                <details class="category-accordion">
                     <summary class="category-header">
                         <h3 class="category-title">${category}</h3>
                     </summary>
@@ -138,12 +145,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Popula as opções do filtro de status
     function populateCalendarFilters() {
         if (calendarStatusFilter) {
-            // Limpa opções existentes
-            calendarStatusFilter.innerHTML = ''; 
-            const statuses = ['Todos', 'Ganho', 'Em analise', 'Perdido', 'Rascunho'];
-            calendarStatusFilter.innerHTML = statuses.map(s => `<option value="${s}">${s}</option>`).join('');
-            // Define 'Ganho' como padrão inicial
-            calendarStatusFilter.value = 'Ganho';
+            // Verifica se já está populado para evitar duplicatas
+            if (calendarStatusFilter.options.length === 0 || calendarStatusFilter.options.length < 4) {
+                const statuses = ['Todos', 'Ganho', 'Em analise', 'Perdido', 'Rascunho'];
+                calendarStatusFilter.innerHTML = statuses.map(s => `<option value="${s}">${s}</option>`).join('');
+                // Define 'Ganho' como padrão inicial
+                calendarStatusFilter.value = 'Ganho';
+            }
         }
     }
 
@@ -160,7 +168,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const calendarEvents = [];
         filteredQuotes.forEach(quote => {
+            // Verifica se quote_data e event_dates existem
             if (quote.quote_data && quote.quote_data.event_dates) {
+                
                 // CORREÇÃO: Identificar o Espaço locado a partir dos itens salvos (snapshot)
                 const spaceItem = quote.quote_data.items?.find(item => item.category === 'Espaço');
                 const spaceName = spaceItem ? ` [${spaceItem.name}]` : '';
@@ -186,14 +196,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function initializeCalendar() {
         const calendarEl = document.getElementById('calendar');
-        if (!calendarEl) return;
+        if (!calendarEl || typeof FullCalendar === 'undefined') return;
 
         // Se a instância não existe, cria ela
         if (!calendarInstance) {
             calendarInstance = new FullCalendar.Calendar(calendarEl, {
                 locale: 'pt-br',
                 initialView: 'dayGridMonth',
-                // ... (Configurações do headerToolbar)
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
                 eventColor: '#8B0000',
                 // CORREÇÃO: Implementação do clique no evento
                 eventClick: function(info) {
@@ -216,8 +230,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tabsNav = document.querySelector('.tabs-nav');
         if (!tabsNav) return;
         tabsNav.addEventListener('click', (e) => {
-            // ... (Lógica de troca de abas)
-            
+            // (Lógica de troca de abas mantida)
+
             // Inicializa o calendário SE for a aba de calendário
             if (tabId === 'calendar') {
                 initializeCalendar();
@@ -227,18 +241,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     function addEventListeners() {
         setupTabEvents();
-        // setupCollapsibleEvents(); // Mantido se necessário
+        // setupCollapsibleEvents(); // Mantido do original
 
-        // ... (Outros listeners de formulários e botões)
-
-        // CORREÇÃO: Listener para o filtro do calendário
+        // NOVO: Listener para o filtro do calendário
         calendarStatusFilter?.addEventListener('change', updateCalendarEvents);
 
-        // ... (Listeners de inputs)
+        // (Demais listeners mantidos do original)
     }
+    
+    // (Funções CRUD e Helpers - Mantidas do original)
 
-    // ... (Funções CRUD e Helpers mantidas)
-
-    // Inicialização da aplicação (Descomentar ao integrar)
-    // initialize(); 
+    // Inicialização da aplicação (Chamar ao integrar)
+    // initialize();
 });
