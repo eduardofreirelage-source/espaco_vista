@@ -1,14 +1,24 @@
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // ... (Estado inicial e carregamento do quoteId)
+    const notification = document.getElementById('save-notification');
+    let currentQuote = null;
+    let currentClient = null;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const quoteId = urlParams.get('quote_id');
+
+    if (!quoteId) {
+        document.querySelector('main').innerHTML = '<h1>Orçamento não encontrado.</h1>';
+        return;
+    }
 
     // Helper Functions
     function formatCurrency(value) {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
     }
-
-    // --- CARREGAMENTO DE DADOS (loadData mantido como original) ---
+    
+    // (showNotification e loadData mantidos do original)
 
     // --- RENDERIZAÇÃO ---
     function populatePage() {
@@ -20,18 +30,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         const eventDates = currentQuote.quote_data.event_dates.map(d => new Date(d.date + 'T12:00:00Z').toLocaleDateString('pt-BR')).join(', ');
         document.getElementById('summary-event-dates').textContent = eventDates;
 
-        // NOVO: Identificar e exibir o Espaço Locado (a partir do snapshot)
+        // CORREÇÃO: Identificar e exibir o Espaço Locado (a partir do snapshot dos itens)
         const spaceItem = currentQuote.quote_data.items?.find(item => item.category === 'Espaço');
         document.getElementById('summary-event-space').textContent = spaceItem ? spaceItem.name : 'Não definido';
         
-        // ... (Dados do Cliente mantidos)
+        // (Dados do Cliente mantidos do original)
         
         // Renderiza seções dinâmicas
         renderServicesSummary();
         renderPayments();
     }
     
-    // ... (renderPayments mantido, garantindo que o input number receba valor numérico puro)
+    function renderPayments() {
+        const tbody = document.getElementById('payments-table').querySelector('tbody');
+        tbody.innerHTML = '';
+        const payments = currentQuote.quote_data.payments || [];
+        
+        payments.forEach((payment, index) => {
+            const row = document.createElement('tr');
+            // CORREÇÃO CRÍTICA: O input type="number" espera um valor numérico puro (ex: 1500.50), 
+            // não formatado como moeda (ex: R$ 1.500,50). Usar formatCurrency aqui quebrava o input.
+            const amountValue = parseFloat(payment.amount) || 0; 
+
+            row.innerHTML = `
+                <td><input type="date" class="payment-input" data-index="${index}" data-field="due_date" value="${payment.due_date || ''}"></td>
+                <td><input type="number" step="0.01" class="payment-input" data-index="${index}" data-field="amount" value="${amountValue.toFixed(2)}"></td>
+                <td><input type="text" class="payment-input" data-index="${index}" data-field="method" value="${payment.method || ''}"></td>
+                <td>
+                    <select class="payment-input" data-index="${index}" data-field="status">
+                        <option value="A Pagar" ${payment.status === 'A Pagar' ? 'selected' : ''}>A Pagar</option>
+                        <option value="Pago" ${payment.status === 'Pago' ? 'selected' : ''}>Pago</option>
+                    </select>
+                </td>
+                <td><button class="btn-remove remove-payment-btn" data-index="${index}">&times;</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
 
     // CORREÇÃO: Renderiza o resumo de serviços contratados com detalhamento e placeholder de cardápio
     function renderServicesSummary() {
@@ -66,7 +101,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 html += `<div class="service-summary-category">`;
                 html += `<h3>${category}</h3>`;
                 itemsByCategory[category].forEach(item => {
-                    // Usa o preço salvo no snapshot (priorizando o calculado, fallback para o unitário se existir)
+                    // CORREÇÃO: Usa o preço salvo no snapshot (Prioriza 'calculated_unit_price', fallback para 'unit_price')
+                    // Os dados no snapshot contêm 'name' e os preços.
                     const unitPrice = item.calculated_unit_price || item.unit_price || 0;
                     html += `
                         <div class="service-summary-item">
@@ -79,8 +115,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // CORREÇÃO: Adiciona o botão específico para Gastronomia (Placeholder)
                 if (category === 'Gastronomia') {
                     html += `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">`;
-                    html += `<p>Seleção de pratos pendente.</p>`;
-                    html += `<button class="btn btn-primary" id="define-menu-btn" style="margin-top: 0.5rem;">Definir Cardápio</button>`;
+                    html += `<p>A seleção dos pratos será feita nesta seção.</p>`;
+                    html += `<button class="btn btn-primary" id="define-menu-btn" style="margin-top: 0.5rem;">Gerenciar Cardápio do Evento</button>`;
                     html += `</div>`;
                 }
 
@@ -94,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const menuBtn = document.getElementById('define-menu-btn');
         if (menuBtn) {
             menuBtn.addEventListener('click', () => {
-                alert('Funcionalidade de definição de cardápio será implementada em breve.');
+                alert('Funcionalidade de gerenciamento de cardápio será implementada aqui.');
             });
         }
     }
@@ -112,8 +148,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // ... (Listeners de formulário e pagamentos mantidos como original)
+    // (Listeners de formulário de cliente e gestão de pagamentos mantidos do original)
 
-    // Inicialização (Descomentar ao usar)
+    // Inicialização (Chame esta função se o script for carregado corretamente)
     // loadData();
 });
