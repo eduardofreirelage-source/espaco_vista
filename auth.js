@@ -27,12 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const eventsTable = document.getElementById('events-table');
     const analyticsContainer = document.getElementById('analytics-container');
     const analyticsNotice = document.getElementById('analytics-notice');
-    const addServiceForm = document.getElementById('addServiceForm');
-    const addPriceTableForm = document.getElementById('addPriceTableForm');
-    const notification = document.getElementById('save-notification');
+    const calendarEl = document.getElementById('calendar');
     const calendarStatusFilter = document.getElementById('calendar-status-filter');
+    const notification = document.getElementById('save-notification');
     
-    let debounceTimers = {};
     let calendarInstance = null; 
 
     // --- INICIALIZAÇÃO ---
@@ -87,96 +85,64 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tbody = quotesTable?.querySelector('tbody');
         if (!tbody) return;
         
-        tbody.innerHTML = ''; // Limpa apenas o corpo da tabela
+        tbody.innerHTML = '';
         const statusOptions = ['Rascunho', 'Em analise', 'Ganho', 'Perdido'];
 
         quotes.forEach(quote => {
-            const row = tbody.insertRow(); // Cria uma nova linha no corpo da tabela
+            const row = tbody.insertRow();
             row.dataset.quoteId = quote.id;
             const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
-
-            const selectHTML = `
-                <select class="status-select" data-id="${quote.id}">
-                    ${statusOptions.map(opt => `<option value="${opt}" ${quote.status === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                </select>
-            `;
-
-            row.innerHTML = `
-                <td>${quote.client_name || 'Rascunho sem nome'}</td>
-                <td>${createdAt}</td>
-                <td>${selectHTML}</td>
-                <td class="actions">
-                    <a href="index.html?quote_id=${quote.id}" class="btn" title="Editar Orçamento">Editar</a>
-                    <a href="evento.html?quote_id=${quote.id}" class="btn" title="Gerenciar Evento" style="${quote.status === 'Ganho' ? '' : 'display:none;'}">Gerenciar</a>
-                    <button class="btn-remove" data-action="delete-quote" data-id="${quote.id}" title="Excluir Orçamento">&times;</button>
-                </td>
-            `;
+            const selectHTML = `<select class="status-select" data-id="${quote.id}">${statusOptions.map(opt => `<option value="${opt}" ${quote.status === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>`;
+            row.innerHTML = `<td>${quote.client_name || 'Rascunho sem nome'}</td><td>${createdAt}</td><td>${selectHTML}</td><td class="actions"><a href="index.html?quote_id=${quote.id}" class="btn" title="Editar Orçamento">Editar</a><a href="evento.html?quote_id=${quote.id}" class="btn" title="Gerenciar Evento" style="${quote.status === 'Ganho' ? '' : 'display:none;'}">Gerenciar</a><button class="btn-remove" data-action="delete-quote" data-id="${quote.id}" title="Excluir Orçamento">&times;</button></td>`;
         });
     }
 
     function renderEventsTable() {
         const tbody = eventsTable?.querySelector('tbody');
         if (!tbody) return;
-        
-        tbody.innerHTML = ''; // Limpa apenas o corpo da tabela
+        tbody.innerHTML = '';
         const events = quotes.filter(q => q.status === 'Ganho');
-
         events.forEach(event => {
             const row = tbody.insertRow();
-            const eventDate = event.quote_data?.event_dates?.[0]?.date 
-                ? new Date(event.quote_data.event_dates[0].date + 'T12:00:00Z').toLocaleDateString('pt-BR') 
-                : 'Data não definida';
-            
-            row.innerHTML = `
-                <td>${event.client_name}</td>
-                <td>${eventDate}</td>
-                <td>${formatCurrency(event.total_value)}</td>
-                <td class="actions">
-                    <a href="evento.html?quote_id=${event.id}" class="btn" title="Gerenciar Evento">Gerenciar</a>
-                </td>
-            `;
+            const eventDate = event.quote_data?.event_dates?.[0]?.date ? new Date(event.quote_data.event_dates[0].date + 'T12:00:00Z').toLocaleDateString('pt-BR') : 'Data não definida';
+            row.innerHTML = `<td>${event.client_name}</td><td>${eventDate}</td><td>${formatCurrency(event.total_value)}</td><td class="actions"><a href="evento.html?quote_id=${event.id}" class="btn" title="Gerenciar Evento">Gerenciar</a></td>`;
         });
     }
 
     function renderAnalytics() {
         if (!analyticsContainer || !analyticsNotice) return;
         
+        analyticsContainer.innerHTML = ''; // Limpa a área
+        
+        if (quotes.length === 0) {
+            analyticsNotice.textContent = 'Nenhuma proposta encontrada no sistema para gerar análises.';
+            analyticsNotice.style.display = 'block';
+            return;
+        }
+
         const now = new Date();
         const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-
         const currentMonthQuotes = quotes.filter(q => new Date(q.created_at) >= startOfCurrentMonth);
-        const previousMonthQuotes = quotes.filter(q => {
-            const createdAt = new Date(q.created_at);
-            return createdAt >= startOfPreviousMonth && createdAt <= endOfPreviousMonth;
-        });
         
         if (currentMonthQuotes.length === 0) {
             analyticsNotice.textContent = 'Nenhuma proposta encontrada para o mês atual.';
             analyticsNotice.style.display = 'block';
-            analyticsContainer.innerHTML = ''; // Limpa os cards antigos
-        } else {
-            analyticsNotice.style.display = 'none';
+            return; // Retorna para não tentar calcular com zero dados
         }
 
+        analyticsNotice.style.display = 'none';
+        const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        const previousMonthQuotes = quotes.filter(q => { const createdAt = new Date(q.created_at); return createdAt >= startOfPreviousMonth && createdAt <= endOfPreviousMonth; });
         const currentMetrics = aggregateQuoteMetrics(currentMonthQuotes);
         const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
-
-        analyticsContainer.innerHTML = `
-            ${createKpiCard('Ganhos', currentMetrics.Ganho, previousMetrics.Ganho)}
-            ${createKpiCard('Perdidos', currentMetrics.Perdido, previousMetrics.Perdido)}
-            ${createKpiCard('Em Análise', currentMetrics['Em analise'], previousMetrics['Em analise'])}
-        `;
+        analyticsContainer.innerHTML = `${createKpiCard('Ganhos', currentMetrics.Ganho, previousMetrics.Ganho)}${createKpiCard('Perdidos', currentMetrics.Perdido, previousMetrics.Perdido)}${createKpiCard('Em Análise', currentMetrics['Em analise'], previousMetrics['Em analise'])}`;
     }
 
     function aggregateQuoteMetrics(quoteArray) {
         const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } };
         return quoteArray.reduce((acc, quote) => {
-            if (acc[quote.status]) {
-                acc[quote.status].count++;
-                acc[quote.status].value += parseFloat(quote.total_value || 0);
-            }
+            if (acc[quote.status]) { acc[quote.status].count++; acc[quote.status].value += parseFloat(quote.total_value || 0); }
             return acc;
         }, initialMetrics);
     }
@@ -185,18 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const percentageChange = calculatePercentageChange(current.value, previous.value);
         const trendClass = percentageChange.startsWith('+') && parseFloat(percentageChange) > 0 ? 'increase' : percentageChange.startsWith('-') ? 'decrease' : '';
         const trendIndicator = trendClass ? `<span class="percentage ${trendClass}">${percentageChange}</span>` : '';
-
-        return `
-            <div class="kpi-card">
-                <div class="kpi-title">${title} (Mês Atual)</div>
-                <div class="kpi-value">${formatCurrency(current.value)}</div>
-                <div class="kpi-sub-value">${current.count} propostas</div>
-                <div class="kpi-comparison">
-                    ${trendIndicator}
-                    <span>em relação ao mês anterior (${formatCurrency(previous.value)})</span>
-                </div>
-            </div>
-        `;
+        return `<div class="kpi-card"><div class="kpi-title">${title} (Mês Atual)</div><div class="kpi-value">${formatCurrency(current.value)}</div><div class="kpi-sub-value">${current.count} propostas</div><div class="kpi-comparison">${trendIndicator}<span>em relação ao mês anterior (${formatCurrency(previous.value)})</span></div></div>`;
     }
     
     function calculatePercentageChange(current, previous) { if (previous === 0) { return current > 0 ? '+∞%' : '0%'; } const change = ((current - previous) / previous) * 100; return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`; }
@@ -205,13 +160,85 @@ document.addEventListener('DOMContentLoaded', async () => {
     function createUnitSelect(currentUnit) { const units = ['unidade', 'diaria', 'por_pessoa']; return `<select class="service-detail-input" data-field="unit">${units.map(unit => `<option value="${unit}" ${unit === currentUnit ? 'selected' : ''}>${unit}</option>`).join('')}</select>`; }
 
     // --- LÓGICA DO CALENDÁRIO ---
-    function initializeCalendar() { const calendarEl = document.getElementById('calendar'); if (!calendarEl || calendarInstance) return; calendarInstance = new FullCalendar.Calendar(calendarEl, { locale: 'pt-br', initialView: 'dayGridMonth', headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' }, events: [], eventColor: '#8B0000', eventClick: (info) => { const { quoteId, spaceName, clientName } = info.event.extendedProps; if (confirm(`Cliente: ${clientName}\nEspaço: ${spaceName}\n\nClique em OK para gerenciar este evento.`)) { window.location.href = `evento.html?quote_id=${quoteId}`; } } }); updateCalendarEvents(); calendarInstance.render(); }
-    function updateCalendarEvents() { if (!calendarInstance) return; const selectedStatus = calendarStatusFilter.value; let filteredQuotes = quotes; if (selectedStatus !== 'Todos') { filteredQuotes = quotes.filter(q => q.status === selectedStatus); } const calendarEvents = []; filteredQuotes.forEach(quote => { if (quote.quote_data && quote.quote_data.items) { const spaceItems = quote.quote_data.items.filter(item => { const service = services.find(s => s.id === item.service_id); return service && service.category === 'Espaço'; }); spaceItems.forEach(item => { const service = services.find(s => s.id === item.service_id); if (item.event_date && service) { calendarEvents.push({ title: `${quote.client_name} (${service.name})`, start: item.event_date, allDay: true, extendedProps: { quoteId: quote.id, spaceName: service.name, clientName: quote.client_name } }); } }); } }); calendarInstance.removeAllEvents(); calendarInstance.addEventSource(calendarEvents); }
+    function initializeCalendar() {
+        if (!calendarEl || calendarInstance) return;
+        
+        // Adiciona um container para a mensagem de aviso
+        let noticeEl = document.getElementById('calendar-notice');
+        if (!noticeEl) {
+            noticeEl = document.createElement('div');
+            noticeEl.id = 'calendar-notice';
+            noticeEl.className = 'analytics-notice'; // Reutiliza o estilo
+            noticeEl.style.display = 'none';
+            calendarEl.parentNode.insertBefore(noticeEl, calendarEl);
+        }
+
+        calendarInstance = new FullCalendar.Calendar(calendarEl, {
+            locale: 'pt-br',
+            initialView: 'dayGridMonth',
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+            events: [],
+            eventColor: '#8B0000',
+            eventClick: (info) => {
+                const { quoteId, spaceName, clientName } = info.event.extendedProps;
+                if (confirm(`Cliente: ${clientName}\nEspaço: ${spaceName}\n\nClique em OK para gerenciar este evento.`)) {
+                    window.location.href = `evento.html?quote_id=${quoteId}`;
+                }
+            }
+        });
+        updateCalendarEvents();
+        calendarInstance.render();
+    }
+
+    function updateCalendarEvents() {
+        if (!calendarInstance) return;
+
+        const selectedStatus = calendarStatusFilter.value;
+        let filteredQuotes = quotes;
+        if (selectedStatus !== 'Todos') {
+            filteredQuotes = quotes.filter(q => q.status === selectedStatus);
+        }
+
+        const calendarEvents = [];
+        filteredQuotes.forEach(quote => {
+            if (quote.quote_data && quote.quote_data.items) {
+                const spaceItems = quote.quote_data.items.filter(item => {
+                    const service = services.find(s => s.id === item.service_id);
+                    // Compara em minúsculas para evitar erros de digitação (Ex: 'Espaço' vs 'espaço')
+                    return service && service.category?.toLowerCase() === 'espaço';
+                });
+                spaceItems.forEach(item => {
+                    const service = services.find(s => s.id === item.service_id);
+                    // Garante que o item tenha uma data de evento definida
+                    if (item.event_date && service) {
+                        calendarEvents.push({
+                            title: `${quote.client_name} (${service.name})`,
+                            start: item.event_date,
+                            allDay: true,
+                            extendedProps: { quoteId: quote.id, spaceName: service.name, clientName: quote.client_name }
+                        });
+                    }
+                });
+            }
+        });
+        
+        calendarInstance.removeAllEvents();
+        calendarInstance.addEventSource(calendarEvents);
+        
+        // Exibe ou oculta a mensagem de aviso
+        const noticeEl = document.getElementById('calendar-notice');
+        if (calendarEvents.length === 0) {
+            noticeEl.innerHTML = `<strong>Nenhum evento encontrado para o filtro '${selectedStatus}'.</strong><br>Para um evento aparecer, a proposta deve ter o status correspondente, conter um serviço da categoria 'Espaço' e o serviço deve ter uma data de evento atribuída.`;
+            noticeEl.style.display = 'block';
+        } else {
+            noticeEl.style.display = 'none';
+        }
+    }
     
     // --- EVENT LISTENERS ---
     function setupTabEvents() { const tabsNav = document.querySelector('.tabs-nav'); if (!tabsNav) return; tabsNav.addEventListener('click', (e) => { const clickedTab = e.target.closest('.tab-btn'); if (!clickedTab) return; const tabId = clickedTab.dataset.tab; tabsNav.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active')); clickedTab.classList.add('active'); document.getElementById(`tab-content-${tabId}`).classList.add('active'); if (tabId === 'calendar') { initializeCalendar(); } }); }
     function setupCollapsibleEvents() { document.body.addEventListener('click', e => { const header = e.target.closest('.collapsible-card > .card-header'); if (header) { const card = header.closest('.collapsible-card'); if (card) card.classList.toggle('collapsed'); } }); }
-    function addEventListeners() { setupTabEvents(); setupCollapsibleEvents(); addServiceForm?.addEventListener('submit', async (e) => { e.preventDefault(); const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value }; const { error } = await supabase.from('services').insert([newService]); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço adicionado!'); e.target.reset(); fetchData(); } }); addPriceTableForm?.addEventListener('submit', async (e) => { e.preventDefault(); const newTable = { name: document.getElementById('tableName').value, consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0 }; const { error } = await supabase.from('price_tables').insert([newTable]); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); } }); document.body.addEventListener('click', e => { const button = e.target.closest('button[data-action]'); if (!button) return; const { action, id } = button.dataset; if (action === 'delete-service') deleteService(id); if (action === 'delete-table') deletePriceTable(id); if (action === 'delete-quote') deleteQuote(id); }); const quotesTbody = quotesTable?.querySelector('tbody'); adminCatalogContainer?.addEventListener('input', (e) => { if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); } }); adminCatalogContainer?.addEventListener('change', (e) => { if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) { handleServiceEdit(e.target, false); } }); priceTablesTbody?.addEventListener('input', (e) => { if (e.target.matches('.price-table-input[data-field="name"]')) { handlePriceTableEdit(e.target, true); } }); priceTablesTbody?.addEventListener('change', (e) => { if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) { handlePriceTableEdit(e.target, false); } }); quotesTbody?.addEventListener('change', async (e) => { if (e.target.classList.contains('status-select')) { const quoteId = e.target.dataset.id; const newStatus = e.target.value; await updateQuoteStatus(quoteId, newStatus); } }); calendarStatusFilter?.addEventListener('change', updateCalendarEvents); }
+    function addEventListeners() { setupTabEvents(); setupCollapsibleEvents(); const addServiceForm = document.getElementById('addServiceForm'); const addPriceTableForm = document.getElementById('addPriceTableForm'); addServiceForm?.addEventListener('submit', async (e) => { e.preventDefault(); const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value }; const { error } = await supabase.from('services').insert([newService]); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço adicionado!'); e.target.reset(); fetchData(); } }); addPriceTableForm?.addEventListener('submit', async (e) => { e.preventDefault(); const newTable = { name: document.getElementById('tableName').value, consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0 }; const { error } = await supabase.from('price_tables').insert([newTable]); if(error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); } }); document.body.addEventListener('click', e => { const button = e.target.closest('button[data-action]'); if (!button) return; const { action, id } = button.dataset; if (action === 'delete-service') deleteService(id); if (action === 'delete-table') deletePriceTable(id); if (action === 'delete-quote') deleteQuote(id); }); const quotesTbody = quotesTable?.querySelector('tbody'); adminCatalogContainer?.addEventListener('input', (e) => { if (e.target.matches('.service-detail-input[type="text"]')) { handleServiceEdit(e.target, true); } }); adminCatalogContainer?.addEventListener('change', (e) => { if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) { handleServiceEdit(e.target, false); } }); priceTablesTbody?.addEventListener('input', (e) => { if (e.target.matches('.price-table-input[data-field="name"]')) { handlePriceTableEdit(e.target, true); } }); priceTablesTbody?.addEventListener('change', (e) => { if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) { handlePriceTableEdit(e.target, false); } }); quotesTbody?.addEventListener('change', async (e) => { if (e.target.classList.contains('status-select')) { const quoteId = e.target.dataset.id; const newStatus = e.target.value; await updateQuoteStatus(quoteId, newStatus); } }); calendarStatusFilter?.addEventListener('change', updateCalendarEvents); }
     function handleServiceEdit(inputElement, useDebounce) { const row = inputElement.closest('tr'); if (!row) return; const serviceId = row.dataset.serviceId; const timerKey = `service-${serviceId}-${inputElement.dataset.field || inputElement.dataset.tableId}`; if (debounceTimers[timerKey]) { clearTimeout(debounceTimers[timerKey]); } const action = () => { if (inputElement.classList.contains('service-detail-input')) { updateServiceDetail(serviceId, inputElement.dataset.field, inputElement.value, inputElement); } else if (inputElement.classList.contains('service-price-input')) { const price = parseFloat(inputElement.value) || 0; if (!useDebounce) { inputElement.value = price.toFixed(2); } updateServicePrice(serviceId, inputElement.dataset.tableId, price, inputElement); } }; if (useDebounce) { debounceTimers[timerKey] = setTimeout(action, 500); } else { action(); } }
     function handlePriceTableEdit(inputElement, useDebounce) { const row = inputElement.closest('tr'); if (!row) return; const tableId = row.dataset.tableId; const field = inputElement.dataset.field; const timerKey = `table-${tableId}-${field}`; if (debounceTimers[timerKey]) { clearTimeout(debounceTimers[timerKey]); } const action = () => { let value = inputElement.value; if (field === 'consumable_credit') { value = parseFloat(value) || 0; if (!useDebounce) { inputElement.value = value.toFixed(2); } } updatePriceTableDetail(tableId, field, value, inputElement); }; if (useDebounce) { debounceTimers[timerKey] = setTimeout(action, 500); } else { action(); } }
     async function updateQuoteStatus(id, status) { const { error } = await supabase.from('quotes').update({ status: status }).eq('id', id); if (error) { showNotification(`Erro ao atualizar status: ${error.message}`, true); } else { showNotification('Status atualizado com sucesso!'); await fetchData(); } }
