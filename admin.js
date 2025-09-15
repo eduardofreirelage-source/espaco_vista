@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchData() {
         try {
+            console.log('[ADMIN DEBUG] Buscando dados do Supabase...');
             const [servicesRes, tablesRes, pricesRes, quotesRes] = await Promise.all([
                 supabase.from('services').select('*').order('category').order('name'),
                 supabase.from('price_tables').select('*').order('name'),
@@ -49,15 +50,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             priceTables = tablesRes.data || [];
             servicePrices = pricesRes.data || [];
             quotes = quotesRes.data || [];
+            
+            // ADICIONADO DEBUG
+            console.log('[ADMIN DEBUG] Dados recebidos do Supabase:', {
+                services: services.length,
+                priceTables: priceTables.length,
+                servicePrices: servicePrices.length,
+                quotes: quotes.length
+            });
 
             renderAll();
         } catch (error) {
             showNotification(`Erro ao carregar dados: ${error.message}`, true);
+            console.error('[ADMIN DEBUG] Erro em fetchData:', error);
         }
     }
 
     // --- RENDERIZAÇÃO ---
     function renderAll() {
+        console.log('[ADMIN DEBUG] Iniciando renderização de todos os componentes.');
         renderPriceTablesList();
         renderAdminCatalog();
         renderQuotesTable();
@@ -158,6 +169,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderPriceTablesList() {
+        // ADICIONADO DEBUG
+        console.log(`[ADMIN DEBUG] Renderizando Listas de Preços com ${priceTables.length} tabelas.`);
         if (!priceTablesTbody) return;
         priceTablesTbody.innerHTML = '';
         priceTables.forEach(table => {
@@ -174,6 +187,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderAdminCatalog() {
+        // ADICIONADO DEBUG
+        console.log(`[ADMIN DEBUG] Renderizando Catálogo com ${services.length} serviços.`);
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
         const servicesByCategory = services.reduce((acc, service) => {
@@ -249,7 +264,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // CORRIGIDO: A função que controla o "accordion"
     function setupCollapsibleEvents() {
         document.body.addEventListener('click', e => {
             const header = e.target.closest('.collapsible-card > .card-header');
@@ -262,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     function addEventListeners() {
         setupTabEvents();
-        setupCollapsibleEvents(); // CORRIGIDO: Chamada da função que estava faltando
+        setupCollapsibleEvents();
 
         addServiceForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
