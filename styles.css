@@ -29,7 +29,7 @@ body {
     padding-bottom: 70px; /* Espaço para o rodapé fixo */
 }
 
-.container { max-width: 1300px; margin: 1.5rem auto; padding: 1rem; }
+.container { max-width: 1600px; margin: 1.5rem auto; padding: 1rem; }
 header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
 .header-actions { display: flex; gap: 0.8rem; }
@@ -84,11 +84,10 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .category-accordion[open] .category-header::after { transform: rotate(180deg); }
 .category-title { font-size: 0.95rem; font-weight: 600; color: var(--primary-color); }
 
-/* Tabela de Orçamento */
 .quote-table { 
     width: 100%; 
     border-collapse: collapse; 
-    table-layout: fixed; /* ADICIONADO: Força a tabela a respeitar as larguras definidas */
+    table-layout: fixed;
 }
 .quote-table th, .quote-table td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border-color); }
 .quote-table th { font-size: 0.75rem; font-weight: 500; color: var(--subtle-text-color); background-color: #fff; }
@@ -170,6 +169,11 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: 1px solid transparent; }
 
 .table-container { overflow-x: auto; }
+/* MODIFICADO: Adicionado table-layout fixed para a tabela de admin */
+.editable-table {
+    table-layout: fixed;
+    width: 100%;
+}
 .editable-table th, .editable-table td { padding: 0.5rem; }
 .editable-table input, .editable-table select { padding: 0.5rem; margin: -0.5rem; border: 1px solid transparent; background-color: inherit; border-radius: 4px; transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s; }
 .editable-table tr:hover input, .editable-table tr:hover select { border-color: #eee; }
