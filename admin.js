@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderAnalytics();
     }
 
-    // ADICIONADO DE VOLTA: Funções auxiliares que estavam faltando
     function createCategorySelect(currentCategory) {
         const categories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
         return `<select class="service-detail-input" data-field="category">
@@ -92,13 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = document.createElement('tr');
             row.dataset.quoteId = quote.id;
             const createdAt = new Date(quote.created_at).toLocaleDateString('pt-BR');
-
-            const selectHTML = `
-                <select class="status-select" data-id="${quote.id}">
-                    ${statusOptions.map(opt => `<option value="${opt}" ${quote.status === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                </select>
-            `;
-
+            const selectHTML = `<select class="status-select" data-id="${quote.id}">${statusOptions.map(opt => `<option value="${opt}" ${quote.status === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>`;
             row.innerHTML = `
                 <td>${quote.client_name || 'Rascunho sem nome'}</td>
                 <td>${createdAt}</td>
@@ -115,21 +108,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderAnalytics() {
         if (!analyticsContainer) return;
-        
         const now = new Date();
         const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-
         const currentMonthQuotes = quotes.filter(q => new Date(q.created_at) >= startOfCurrentMonth);
-        const previousMonthQuotes = quotes.filter(q => {
-            const createdAt = new Date(q.created_at);
-            return createdAt >= startOfPreviousMonth && createdAt <= endOfPreviousMonth;
-        });
-
+        const previousMonthQuotes = quotes.filter(q => new Date(q.created_at) >= startOfPreviousMonth && new Date(q.created_at) <= endOfPreviousMonth);
         const currentMetrics = aggregateQuoteMetrics(currentMonthQuotes);
         const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
-
         analyticsContainer.innerHTML = `
             ${createKpiCard('Ganhos', currentMetrics.Ganho, previousMetrics.Ganho)}
             ${createKpiCard('Perdidos', currentMetrics.Perdido, previousMetrics.Perdido)}
@@ -138,12 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function aggregateQuoteMetrics(quoteArray) {
-        const initialMetrics = {
-            'Ganho': { count: 0, value: 0 },
-            'Perdido': { count: 0, value: 0 },
-            'Em analise': { count: 0, value: 0 },
-            'Rascunho': { count: 0, value: 0 }
-        };
+        const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } };
         return quoteArray.reduce((acc, quote) => {
             if (acc[quote.status]) {
                 acc[quote.status].count++;
@@ -157,7 +138,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const percentageChange = calculatePercentageChange(current.value, previous.value);
         const trendClass = percentageChange.startsWith('+') && percentageChange.length > 2 ? 'increase' : percentageChange.startsWith('-') ? 'decrease' : '';
         const trendIndicator = trendClass ? `<span class="percentage ${trendClass}">${percentageChange}</span>` : '';
-
         return `
             <div class="kpi-card">
                 <div class="kpi-title">${title} (Mês Atual)</div>
@@ -172,9 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function calculatePercentageChange(current, previous) {
-        if (previous === 0) {
-            return current > 0 ? '+∞%' : '0%';
-        }
+        if (previous === 0) return current > 0 ? '+∞%' : '0%';
         const change = ((current - previous) / previous) * 100;
         return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
     }
@@ -271,6 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // CORRIGIDO: A função que controla o "accordion"
     function setupCollapsibleEvents() {
         document.body.addEventListener('click', e => {
             const header = e.target.closest('.collapsible-card > .card-header');
@@ -283,7 +262,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     function addEventListeners() {
         setupTabEvents();
-        setupCollapsibleEvents();
+        setupCollapsibleEvents(); // CORRIGIDO: Chamada da função que estava faltando
 
         addServiceForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
