@@ -5,7 +5,8 @@
    ================================================================= */
 
 :root {
-    --primary-color: #D9534F; 
+    /* MODIFICADO: Cor primária revertida para o tom de vinho */
+    --primary-color: #8B0000; 
     --secondary-color: #f8f8f8;
     --heading-color: #2c2c2c;
     --text-color: #333333;
@@ -15,7 +16,7 @@
     --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.05);
     --warning-color: #f0ad4e;
     --success-color: #5cb85c;
-    --danger-color: #D9534F;
+    --danger-color: #c9302c;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,29 +58,27 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .form-group input, .form-group select { width: 100%; padding: 0.4rem 0.6rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.85rem; }
 
 
-/* Estilo dos botões suavizado */
+/* MODIFICADO: Estilo "Ghost Button" unificado para todos os botões */
 .btn {
     padding: 0.6rem 1.2rem;
-    background-color: #efefef;
-    color: var(--heading-color);
-    border: 1px solid #efefef;
-    border-radius: 20px;
+    background-color: transparent; /* Fundo transparente por padrão */
+    color: var(--heading-color);   /* Texto escuro padrão */
+    border: 1px solid var(--border-color); /* Borda cinza claro padrão */
+    border-radius: 20px;       /* Formato de pílula */
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
     text-align: center;
-    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .btn:hover {
-    background-color: #e1e1e1;
+    background-color: #f1f1f1; /* Preenchimento sutil no hover */
     border-color: #e1e1e1;
 }
 
-/* MODIFICADO: Estilo "Ghost Button" para botões primários */
 .btn-primary {
-    background-color: transparent;
     border-color: var(--primary-color);
     color: var(--primary-color);
 }
@@ -90,13 +89,13 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 }
 
 .btn.dirty {
+    border-color: var(--warning-color);
+    color: var(--warning-color);
+}
+.btn.dirty:hover {
     background-color: var(--warning-color);
     border-color: var(--warning-color);
     color: white;
-}
-.btn.dirty:hover {
-    background-color: #ec971f;
-    border-color: #ec971f;
 }
 
 .btn-icon {
@@ -116,6 +115,8 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     color: var(--danger-color);
     background-color: #f1f1f1;
 }
+
+/* Fim da modificação dos botões */
 
 
 .event-dates-wrapper { margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; }
@@ -187,8 +188,8 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .catalog-item:last-child { border-bottom: none; }
 .catalog-item-name { font-weight: 500; }
 .btn-add-item { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
-.btn-added { background-color: var(--success-color); cursor: default; border-color: var(--success-color) !important; color: white; }
-.btn-added:hover { background-color: var(--success-color); }
+.btn-added { background-color: var(--success-color) !important; cursor: default; border-color: var(--success-color) !important; color: white !important; }
+.btn-added:hover { background-color: var(--success-color) !important; color: white !important; }
 
 .client-view .summary-footer, .client-view #summary-card { display: none !important; }
 .client-view .price, .client-view input.price-input, .client-view input.discount-input { display: none !important; }
@@ -258,8 +259,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     text-align: left;
 }
 .editable-table tr:hover input, .editable-table tr:hover select { border-color: #eee; }
-.editable-table input:focus, .editable-table select:focus { border-color: var(--primary-color); background-color: white; outline: none; box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.2); }
-
+.editable-table input:focus, .editable-table select:focus { border-color: var(--primary-color); background-color: white; outline: none; box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2); }
 
 .editable-table .category-header th {
     background-color: #f9f9f9;
