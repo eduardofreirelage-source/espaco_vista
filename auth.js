@@ -47,6 +47,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const availableGastronomyItemsContainer = document.getElementById('available-gastronomy-items');
     const availableItemSearch = document.getElementById('available-item-search');
 
+    // =================================================================
+    // FUNÇÕES UTILITÁRIAS (Helpers)
+    // =================================================================
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
+    }
+
+    function showNotification(message, isError = false) {
+        if (!notification) return;
+        notification.textContent = message;
+        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 5000);
+    }
+    
+    function showFlash(inputElement) {
+        if (inputElement) {
+            inputElement.classList.add('success-flash');
+            setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
+        }
+    }
+
+    function createUnitSelect(currentUnit) {
+        const units = ['unidade', 'diaria', 'por_pessoa'];
+        return `<select class="service-detail-input" data-field="unit">${units.map(unit => `<option value="${unit}" ${unit === currentUnit ? 'selected' : ''}>${unit}</option>`).join('')}</select>`;
+    }
 
     // =================================================================
     // FUNÇÕES PRINCIPAIS (INICIALIZAÇÃO E DADOS)
@@ -54,7 +80,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initialize() {
         addEventListeners();
         await fetchData();
-        
         if (document.querySelector('.tab-btn[data-tab="calendar"].active')) {
             initializeCalendar();
         }
@@ -76,22 +101,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             services = (servicesRes.status === 'fulfilled' && servicesRes.value.data) ? servicesRes.value.data : [];
             if (servicesRes.status === 'rejected') console.error("Erro ao buscar services:", servicesRes.reason);
-
             priceTables = (tablesRes.status === 'fulfilled' && tablesRes.value.data) ? tablesRes.value.data : [];
             if (tablesRes.status === 'rejected') console.error("Erro ao buscar price_tables:", tablesRes.reason);
-
             servicePrices = (pricesRes.status === 'fulfilled' && pricesRes.value.data) ? pricesRes.value.data : [];
             if (pricesRes.status === 'rejected') console.error("Erro ao buscar service_prices:", pricesRes.reason);
-            
             quotes = (quotesRes.status === 'fulfilled' && quotesRes.value.data) ? quotesRes.value.data : [];
             if (quotesRes.status === 'rejected') console.error("Erro ao buscar quotes:", quotesRes.reason);
-
             paymentMethods = (paymentsRes.status === 'fulfilled' && paymentsRes.value.data) ? paymentsRes.value.data : [];
             if (paymentsRes.status === 'rejected') console.warn("Aviso: Não foi possível buscar 'payment_methods'.", paymentsRes.reason);
-            
             menus = (menusRes.status === 'fulfilled' && menusRes.value.data) ? menusRes.value.data : [];
             if (menusRes.status === 'rejected') console.warn("Aviso: Não foi possível buscar 'menus'.", menusRes.reason);
-            
             menuItems = (menuItemsRes.status === 'fulfilled' && menuItemsRes.value.data) ? menuItemsRes.value.data : [];
             if (menuItemsRes.status === 'rejected') console.warn("Aviso: Não foi possível buscar 'menu_items'.", menuItemsRes.reason);
 
@@ -114,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderGastronomyItems();
         renderMenusList();
     }
-    
+
     function renderQuotesTable() {
         const tbody = quotesTable?.querySelector('tbody');
         if (!tbody) return;
@@ -239,7 +258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderCurrentMenuItems() {
-        if(!currentMenuItemsContainer) return;
+        if (!currentMenuItemsContainer) return;
         currentMenuItemsContainer.innerHTML = '';
         const itemsInMenu = menuItems.filter(item => item.menu_id === selectedMenuId);
         if (itemsInMenu.length === 0) {
@@ -256,7 +275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderAvailableGastronomyItems() {
-        if(!availableGastronomyItemsContainer) return;
+        if (!availableGastronomyItemsContainer) return;
         availableGastronomyItemsContainer.innerHTML = '';
         const itemsInMenuIds = menuItems.filter(item => item.menu_id === selectedMenuId).map(item => item.services?.id);
         const searchQuery = availableItemSearch.value.toLowerCase();
@@ -340,18 +359,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function aggregateQuoteMetrics(quoteArray) {
+        const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } };
+        return quoteArray.reduce((acc, quote) => { if (acc[quote.status]) { acc[quote.status].count++; acc[quote.status].value += parseFloat(quote.total_value || 0); } return acc; }, initialMetrics);
+    }
+
+    function createKpiCard(title, current, previous) {
+        const percentageChange = calculatePercentageChange(current.value, previous.value);
+        const trendClass = percentageChange.startsWith('+') && parseFloat(percentageChange) > 0 ? 'increase' : percentageChange.startsWith('-') ? 'decrease' : '';
+        const trendIndicator = trendClass ? `<span class="percentage ${trendClass}">${percentageChange}</span>` : '';
+        return `<div class="kpi-card"><div class="kpi-title">${title} (Mês Atual)</div><div class="kpi-value">${formatCurrency(current.value)}</div><div class="kpi-sub-value">${current.count} propostas</div><div class="kpi-comparison">${trendIndicator}<span>em relação ao mês anterior (${formatCurrency(previous.value)})</span></div></div>`;
+    }
+
+    function calculatePercentageChange(current, previous) {
+        if (previous === 0) { return current > 0 ? '+∞%' : '0%'; }
+        const change = ((current - previous) / previous) * 100;
+        return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
+    }
 
     // =================================================================
     // FUNÇÕES DE AÇÃO (HANDLERS E CRUD)
     // =================================================================
     function addEventListeners() {
         const quotesTbody = quotesTable?.querySelector('tbody');
-        
-        // Navegação por Abas e Seções
         document.querySelector('.tabs-nav')?.addEventListener('click', setupTabEvents);
         document.body.addEventListener('click', setupCollapsibleEvents);
-        
-        // Ações de Delete (delegação no body)
         document.body.addEventListener('click', (e) => {
             const button = e.target.closest('button[data-action]');
             if (!button) return;
@@ -361,31 +393,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 'delete-service': deleteService,
                 'delete-table': deletePriceTable,
                 'delete-payment-method': deletePaymentMethod,
-                'delete-menu': () => deleteMenu(id), // deleteMenu precisa ser chamado com id
+                'delete-menu': () => deleteMenu(id),
             };
             if (actions[action]) actions[action](id);
         });
-
-        // Formulários de Adição
         document.getElementById('addServiceForm')?.addEventListener('submit', addService);
         document.getElementById('addPriceTableForm')?.addEventListener('submit', addPriceTable);
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', addPaymentMethod);
         document.getElementById('addGastronomyItemForm')?.addEventListener('submit', addGastronomyItem);
         document.getElementById('addMenuForm')?.addEventListener('submit', addMenu);
-        
-        // Interações de Edição nas Tabelas
         adminCatalogContainer?.addEventListener('change', (e) => { if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) handleServiceEdit(e.target, false); });
         adminCatalogContainer?.addEventListener('input', (e) => { if (e.target.matches('.service-detail-input[type="text"]')) handleServiceEdit(e.target, true); });
         priceTablesTbody?.addEventListener('change', (e) => { if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) handlePriceTableEdit(e.target, false); });
         priceTablesTbody?.addEventListener('input', (e) => { if (e.target.matches('.price-table-input[data-field="name"]')) handlePriceTableEdit(e.target, true); });
         paymentMethodsTbody?.addEventListener('change', (e) => { if (e.target.classList.contains('editable-input')) { const id = e.target.closest('tr').dataset.id; updatePaymentMethod(id, e.target.dataset.field, e.target.value); } });
         gastronomyItemsTbody?.addEventListener('change', (e) => { if (e.target.classList.contains('service-detail-input')) handleServiceEdit(e.target, false); });
-
-        // Filtros e Seleções
         quotesTbody?.addEventListener('change', async (e) => { if (e.target.classList.contains('status-select')) { const quoteId = e.target.dataset.id; const newStatus = e.target.value; await updateQuoteStatus(quoteId, newStatus); } });
         calendarStatusFilter?.addEventListener('change', updateCalendarEvents);
-
-        // Nova Interface de Cardápios
         availableItemSearch?.addEventListener('input', renderAvailableGastronomyItems);
         menuListContainer?.addEventListener('click', (e) => { const menuItem = e.target.closest('.menu-list-item'); if (menuItem && !e.target.closest('.btn-remove')) { selectedMenuId = menuItem.dataset.menuId; renderMenusList(); renderMenuDetails(); } });
         menuDetailColumn?.addEventListener('click', e => { const addButton = e.target.closest('[data-action="add-menu-item"]'); const removeButton = e.target.closest('[data-action="delete-menu-item"]'); if (addButton) addItemToMenu(addButton.dataset.serviceId); if (removeButton) deleteMenuItem(removeButton.dataset.id); });
@@ -416,16 +440,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function updateServiceDetail(serviceId, field, value, inputElement) { if (!serviceId || !field) return; if (field === 'name' && !value.trim()) { showNotification('O nome do serviço não pode ficar vazio.', true); fetchData(); return; } const { error } = await supabase.from('services').update({ [field]: value }).eq('id', serviceId); if (error) { showNotification(`Erro ao atualizar: ${error.message}`, true); fetchData(); } else { showFlash(inputElement); } }
     async function updateServicePrice(serviceId, tableId, price, inputElement) { if (!serviceId || !tableId) return; const recordToUpsert = { service_id: serviceId, price_table_id: tableId, price: price }; const { error } = await supabase.from('service_prices').upsert(recordToUpsert, { onConflict: 'service_id, price_table_id' }); if (error) { showNotification(`Erro ao atualizar preço: ${error.message}`, true); fetchData(); } else { showFlash(inputElement); } }
     async function updatePriceTableDetail(tableId, field, value, inputElement) { if (!tableId || !field) return; if (field === 'name' && !value.trim()) { showNotification('O nome da lista não pode ficar vazio.', true); fetchData(); return; } const { error } = await supabase.from('price_tables').update({ [field]: value }).eq('id', tableId); if (error) { showNotification(`Erro ao atualizar: ${error.message}`, true); fetchData(); } else { showFlash(inputElement); if (field === 'name') { fetchData(); } } }
-
-    // =================================================================
-    // FUNÇÕES UTILITÁRIAS
-    // =================================================================
-    function aggregateQuoteMetrics(quoteArray) { const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } }; return quoteArray.reduce((acc, quote) => { if (acc[quote.status]) { acc[quote.status].count++; acc[quote.status].value += parseFloat(quote.total_value || 0); } return acc; }, initialMetrics); }
-    function createKpiCard(title, current, previous) { const percentageChange = calculatePercentageChange(current.value, previous.value); const trendClass = percentageChange.startsWith('+') && parseFloat(percentageChange) > 0 ? 'increase' : percentageChange.startsWith('-') ? 'decrease' : ''; const trendIndicator = trendClass ? `<span class="percentage ${trendClass}">${percentageChange}</span>` : ''; return `<div class="kpi-card"><div class="kpi-title">${title} (Mês Atual)</div><div class="kpi-value">${formatCurrency(current.value)}</div><div class="kpi-sub-value">${current.count} propostas</div><div class="kpi-comparison">${trendIndicator}<span>em relação ao mês anterior (${formatCurrency(previous.value)})</span></div></div>`; }
-    function calculatePercentageChange(current, previous) { if (previous === 0) { return current > 0 ? '+∞%' : '0%'; } const change = ((current - previous) / previous) * 100; return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`; }
-    function createUnitSelect(currentUnit) { const units = ['unidade', 'diaria', 'por_pessoa']; return `<select class="service-detail-input" data-field="unit">${units.map(unit => `<option value="${unit}" ${unit === currentUnit ? 'selected' : ''}>${unit}</option>`).join('')}</select>`; }
-    function showFlash(inputElement) { if (inputElement) { inputElement.classList.add('success-flash'); setTimeout(() => inputElement.classList.remove('success-flash'), 1500); } }
-    function showNotification(message, isError = false) { if (!notification) return; notification.textContent = message; notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)'; notification.classList.add('show'); setTimeout(() => notification.classList.remove('show'), 5000); }
     
     // Inicia a aplicação
     initialize();
