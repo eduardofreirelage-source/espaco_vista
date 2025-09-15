@@ -59,7 +59,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         
-        // Gestão Financeira
+        // Renderiza seções dinâmicas
+        renderServicesSummary();
         renderPayments();
     }
     
@@ -72,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><input type="date" class="payment-input" data-index="${index}" data-field="due_date" value="${payment.due_date || ''}"></td>
-                <td><input type="number" step="0.01" class="payment-input" data-index="${index}" data-field="amount" value="${payment.amount || 0}"></td>
+                <td><input type="number" step="0.01" class="payment-input" data-index="${index}" data-field="amount" value="${formatCurrency(payment.amount) || 0}"></td>
                 <td><input type="text" class="payment-input" data-index="${index}" data-field="method" value="${payment.method || ''}"></td>
                 <td>
                     <select class="payment-input" data-index="${index}" data-field="status">
@@ -86,12 +87,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // NOVA FUNÇÃO: Renderiza o resumo de serviços contratados
+    function renderServicesSummary() {
+        const container = document.getElementById('services-summary-container');
+        if (!container || !currentQuote?.quote_data?.items) {
+            container.innerHTML = '<p>Nenhum serviço encontrado.</p>';
+            return;
+        }
+
+        const itemsByCategory = currentQuote.quote_data.items.reduce((acc, item) => {
+            const category = item.category || 'Outros';
+            if (!acc[category]) {
+                acc[category] = [];
+            }
+            acc[category].push(item);
+            return acc;
+        }, {});
+
+        let html = '';
+        const categoryOrder = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
+        
+        categoryOrder.forEach(category => {
+            if(itemsByCategory[category]) {
+                html += `<div class="service-summary-category">`;
+                html += `<h3>${category}</h3>`;
+                itemsByCategory[category].forEach(item => {
+                    html += `
+                        <div class="service-summary-item">
+                            <span>${item.name}</span>
+                            <span>${item.quantity} x ${formatCurrency(item.unit_price)}</span>
+                        </div>
+                    `;
+                });
+
+                // Adiciona o botão específico para Gastronomia
+                if (category === 'Gastronomia') {
+                    html += `<button class="btn btn-primary" style="margin-top: 1rem;">Definir Cardápio</button>`;
+                }
+
+                html += `</div>`;
+            }
+        });
+
+        container.innerHTML = html;
+    }
+
     // --- EVENT LISTENERS E AÇÕES ---
     document.getElementById('client-details-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const clientData = {
-            id: currentClient?.id, // Reutiliza o ID se já existir
+            id: currentClient?.id, 
             name: document.getElementById('client-name').value,
             cnpj: document.getElementById('client-cnpj').value,
             email: document.getElementById('client-email').value,
@@ -120,7 +166,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Se o orçamento ainda não está ligado a este cliente, atualiza a referência
         if (currentQuote.client_id !== savedClient.id) {
             const { error: quoteError } = await supabase
                 .from('quotes')
@@ -177,7 +222,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // Listener para os cards recolhíveis na página do evento
+    document.body.addEventListener('click', e => {
+        const header = e.target.closest('.collapsible-card > .card-header');
+        if (header) {
+            const card = header.closest('.collapsible-card');
+            card?.classList.toggle('collapsed');
+        }
+    });
+
+
     // --- FUNÇÕES UTILITÁRIAS ---
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
+    }
+
     function showNotification(message, isError = false) {
         notification.textContent = message;
         notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
