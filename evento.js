@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const notification = document.getElementById('save-notification');
     let currentQuote = null;
     let currentClient = null;
-    let services = []; // Armazenar os serviços para consulta
+    let services = [];
+    let hasInitializedListeners = false;
     
     const urlParams = new URLSearchParams(window.location.search);
     const quoteId = urlParams.get('quote_id');
@@ -28,7 +29,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentQuote = quoteRes.data;
             currentClient = quoteRes.data.clients;
             services = servicesRes.data;
+            
             populatePage();
+            if (!hasInitializedListeners) {
+                setupEventListeners();
+                hasInitializedListeners = true;
+            }
 
         } catch (error) {
             showNotification('Erro ao carregar dados do evento.', true);
@@ -47,10 +53,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('summary-event-dates').textContent = eventDates;
         
         // Dados do Cliente
+        populateClientForm();
+        
+        // Seções dinâmicas
+        renderServicesSummary();
+        renderPayments();
+    }
+
+    function populateClientForm() {
         document.getElementById('client-name').value = currentQuote.client_name || '';
-        document.getElementById('client-cnpj').value = currentQuote.quote_data.client_cnpj || '';
-        document.getElementById('client-email').value = currentQuote.quote_data.client_email || '';
-        document.getElementById('client-phone').value = currentQuote.quote_data.client_phone || '';
+        document.getElementById('client-cnpj').value = currentQuote.quote_data.client_cnpj || currentQuote.clients?.cnpj || '';
+        document.getElementById('client-email').value = currentQuote.quote_data.client_email || currentQuote.clients?.email ||'';
+        document.getElementById('client-phone').value = currentQuote.quote_data.client_phone || currentQuote.clients?.phone || '';
         if (currentClient) {
             document.getElementById('client-legal-name').value = currentClient.legal_name || '';
             document.getElementById('client-state-reg').value = currentClient.state_registration || '';
@@ -63,19 +77,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('client-address-zip').value = currentClient.address.zip || '';
             }
         }
-        
-        // Renderiza seções dinâmicas
-        renderServicesSummary();
-        renderPayments();
     }
     
     function renderPayments() {
-        const tbody = document.getElementById('payments-table').querySelector('tbody');
+        const tbody = document.getElementById('payments-table')?.querySelector('tbody');
+        if (!tbody) return;
         tbody.innerHTML = '';
         const payments = currentQuote.quote_data.payments || [];
         
         payments.forEach((payment, index) => {
-            const row = document.createElement('tr');
+            const row = tbody.insertRow();
             row.innerHTML = `
                 <td><input type="date" class="payment-input" data-index="${index}" data-field="due_date" value="${payment.due_date || ''}"></td>
                 <td><input type="number" step="0.01" class="payment-input" data-index="${index}" data-field="amount" value="${payment.amount || 0}"></td>
@@ -88,14 +99,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </td>
                 <td><button class="btn-remove remove-payment-btn" data-index="${index}">&times;</button></td>
             `;
-            tbody.appendChild(row);
         });
     }
 
     function renderServicesSummary() {
         const container = document.getElementById('services-summary-container');
         const items = currentQuote?.quote_data?.items;
-
         if (!container || !items || items.length === 0) {
             container.innerHTML = '<p>Nenhum serviço contratado encontrado.</p>';
             return;
@@ -105,9 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const service = services.find(s => s.id === item.service_id);
             if (!service) return acc;
             const category = service.category || 'Outros';
-            if (!acc[category]) {
-                acc[category] = [];
-            }
+            if (!acc[category]) acc[category] = [];
             acc[category].push({ ...item, name: service.name });
             return acc;
         }, {});
@@ -117,32 +124,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         categoryOrder.forEach(category => {
             if(itemsByCategory[category]) {
-                html += `<div class="service-summary-category">`;
-                html += `<h3>${category}</h3>`;
+                html += `<div class="service-summary-category"><h3>${category}</h3>`;
                 itemsByCategory[category].forEach(item => {
-                    html += `
-                        <div class="service-summary-item">
-                            <span>${item.name}</span>
-                            <span>${item.quantity} x ${formatCurrency(item.calculated_unit_price)}</span>
-                        </div>
-                    `;
+                    html += `<div class="service-summary-item"><span>${item.name}</span><span>${item.quantity} x ${formatCurrency(item.calculated_unit_price)}</span></div>`;
                 });
-
                 if (category === 'Gastronomia') {
-                    html += `<button class="btn btn-primary" style="margin-top: 1rem;">Definir Cardápio</button>`;
+                    html += `<button id="define-cardapio-btn" class="btn btn-primary" style="margin-top: 1rem;">Definir Cardápio</button>`;
                 }
-
                 html += `</div>`;
             }
         });
-
         container.innerHTML = html || '<p>Não foi possível detalhar os serviços.</p>';
     }
 
     // --- EVENT LISTENERS E AÇÕES ---
-    document.getElementById('client-details-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    function setupEventListeners() {
+        document.getElementById('client-details-form').addEventListener('submit', handleClientFormSubmit);
+        document.getElementById('add-payment-btn').addEventListener('click', handleAddPayment);
         
+        const paymentsTable = document.getElementById('payments-table');
+        paymentsTable.addEventListener('change', handlePaymentChange);
+        paymentsTable.addEventListener('click', handlePaymentClick);
+        
+        document.body.addEventListener('click', (e) => {
+            const header = e.target.closest('.collapsible-card > .card-header');
+            if (header) {
+                header.closest('.collapsible-card')?.classList.toggle('collapsed');
+            }
+            if (e.target.matches('#define-cardapio-btn')) {
+                window.location.href = 'app.html';
+            }
+        });
+    }
+
+    async function handleClientFormSubmit(e) {
+        e.preventDefault();
         const clientData = {
             id: currentClient?.id, 
             name: document.getElementById('client-name').value,
@@ -153,65 +169,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             state_registration: document.getElementById('client-state-reg').value,
             legal_rep_name: document.getElementById('client-rep-name').value,
             legal_rep_cpf: document.getElementById('client-rep-cpf').value,
-            address: {
-                street: document.getElementById('client-address-street').value,
-                city: document.getElementById('client-address-city').value,
-                state: document.getElementById('client-address-state').value,
-                zip: document.getElementById('client-address-zip').value,
-            }
+            address: { street: document.getElementById('client-address-street').value, city: document.getElementById('client-address-city').value, state: document.getElementById('client-address-state').value, zip: document.getElementById('client-address-zip').value }
         };
 
-        const { data: savedClient, error: clientError } = await supabase
-            .from('clients')
-            .upsert(clientData)
-            .select()
-            .single();
-
+        const { data: savedClient, error: clientError } = await supabase.from('clients').upsert(clientData).select().single();
         if (clientError) { showNotification('Erro ao salvar cliente.', true); console.error(clientError); return; }
-        if (currentQuote.client_id !== savedClient.id) {
-            const { error: quoteError } = await supabase.from('quotes').update({ client_id: savedClient.id }).eq('id', quoteId);
-            if (quoteError) { showNotification('Erro ao vincular cliente ao orçamento.', true); console.error(quoteError); return; }
+        
+        let quoteUpdateData = { client_name: savedClient.name };
+        if (!currentQuote.client_id) {
+             quoteUpdateData.client_id = savedClient.id;
         }
-        currentClient = savedClient;
+
+        const { error: quoteError } = await supabase.from('quotes').update(quoteUpdateData).eq('id', quoteId);
+        if (quoteError) { showNotification('Erro ao vincular cliente ao orçamento.', true); console.error(quoteError); return; }
+        
         showNotification('Dados do cliente salvos com sucesso!');
-    });
-    
-    document.getElementById('add-payment-btn').addEventListener('click', () => {
-        if (!currentQuote.quote_data.payments) { currentQuote.quote_data.payments = []; }
+        await loadData(); // Recarrega os dados para garantir consistência
+    }
+
+    function handleAddPayment() {
+        if (!currentQuote) return;
+        if (!currentQuote.quote_data.payments) currentQuote.quote_data.payments = [];
         currentQuote.quote_data.payments.push({ due_date: '', amount: 0, method: '', status: 'A Pagar' });
         renderPayments();
-    });
+        saveQuoteData();
+    }
 
-    document.getElementById('payments-table').addEventListener('change', async (e) => {
+    async function handlePaymentChange(e) {
         if (e.target.classList.contains('payment-input')) {
             const index = e.target.dataset.index;
             const field = e.target.dataset.field;
             let value = e.target.value;
             if (e.target.type === 'number') value = parseFloat(value) || 0;
             currentQuote.quote_data.payments[index][field] = value;
-            
-            const { error } = await supabase.from('quotes').update({ quote_data: currentQuote.quote_data }).eq('id', quoteId);
-            if (error) { showNotification('Erro ao salvar parcela.', true); } else { showNotification('Parcela salva!'); }
+            await saveQuoteData('Parcela salva!');
         }
-    });
-    
-    document.getElementById('payments-table').addEventListener('click', async (e) => {
+    }
+
+    async function handlePaymentClick(e) {
         if (e.target.classList.contains('remove-payment-btn')) {
             const index = e.target.dataset.index;
             currentQuote.quote_data.payments.splice(index, 1);
-            
-            const { error } = await supabase.from('quotes').update({ quote_data: currentQuote.quote_data }).eq('id', quoteId);
-            if (error) { showNotification('Erro ao remover parcela.', true); } else { showNotification('Parcela removida!'); renderPayments(); }
+            renderPayments();
+            await saveQuoteData('Parcela removida!');
         }
-    });
+    }
 
-    document.body.addEventListener('click', e => {
-        const header = e.target.closest('.collapsible-card > .card-header');
-        if (header) {
-            const card = header.closest('.collapsible-card');
-            card?.classList.toggle('collapsed');
-        }
-    });
+    async function saveQuoteData(message = 'Dados salvos.') {
+        if (!currentQuote) return;
+        const { error } = await supabase.from('quotes').update({ quote_data: currentQuote.quote_data }).eq('id', quoteId);
+        if (error) { showNotification('Erro ao salvar dados.', true); } 
+        else { showNotification(message); }
+    }
 
     function formatCurrency(value) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0); }
     function showNotification(message, isError = false) { notification.textContent = message; notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)'; notification.classList.add('show'); setTimeout(() => notification.classList.remove('show'), 4000); }
