@@ -29,11 +29,11 @@ body {
 }
 
 .container {
-    /* CORREÇÃO FINAL: Layout 100% de ponta a ponta */
+    /* CORREÇÃO FINAL: Removido padding lateral para o container ocupar 100% da tela */
     max-width: none;
     width: 100%;
     margin: 1.5rem auto;
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 1rem; /* Padding vertical mantido, horizontal reduzido */
 }
 
 .print-only { display: none; }
@@ -116,6 +116,13 @@ summary.card-summary-header h2 {
 .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); color: white; }
 .btn-primary:hover { background-color: #6d0000; border-color: #6d0000; }
 
+/* ADICIONADO: Estilo para tornar os botões de ação nas tabelas menores */
+.quote-table .actions .btn {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+
 .btn-remove {
     padding: 0; width: 34px; height: 34px;
     border-radius: 50%; border: 1px solid transparent;
@@ -160,7 +167,6 @@ summary.card-summary-header h2 {
 .summary-footer { padding-bottom: 0; }
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
 .summary-content { 
-    /* Garante que o conteúdo do rodapé também ocupe 100% da largura */
     max-width: none; 
     margin: 0 auto; 
     display: flex; 
