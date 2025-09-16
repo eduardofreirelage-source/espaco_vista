@@ -194,7 +194,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>`;
             }).join('');
 
-            // CORRIGIDO: Remove o 'div' wrapper desnecessário, inserindo o HTML diretamente.
             const detailsHtml = `<details class="category-accordion" open>
                 <summary class="category-header"><h3 class="category-title">${category}</h3></summary>
                 <div class="table-container">
