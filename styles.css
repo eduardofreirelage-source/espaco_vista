@@ -211,6 +211,7 @@ summary.card-summary-header h2 {
 .collapsible-card .card-content { overflow: hidden; transition: all 0.4s ease-out; max-height: 5000px; }
 .collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: 1px solid transparent; visibility: hidden; }
 
+/* Esta classe é crucial para conter o overflow horizontal */
 .table-container { overflow-x: auto; }
 .editable-table, .quote-table { width: 100%; border-collapse: collapse; }
 .editable-table th, .editable-table td, .quote-table th, .quote-table td { padding: 0.8rem; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border-color);}
