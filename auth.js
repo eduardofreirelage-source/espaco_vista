@@ -174,10 +174,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         orderedCategories.forEach(category => {
             if (!servicesByCategory[category]) return;
-            const categoryWrapper = document.createElement('div');
+            
             let tableHeaders = `<th>Nome</th><th>Unidade</th>`;
             priceTables.forEach(pt => tableHeaders += `<th class="price-column">${pt.name}</th>`);
             tableHeaders += `<th class="actions">Ações</th>`;
+            
             let rowsHtml = servicesByCategory[category].map(service => {
                 let priceColumns = priceTables.map(table => {
                     const priceRecord = servicePrices.find(p => p.service_id === service.id && p.price_table_id === table.id);
@@ -192,8 +193,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td class="actions">${duplicateButton}<button class="btn-remove" data-action="delete-service" data-id="${service.id}">&times;</button></td>
                 </tr>`;
             }).join('');
-            categoryWrapper.innerHTML = `<details class="category-accordion" open><summary class="category-header"><h3 class="category-title">${category}</h3></summary><div class="table-container"><table class="editable-table"><thead><tr>${tableHeaders}</tr></thead><tbody>${rowsHtml}</tbody></table></div></details>`;
-            adminCatalogContainer.appendChild(categoryWrapper);
+
+            // CORRIGIDO: Remove o 'div' wrapper desnecessário, inserindo o HTML diretamente.
+            const detailsHtml = `<details class="category-accordion" open>
+                <summary class="category-header"><h3 class="category-title">${category}</h3></summary>
+                <div class="table-container">
+                    <table class="editable-table">
+                        <thead><tr>${tableHeaders}</tr></thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            </details>`;
+            adminCatalogContainer.insertAdjacentHTML('beforeend', detailsHtml);
         });
     }
 
