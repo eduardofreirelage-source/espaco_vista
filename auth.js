@@ -12,16 +12,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ESTADO GLOBAL
     let services = [], priceTables = [], servicePrices = [], quotes = [], paymentMethods = [], cardapioItems = [], cardapioComposition = [], units = [];
     let selectedCardapioId = null;
+    let calendarInstance = null;
 
     // SELETORES DO DOM
     const notification = document.getElementById('save-notification');
     const adminCatalogContainer = document.getElementById('admin-catalog-container');
-    const cardapioItemsTbody = document.getElementById('cardapio-items-table')?.querySelector('tbody');
     const selectCardapioToEdit = document.getElementById('select-cardapio-to-edit');
     const compositionSection = document.getElementById('composition-section');
     const editingCardapioName = document.getElementById('editing-cardapio-name');
     const selectItemToAdd = document.getElementById('select-item-to-add');
     const serviceUnitSelect = document.getElementById('serviceUnit');
+    const analyticsContainer = document.getElementById('analytics-container');
+    const analyticsNotice = document.getElementById('analytics-notice');
+    const calendarEl = document.getElementById('calendar');
 
     // =================================================================
     // FUNÇÕES UTILITÁRIAS
@@ -46,6 +49,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `<select class="editable-input" data-field="unit">${units.map(unit => `<option value="${unit.name}" ${unit.name === currentUnit ? 'selected' : ''}>${unit.name}</option>`).join('')}</select>`;
     }
 
+    function aggregateQuoteMetrics(quoteArray) {
+        const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } };
+        return quoteArray.reduce((acc, quote) => { if (acc[quote.status]) { acc[quote.status].count++; acc[quote.status].value += parseFloat(quote.total_value || 0); } return acc; }, initialMetrics);
+    }
+
+    function createKpiCard(title, current, previous) {
+        const calculatePercentageChange = (current, previous) => {
+            if (previous === 0) { return current > 0 ? '+∞%' : '0%'; }
+            const change = ((current - previous) / previous) * 100;
+            return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
+        };
+        const percentageChange = calculatePercentageChange(current.value, previous.value);
+        const trendClass = percentageChange.startsWith('+') && parseFloat(percentageChange) > 0 ? 'increase' : percentageChange.startsWith('-') ? 'decrease' : '';
+        const trendIndicator = trendClass ? `<span class="percentage ${trendClass}">${percentageChange}</span>` : '';
+        const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        return `<div class="kpi-card"><div class="kpi-title">${title} (Mês Atual)</div><div class="kpi-value">${formatCurrency(current.value)}</div><div class="kpi-sub-value">${current.count} propostas</div><div class="kpi-comparison">${trendIndicator}<span>em relação ao mês anterior (${formatCurrency(previous.value)})</span></div></div>`;
+    }
+
     // =================================================================
     // INICIALIZAÇÃO E DADOS
     // =================================================================
@@ -67,7 +88,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]);
 
         const [servicesRes, tablesRes, pricesRes, quotesRes, paymentsRes, itemsRes, compositionRes, unitsRes] = results;
-
         services = (servicesRes.status === 'fulfilled') ? servicesRes.value.data : [];
         priceTables = (tablesRes.status === 'fulfilled') ? tablesRes.value.data : [];
         servicePrices = (pricesRes.status === 'fulfilled') ? pricesRes.value.data : [];
@@ -77,14 +97,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         cardapioComposition = (compositionRes.status === 'fulfilled') ? compositionRes.value.data : [];
         units = (unitsRes.status === 'fulfilled') ? unitsRes.value.data : [];
         
-        if (itemsRes.status === 'rejected') console.warn("Aviso: Tabela 'cardapio_items' não encontrada.", itemsRes.reason);
-        if (compositionRes.status === 'rejected') console.warn("Aviso: Tabela 'cardapio_composition' não encontrada.", compositionRes.reason);
-        if (unitsRes.status === 'rejected') console.warn("Aviso: Tabela 'units' não encontrada.", unitsRes.reason);
-        
         renderAll();
     }
-
-    // =================================================================
+// =================================================================
     // RENDERIZAÇÃO
     // =================================================================
     function renderAll() {
@@ -218,6 +233,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         serviceUnitSelect.innerHTML = '';
         units.forEach(unit => serviceUnitSelect.add(new Option(unit.name, unit.name)));
     }
+    
+    function renderAnalytics() {
+        if (!analyticsContainer || !analyticsNotice) return;
+        analyticsContainer.innerHTML = '';
+        if (quotes.length === 0) {
+            analyticsNotice.textContent = 'Nenhuma proposta encontrada para gerar análises.';
+            analyticsNotice.style.display = 'block';
+            return;
+        }
+        const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentMonthQuotes = quotes.filter(q => new Date(q.created_at) >= startOfCurrentMonth);
+        if (currentMonthQuotes.length === 0) {
+            analyticsNotice.textContent = 'Nenhuma proposta encontrada para o mês atual.';
+            analyticsNotice.style.display = 'block';
+            return;
+        }
+        analyticsNotice.style.display = 'none';
+        const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        const previousMonthQuotes = quotes.filter(q => { const createdAt = new Date(q.created_at); return createdAt >= startOfPreviousMonth && createdAt <= endOfPreviousMonth; });
+        const currentMetrics = aggregateQuoteMetrics(currentMonthQuotes);
+        const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
+        analyticsContainer.innerHTML = `${createKpiCard('Ganhos', currentMetrics.Ganho, previousMetrics.Ganho)}${createKpiCard('Perdidos', currentMetrics.Perdido, previousMetrics.Perdido)}${createKpiCard('Em Análise', currentMetrics['Em analise'], previousMetrics['Em analise'])}`;
+    }
+    
+    function initializeCalendar() {
+        if (!calendarEl || calendarInstance) return;
+        calendarInstance = new FullCalendar.Calendar(calendarEl, {
+            locale: 'pt-br', initialView: 'dayGridMonth', headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+            eventClick: (info) => { const { quoteId } = info.event.extendedProps; window.location.href = `evento.html?quote_id=${quoteId}`; }
+        });
+        calendarInstance.render();
+        updateCalendarEvents();
+    }
+    
+    function updateCalendarEvents() {
+        if (!calendarInstance) return;
+        const events = quotes.filter(q => q.status === 'Ganho' && q.quote_data?.event_dates?.[0]?.date)
+                             .map(q => ({ title: q.client_name, start: q.quote_data.event_dates[0].date, extendedProps: { quoteId: q.id } }));
+        calendarInstance.removeAllEvents();
+        calendarInstance.addEventSource(events);
+    }
+
     // =================================================================
     // EVENT LISTENERS E AÇÕES
     // =================================================================
@@ -229,19 +288,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             clickedTab.classList.add('active');
             document.getElementById(`tab-content-${clickedTab.dataset.tab}`).classList.add('active');
+            if (clickedTab.dataset.tab === 'calendar') initializeCalendar();
         });
         document.body.addEventListener('click', (e) => {
             const header = e.target.closest('.collapsible-card > .card-header');
             if (header) header.closest('.collapsible-card')?.classList.toggle('collapsed');
         });
-        
         document.getElementById('add-cardapio-item-form')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addServiceForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPriceTableForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addUnitForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('add-item-to-cardapio-form')?.addEventListener('submit', handleFormSubmit);
-
         document.body.addEventListener('click', handleTableActions);
         document.body.addEventListener('change', handleTableEdits);
         selectCardapioToEdit?.addEventListener('change', (e) => { selectedCardapioId = e.target.value; renderCompositionDetails(); });
@@ -250,35 +308,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleFormSubmit(e) {
         e.preventDefault();
         const form = e.target;
-        const formId = form.id;
         let result, successMessage = 'Salvo com sucesso!';
         try {
-            if (formId === 'add-cardapio-item-form') {
-                const name = form.querySelector('#cardapioItemName').value;
-                const description = form.querySelector('#cardapioItemDescription').value;
-                result = await supabase.from('cardapio_items').insert([{ name, description }]);
-            } else if (formId === 'addServiceForm') {
-                const name = form.querySelector('#serviceName').value;
-                const category = form.querySelector('#serviceCategory').value;
-                const unit = form.querySelector('#serviceUnit').value;
-                result = await supabase.from('services').insert([{ name, category, unit }]);
-            } else if (formId === 'addPriceTableForm') {
-                const name = form.querySelector('#tableName').value;
-                const consumable_credit = form.querySelector('#tableConsumable').value;
-                result = await supabase.from('price_tables').insert([{ name, consumable_credit }]);
-            } else if (formId === 'addPaymentMethodForm') {
-                 const name = form.querySelector('#paymentMethodName').value;
-                 result = await supabase.from('payment_methods').insert([{ name }]);
-            } else if (formId === 'addUnitForm') {
-                 const name = form.querySelector('#unitName').value;
-                 result = await supabase.from('units').insert([{ name }]);
-            } else if (formId === 'add-item-to-cardapio-form') {
-                if (!selectedCardapioId) return;
-                const item_id = selectItemToAdd.value;
-                result = await supabase.from('cardapio_composition').insert([{ cardapio_service_id: selectedCardapioId, item_id }]);
-                successMessage = 'Item adicionado ao cardápio!';
+            switch (form.id) {
+                case 'add-cardapio-item-form':
+                    result = await supabase.from('cardapio_items').insert([{ name: form.querySelector('#cardapioItemName').value, description: form.querySelector('#cardapioItemDescription').value }]);
+                    break;
+                case 'addServiceForm':
+                    result = await supabase.from('services').insert([{ name: form.querySelector('#serviceName').value, category: form.querySelector('#serviceCategory').value, unit: form.querySelector('#serviceUnit').value }]);
+                    break;
+                case 'addPriceTableForm':
+                    result = await supabase.from('price_tables').insert([{ name: form.querySelector('#tableName').value, consumable_credit: form.querySelector('#tableConsumable').value }]);
+                    break;
+                case 'addPaymentMethodForm':
+                     result = await supabase.from('payment_methods').insert([{ name: form.querySelector('#paymentMethodName').value }]);
+                     break;
+                case 'addUnitForm':
+                     result = await supabase.from('units').insert([{ name: form.querySelector('#unitName').value }]);
+                     break;
+                case 'add-item-to-cardapio-form':
+                    if (!selectedCardapioId) return;
+                    result = await supabase.from('cardapio_composition').insert([{ cardapio_service_id: selectedCardapioId, item_id: selectItemToAdd.value }]);
+                    successMessage = 'Item adicionado ao cardápio!';
+                    break;
             }
-
             if (result && result.error) throw result.error;
             showNotification(successMessage);
             if(form.tagName === 'FORM') form.reset();
@@ -291,7 +344,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleTableActions(e) {
         const button = e.target.closest('button[data-action]');
         if (!button) return;
-        
         const { action, id } = button.dataset;
         if (action === 'duplicate-cardapio') {
             duplicateCardapio(id);
@@ -312,32 +364,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     async function handleTableEdits(e) {
         const input = e.target;
-        if (!input.classList.contains('editable-input') && !input.classList.contains('status-select') && !input.classList.contains('service-price-input')) return;
-        
+        if (!input.matches('.editable-input, .status-select, .service-price-input')) return;
         const row = input.closest('tr');
         const id = row.dataset.id;
         if(!id) return;
-
         if (input.classList.contains('service-price-input')) {
-            const service_id = input.dataset.serviceId;
-            const price_table_id = input.dataset.tableId;
-            const price = input.value;
-            const { error } = await supabase.from('service_prices').upsert({ service_id, price_table_id, price }, { onConflict: 'service_id, price_table_id' });
+            const { serviceId, tableId } = input.dataset;
+            const { error } = await supabase.from('service_prices').upsert({ service_id: serviceId, price_table_id: tableId, price: input.value }, { onConflict: 'service_id, price_table_id' });
             if (error) { showNotification(`Erro: ${error.message}`, true); } else { showFlash(input); }
             return;
         }
-
         const { field } = input.dataset;
         const value = input.value;
         const table = row.closest('table');
         if (!table) return;
-
         const tableMap = {
             'cardapio-items-table': 'cardapio_items', 'payment-methods-table': 'payment_methods',
             'price-tables-list': 'price_tables', 'units-table': 'units', 'quotes-table': 'quotes',
         };
-        let tableName = tableMap[table.id];
-        if (table.closest('#admin-catalog-container')) tableName = 'services';
+        let tableName = tableMap[table.id] || (table.closest('#admin-catalog-container') ? 'services' : null);
         if (tableName) {
             const { error } = await supabase.from(tableName).update({ [field]: value }).eq(tableName === 'units' ? 'name' : 'id', id);
             if (error) { showNotification(`Erro: ${error.message}`, true); fetchData(); }
@@ -346,7 +391,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     async function duplicateCardapio(serviceId) {
-        showNotification('Duplicando cardápio, por favor aguarde...');
+        showNotification('Duplicando cardápio, aguarde...');
         try {
             const { data: originalService, error: serviceError } = await supabase.from('services').select('*').eq('id', serviceId).single();
             if (serviceError) throw serviceError;
@@ -354,26 +399,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (compError) throw compError;
             const { data: originalPrices, error: pricesError } = await supabase.from('service_prices').select('price_table_id, price').eq('service_id', serviceId);
             if (pricesError) throw pricesError;
-
-            const { data: newService, error: newServiceError } = await supabase.from('services').insert({
-                name: `${originalService.name} Cópia`,
-                category: originalService.category,
-                unit: originalService.unit
-            }).select().single();
+            const { data: newService, error: newServiceError } = await supabase.from('services').insert({ name: `${originalService.name} Cópia`, category: originalService.category, unit: originalService.unit }).select().single();
             if (newServiceError) throw newServiceError;
-
-            if (originalComposition && originalComposition.length > 0) {
+            if (originalComposition?.length > 0) {
                 const newComposition = originalComposition.map(item => ({ cardapio_service_id: newService.id, item_id: item.item_id }));
                 const { error: newCompError } = await supabase.from('cardapio_composition').insert(newComposition);
                 if (newCompError) throw newCompError;
             }
-
-            if (originalPrices && originalPrices.length > 0) {
+            if (originalPrices?.length > 0) {
                 const newPrices = originalPrices.map(p => ({ service_id: newService.id, price_table_id: p.price_table_id, price: p.price }));
                 const { error: newPricesError } = await supabase.from('service_prices').insert(newPrices);
                 if (newPricesError) throw newPricesError;
             }
-
             showNotification('Cardápio duplicado com sucesso!');
             fetchData();
         } catch (error) {
@@ -383,6 +420,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initialize();
 });
-
 // FIM DO ARQUIVO auth.js
-    function renderAnalytics() { /* ... Lógica de Analytics aqui ... */ }
