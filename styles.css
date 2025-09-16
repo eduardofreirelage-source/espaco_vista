@@ -29,6 +29,7 @@ body {
 }
 
 .container {
+    /* Regra final para garantir 100% de largura */
     max-width: none;
     width: 100%;
     margin: 1.5rem auto;
@@ -268,7 +269,7 @@ summary.card-summary-header h2 {
 .fc .fc-daygrid-day.fc-day-today { background-color: rgba(139, 0, 0, 0.1); }
 .fc-event { cursor: pointer; }
 
-/* ADICIONADO: Estilos para a página de Analytics para garantir 100% de largura */
+/* Página de Analytics */
 .analytics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
