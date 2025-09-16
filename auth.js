@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const serviceUnitSelect = document.getElementById('serviceUnit');
 
     // =================================================================
-    // FUNÇÕES UTILITÁRIAS (Helpers)
+    // FUNÇÕES UTILITÁRIAS
     // =================================================================
     function showNotification(message, isError = false) {
         if (!notification) return;
@@ -42,12 +42,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function createUnitSelect(currentUnit) {
-        if(!units || units.length === 0) return `<input type="text" class="editable-input" data-field="unit" value="${currentUnit || ''}">`;
+        if (!units || units.length === 0) return `<input type="text" class="editable-input" data-field="unit" value="${currentUnit || ''}">`;
         return `<select class="editable-input" data-field="unit">${units.map(unit => `<option value="${unit.name}" ${unit.name === currentUnit ? 'selected' : ''}>${unit.name}</option>`).join('')}</select>`;
     }
 
     // =================================================================
-    // FUNÇÕES PRINCIPAIS (INICIALIZAÇÃO E DADOS)
+    // INICIALIZAÇÃO E DADOS
     // =================================================================
     async function initialize() {
         addEventListeners();
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             supabase.from('units').select('name').order('name')
         ]);
 
-        const [servicesRes, tablesRes, pricesRes, quotesRes, paymentsRes, itemsRes, compositionRes, unitsRes] = results;
+        const [servicesRes, tablesRes, quotesRes, paymentsRes, itemsRes, compositionRes, unitsRes] = results;
 
         services = (servicesRes.status === 'fulfilled') ? servicesRes.value.data : [];
         priceTables = (tablesRes.status === 'fulfilled') ? tablesRes.value.data : [];
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.createElement('tr');
         row.dataset.id = quote.id;
         const statusOptions = ['Rascunho', 'Em analise', 'Ganho', 'Perdido'];
-        const selectHTML = `<select class="status-select editable-input" data-field="status" data-id="${quote.id}">${statusOptions.map(opt => `<option value="${opt}" ${quote.status === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>`;
+        const selectHTML = `<select class="status-select editable-input" data-field="status">${statusOptions.map(opt => `<option value="${opt}" ${quote.status === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>`;
         row.innerHTML = `<td>${quote.client_name || 'Rascunho'}</td><td>${new Date(quote.created_at).toLocaleDateString('pt-BR')}</td><td>${selectHTML}</td><td class="actions"><a href="index.html?quote_id=${quote.id}" class="btn">Editar</a><a href="evento.html?quote_id=${quote.id}" class="btn" style="${quote.status === 'Ganho' ? '' : 'display:none;'}">Gerenciar</a><button class="btn-remove" data-action="delete-quote" data-id="${quote.id}">&times;</button></td>`;
         return row;
     }
@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         units.forEach(unit => serviceUnitSelect.add(new Option(unit.name, unit.name)));
     }
     
-    function renderAnalytics() { /* ... Lógica de Analytics ... */ }
+    function renderAnalytics() { /* ... Lógica de Analytics aqui ... */ }
 // =================================================================
     // EVENT LISTENERS E AÇÕES
     // =================================================================
@@ -299,13 +299,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             duplicateCardapio(id);
             return;
         }
-
         const tables = {
             'delete-quote': 'quotes', 'delete-service': 'services', 'delete-table': 'price_tables',
             'delete-payment-method': 'payment_methods', 'delete-cardapio-item': 'cardapio_items',
             'delete-composition-item': 'cardapio_composition', 'delete-unit': 'units'
         };
-
         if (tables[action]) {
             if (!confirm('Tem certeza?')) return;
             const { error } = await supabase.from(tables[action]).delete().eq(action === 'delete-unit' ? 'name' : 'id', id);
@@ -333,13 +331,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const { field } = input.dataset;
         const value = input.value;
-        const tableId = row.closest('table')?.id;
+        const table = row.closest('table');
+        if (!table) return;
+
         const tableMap = {
             'cardapio-items-table': 'cardapio_items', 'payment-methods-table': 'payment_methods',
             'price-tables-list': 'price_tables', 'units-table': 'units', 'quotes-table': 'quotes',
         };
-        let tableName = tableMap[tableId];
-        if (row.closest('#admin-catalog-container')) tableName = 'services';
+        let tableName = tableMap[table.id];
+        if (table.closest('#admin-catalog-container')) tableName = 'services';
         if (tableName) {
             const { error } = await supabase.from(tableName).update({ [field]: value }).eq(tableName === 'units' ? 'name' : 'id', id);
             if (error) { showNotification(`Erro: ${error.message}`, true); fetchData(); }
@@ -383,8 +383,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Inicia a aplicação
     initialize();
 });
-
 // FIM DO ARQUIVO auth.js
