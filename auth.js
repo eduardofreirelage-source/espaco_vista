@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderAll() {
         renderSimpleTable(document.getElementById('quotes-table'), quotes, createQuoteRow);
         renderSimpleTable(document.getElementById('events-table'), quotes.filter(q => q.status === 'Ganho'), createEventRow);
-        renderSimpleTable(document.getElementById('price-tables-list'), priceTables, createPriceTableRow);
+        renderSimpleTable(document.getElementById('price-tables-table'), priceTables, createPriceTableRow);
         renderSimpleTable(document.getElementById('payment-methods-table'), paymentMethods, createPaymentMethodRow);
         renderSimpleTable(document.getElementById('cardapio-items-table'), cardapioItems, createCardapioItemRow);
         renderSimpleTable(document.getElementById('units-table'), units, createUnitRow);
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
         const servicesByCategory = services.reduce((acc, service) => { if (!acc[service.category]) acc[service.category] = []; acc[service.category].push(service); return acc; }, {});
-        const orderedCategories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
+        const orderedCategories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços e Outros'];
         
         orderedCategories.forEach(category => {
             if (!servicesByCategory[category]) return;
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!table) return;
         const tableMap = {
             'cardapio-items-table': 'cardapio_items', 'payment-methods-table': 'payment_methods',
-            'price-tables-list': 'price_tables', 'units-table': 'units', 'quotes-table': 'quotes',
+            'price-tables-table': 'price_tables', 'units-table': 'units', 'quotes-table': 'quotes',
         };
         let tableName = tableMap[table.id] || (table.closest('#admin-catalog-container') ? 'services' : null);
         if (tableName) {
@@ -420,4 +420,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initialize();
 });
-// FIM DO ARQUIVO auth.js
