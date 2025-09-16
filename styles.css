@@ -29,7 +29,6 @@ body {
 }
 
 .container {
-    /* Regra final para garantir 100% de largura */
     max-width: none;
     width: 100%;
     margin: 1.5rem auto;
@@ -42,7 +41,17 @@ header { display: flex; justify-content: space-between; align-items: center; mar
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
 .header-actions { display: flex; gap: 0.8rem; align-items: center; }
 
-.card { background-color: var(--card-bg); border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 1.5rem; }
+/* CORREÇÃO FINAL: Adicionado width: 100% para garantir que todos os cards ocupem a largura total */
+.card { 
+    background-color: var(--card-bg); 
+    border-radius: 8px; 
+    box-shadow: var(--shadow); 
+    border: 1px solid var(--border-color); 
+    overflow: hidden; 
+    margin-bottom: 1.5rem; 
+    width: 100%;
+}
+
 h2, h3, h4, h5 { font-weight: 600; color: var(--heading-color); }
 h2 { font-size: 1.1rem; }
 h4 { margin-bottom: 1rem; }
