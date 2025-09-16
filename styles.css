@@ -14,7 +14,7 @@
     --card-bg: #ffffff;
     --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.05);
     --danger-color: #c9302c;
-    --success-color: #28a745; /* COR ADICIONADA */
+    --success-color: #28a745;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,11 +25,12 @@ body {
     color: var(--text-color); 
     line-height: 1.5; 
     font-size: 13px;
-    padding-bottom: 80px; /* ADICIONADO: Espaço para o rodapé fixo não sobrepor o conteúdo */
+    padding-bottom: 80px;
 }
 
 .container {
-    max-width: none;
+    /* CORRIGIDO: Definida uma largura máxima para um layout mais consistente em telas grandes */
+    max-width: 1300px;
     width: 100%;
     margin: 1.5rem auto;
     padding: 1.5rem 2rem;
@@ -47,13 +48,29 @@ h2 { font-size: 1.1rem; }
 h4 { margin-bottom: 1rem; }
 
 .card-content { padding: 1.2rem 1.5rem; }
-.card .card-header {
+.card .card-header,
+/* ADICIONADO: Estilo para alinhar título e botão (ex: "+ Adicionar Data") */
+.card .card-summary-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
 }
+
+/* ADICIONADO: Remove a seta padrão do <details> e ajusta o padding */
+.card .card-summary-header {
+    list-style: none;
+    padding: 0.8rem 1.5rem;
+}
+.card .card-summary-header::-webkit-details-marker {
+    display: none;
+}
+.data-accordion[open] > summary {
+    border-bottom: 1px solid var(--border-color);
+}
+
+
 .collapsible-card.collapsed .card-header {
     border-bottom-color: transparent;
 }
@@ -104,7 +121,39 @@ h4 { margin-bottom: 1rem; }
 }
 .btn-remove:hover { background-color: var(--danger-color); color: white; }
 
-.summary-footer { padding-bottom: 0; } /* Remove padding from body for fixed footer */
+/* ADICIONADO: Estilos para o container e menu de exportação */
+.export-container {
+    position: relative;
+    display: inline-block;
+}
+.export-menu {
+    display: none; /* Escondido por padrão */
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+    z-index: 100;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.export-menu.show {
+    display: block; /* Exibido via JS */
+}
+.export-menu div {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.export-menu div:hover {
+    background-color: #f1f1f1;
+}
+
+
+.summary-footer { padding-bottom: 0; }
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
 .summary-content { max-width: 1300px; margin: 0 auto; display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; }
 .summary-item { display: flex; align-items: center; gap: 0.5rem; }
