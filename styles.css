@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 /* =================================================================
-   ESTILOS GERAIS
+   ESTILOS GERAIS E LAYOUT GRID
    ================================================================= */
 
 :root {
@@ -35,6 +35,14 @@ body {
     padding: 1.5rem 1rem;
 }
 
+/* CORREÇÃO 1: Usar Grid no <main> para controlar o layout e espaçamento dos cards. */
+main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+
 .print-only { display: none; }
 
 header { 
@@ -55,9 +63,13 @@ header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
     border: 1px solid var(--border-color); 
     overflow: hidden; 
     width: 100%;
-    margin-bottom: 1.5rem; /* Espaçamento entre os cards */
+    /* margin-bottom: 1.5rem; */ /* CORREÇÃO 1: Removido, 'gap' no grid controla o espaçamento */
+    
+    /* CORREÇÃO 1: Essencial para que o card respeite a largura do grid e não expanda com o conteúdo. */
+    min-width: 0; 
 }
-/* Remove a margem do último card para evitar espaçamento duplo no final */
+
+/* Mantido para compatibilidade se algum layout não usar grid/gap */
 .card:last-child {
     margin-bottom: 0;
 }
@@ -203,16 +215,37 @@ summary.card-summary-header h2 {
 .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
 
 .tab-content { display: none; }
-.tab-content.active { display: block; }
+
+/* CORREÇÃO 1: Aplica o Grid também ao conteúdo das abas ativas. */
+.tab-content.active { 
+    /* display: block; */
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
 
 .collapsible-card > .card-header { cursor: pointer; }
 .collapse-icon::before { content: '−'; font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
 .collapsible-card.collapsed .collapse-icon::before { content: '+'; }
-.collapsible-card .card-content { overflow: hidden; transition: all 0.4s ease-out; max-height: 5000px; }
-.collapsible-card.collapsed .card-content { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: 1px solid transparent; visibility: hidden; }
 
-/* Esta classe é crucial para conter o overflow horizontal */
+/* CORREÇÃO 2: Removido overflow: hidden do estado aberto para permitir rolagem interna */
+.collapsible-card .card-content { 
+    /* overflow: hidden; */
+    transition: all 0.4s ease-out; 
+    max-height: 5000px; 
+}
+.collapsible-card.collapsed .card-content { 
+    max-height: 0; 
+    padding-top: 0; 
+    padding-bottom: 0; 
+    border-top: 1px solid transparent; 
+    visibility: hidden; 
+    overflow: hidden; /* Manter oculto quando fechado */
+}
+
+/* Esta classe é crucial para conter o overflow horizontal internamente */
 .table-container { overflow-x: auto; }
+
 .editable-table, .quote-table { width: 100%; border-collapse: collapse; }
 .editable-table th, .editable-table td, .quote-table th, .quote-table td { padding: 0.8rem; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border-color);}
 .editable-table th, .quote-table th { background-color: #f9f9f9; font-weight: 600; }
@@ -235,6 +268,8 @@ summary.card-summary-header h2 {
     gap: 1.5rem;
     align-items: flex-end;
     flex-wrap: wrap;
+    /* CORREÇÃO 3: Adicionado para conter overflow causado por margens negativas */
+    overflow-x: auto; 
 }
 .inline-form .form-group {
     flex-grow: 1;
@@ -270,7 +305,14 @@ summary.card-summary-header h2 {
    ================================================================= */
 
 /* Página de Gestão de Evento */
-#event-details-grid { display: flex; flex-direction: column; gap: 1.5rem; }
+/* CORREÇÃO 1: Convertido de flex column para grid */
+#event-details-grid { 
+    /* display: flex; flex-direction: column; gap: 1.5rem; */
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
 .event-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
 .summary-box { background-color: #f9f9f9; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; }
 .summary-label { display: block; font-size: 0.8rem; color: var(--subtle-text-color); margin-bottom: 0.25rem; }
