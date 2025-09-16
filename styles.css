@@ -29,8 +29,8 @@ body {
 }
 
 .container {
-    /* CORRIGIDO: Definida uma largura máxima para um layout mais consistente em telas grandes */
-    max-width: 1300px;
+    /* CORRIGIDO: Largura máxima removida para garantir layout 100% fluido */
+    max-width: none;
     width: 100%;
     margin: 1.5rem auto;
     padding: 1.5rem 2rem;
@@ -48,9 +48,7 @@ h2 { font-size: 1.1rem; }
 h4 { margin-bottom: 1rem; }
 
 .card-content { padding: 1.2rem 1.5rem; }
-.card .card-header,
-/* ADICIONADO: Estilo para alinhar título e botão (ex: "+ Adicionar Data") */
-.card .card-summary-header {
+.card .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -58,16 +56,23 @@ h4 { margin-bottom: 1rem; }
     border-bottom: 1px solid var(--border-color);
 }
 
-/* ADICIONADO: Remove a seta padrão do <details> e ajusta o padding */
-.card .card-summary-header {
-    list-style: none;
-    padding: 0.8rem 1.5rem;
+/* CORREÇÃO ROBUSTA PARA ALINHAMENTO DE TÍTULO E BOTÃO */
+summary.card-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    list-style: none; /* Remove o marcador de seta padrão */
+    cursor: pointer;
 }
-.card .card-summary-header::-webkit-details-marker {
-    display: none;
+summary.card-summary-header::-webkit-details-marker {
+    display: none; /* Remove o marcador para navegadores Webkit */
 }
-.data-accordion[open] > summary {
+.data-accordion[open] > summary.card-summary-header {
     border-bottom: 1px solid var(--border-color);
+}
+summary.card-summary-header h2 {
+    margin: 0; /* Garante que o H2 não quebre a linha */
 }
 
 
@@ -121,13 +126,12 @@ h4 { margin-bottom: 1rem; }
 }
 .btn-remove:hover { background-color: var(--danger-color); color: white; }
 
-/* ADICIONADO: Estilos para o container e menu de exportação */
 .export-container {
     position: relative;
     display: inline-block;
 }
 .export-menu {
-    display: none; /* Escondido por padrão */
+    display: none;
     position: absolute;
     right: 0;
     top: 100%;
@@ -141,7 +145,7 @@ h4 { margin-bottom: 1rem; }
     overflow: hidden;
 }
 .export-menu.show {
-    display: block; /* Exibido via JS */
+    display: block;
 }
 .export-menu div {
     padding: 10px 15px;
@@ -155,7 +159,7 @@ h4 { margin-bottom: 1rem; }
 
 .summary-footer { padding-bottom: 0; }
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
-.summary-content { max-width: 1300px; margin: 0 auto; display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; }
+.summary-content { max-width: none; margin: 0 auto; display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; padding: 0 1rem; }
 .summary-item { display: flex; align-items: center; gap: 0.5rem; }
 .summary-item label { font-size: 0.85rem; }
 .summary-item input { width: 100px; padding: 0.3rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
