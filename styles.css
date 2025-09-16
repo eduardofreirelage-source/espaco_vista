@@ -35,12 +35,6 @@ body {
     padding: 1.5rem 1rem;
 }
 
-main {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
 .print-only { display: none; }
 
 header { 
@@ -48,7 +42,7 @@ header {
     justify-content: space-between; 
     align-items: center; 
     margin-bottom: 1.5rem; 
-    padding: 1rem 0;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color); 
 }
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
@@ -61,6 +55,10 @@ header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
     border: 1px solid var(--border-color); 
     overflow: hidden; 
     width: 100%;
+    margin-bottom: 1.5rem; /* Espaçamento entre os cards */
+}
+/* Remove a margem do último card para evitar espaçamento duplo no final */
+.card:last-child {
     margin-bottom: 0;
 }
 
@@ -205,11 +203,7 @@ summary.card-summary-header h2 {
 .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
 
 .tab-content { display: none; }
-.tab-content.active { 
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
+.tab-content.active { display: block; }
 
 .collapsible-card > .card-header { cursor: pointer; }
 .collapse-icon::before { content: '−'; font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
@@ -227,7 +221,6 @@ summary.card-summary-header h2 {
 .editable-table tr:hover input, .editable-table tr:hover select { border-color: #eee; background-color: #fdfdfd; }
 .editable-table input:focus, .editable-table select:focus { border-color: var(--primary-color); background-color: white; outline: none; box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.1); }
 
-/* ADICIONADO: Garante que o conteúdo dinâmico dentro de um card também ocupe 100% da largura */
 .category-accordion {
     width: 100%;
 }
