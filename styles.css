@@ -14,6 +14,7 @@
     --card-bg: #ffffff;
     --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.05);
     --danger-color: #c9302c;
+    --success-color: #28a745; /* COR ADICIONADA */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,6 +25,7 @@ body {
     color: var(--text-color); 
     line-height: 1.5; 
     font-size: 13px;
+    padding-bottom: 80px; /* ADICIONADO: Espaço para o rodapé fixo não sobrepor o conteúdo */
 }
 
 .container {
