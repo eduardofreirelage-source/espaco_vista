@@ -93,7 +93,7 @@
                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
-                        <p class="hint">Cadastre aqui todos os seus serviços, incluindo espaços, equipamentos e os itens de gastronomia (pratos, bebidas, etc.).</p>
+                        <p class="hint">Use esta seção para cadastrar <strong>TODOS</strong> os itens que sua empresa oferece. Para itens de cardápio, crie tanto os pratos individuais (ex: 'Strogonoff de Frango') quanto os cardápios completos (ex: 'Almoço Executivo'), sempre com a categoria 'Gastronomia'.</p>
                         <div id="admin-catalog-container" class="table-container"></div>
                         <form id="addServiceForm" class="inline-form">
                             <input type="text" id="serviceName" placeholder="Nome do Serviço" required>
@@ -165,12 +165,13 @@
                 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header">
-                        <h2>Composição de Itens / Cardápios</h2>
+                        <h2>Montagem de Cardápios (Vincular Pratos)</h2>
                          <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
                         <div class="form-group">
-                            <label for="select-parent-service">1. Selecione o cardápio (item "Pai") que você quer montar:</label>
+                            <label for="select-parent-service">1. Selecione o Cardápio (item "Pai") que você quer montar:</label>
+                            <p class="hint" style="margin-bottom: 0.5rem;">(Os cardápios são os itens de 'Gastronomia' que você cadastrou no Catálogo de Serviços, como 'Almoço Executivo').</p>
                             <select id="select-parent-service"><option value="">-- Selecione um item de gastronomia --</option></select>
                         </div>
                         
@@ -181,7 +182,7 @@
                                 <table id="composition-table" class="editable-table">
                                     <thead>
                                         <tr>
-                                            <th>Item (Filho)</th>
+                                            <th>Prato (item "Filho")</th>
                                             <th>Quantidade</th>
                                             <th class="actions">Ação</th>
                                         </tr>
@@ -192,7 +193,8 @@
                             
                             <form id="add-component-form" class="inline-form">
                                 <div class="form-group" style="flex-grow: 2;">
-                                    <label for="select-child-service">2. Adicione um item a este cardápio</label>
+                                    <label for="select-child-service">2. Adicione um Prato a este Cardápio</label>
+                                    <p class="hint" style="margin-bottom: 0.5rem;">(Os pratos também são cadastrados no Catálogo de Serviços).</p>
                                     <select id="select-child-service" required></select>
                                 </div>
                                 <div class="form-group">
