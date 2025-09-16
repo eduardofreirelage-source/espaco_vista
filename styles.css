@@ -33,7 +33,14 @@ body {
     display: none;
 }
 
-.container { max-width: 1600px; margin: 1.5rem auto; padding: 1rem; }
+/* MODIFICAÇÃO: Container ajustado para usar a largura total */
+.container {
+    max-width: none; /* Remove o limite de 1600px */
+    width: 100%;
+    margin: 1.5rem auto;
+    padding: 1.5rem 2rem; /* Aumenta o respiro lateral */
+}
+
 header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
 .header-actions { display: flex; gap: 0.8rem; align-items: center; }
@@ -50,7 +57,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     border-bottom: 1px solid var(--border-color);
 }
 .card .card-header h2 { padding: 0; border: none; }
-.collapsible-card.collapsed .card-header { border-bottom: none; }
+.collapsible-card.collapsed .card-header { border-bottom: 1px solid var(--border-color); }
 
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
@@ -182,7 +189,7 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .table-container { overflow-x: auto; }
 .editable-table, #quotes-table, #events-table { width: 100%; border-collapse: collapse; }
 .editable-table th, .editable-table td, #quotes-table th, #quotes-table td { padding: 0.8rem; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border-color);}
-.editable-table th:first-child, .editable-table td:first-child { text-align: left; }
+.editable-table th, #quotes-table th, #events-table th { background-color: #f9f9f9; font-weight: 600; }
 .editable-table input, .editable-table select { width: 100%; padding: 0.5rem; border: 1px solid transparent; background-color: inherit; border-radius: 4px; transition: all 0.2s; font-size: 0.9rem; }
 .editable-table td.price-column, .editable-table th.price-column { text-align: right; }
 .editable-table td.price-column input { text-align: right; }
@@ -192,14 +199,30 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .success-flash { animation: success-flash-anim 1.5s ease-out; }
 @keyframes success-flash-anim { from { background-color: rgba(92, 184, 92, 0.3); } to { background-color: transparent; } }
 
-.inline-form { border-top: 1px solid var(--border-color); margin-top: 1.5rem; padding-top: 1.5rem; display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
-.inline-form input, .inline-form select { flex: 1 1 200px; }
-.inline-form button { flex-shrink: 0; }
+/* MODIFICAÇÃO: Layout dos formulários de adição melhorado */
+.inline-form {
+    border-top: 1px solid var(--border-color);
+    margin: 1.5rem -1.5rem -1.2rem -1.5rem; /* Puxa para as bordas do card-content */
+    padding: 1.5rem;
+    background-color: #fcfcfc;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.inline-form input, .inline-form select {
+    flex-grow: 1;
+    flex-basis: 220px;
+}
+.inline-form button {
+    flex-shrink: 0;
+    margin-left: auto; /* Alinha o botão à direita */
+    min-width: 160px;
+}
 
-.actions { text-align: right; white-space: nowrap; width: 120px; }
-#quotes-table .actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+.actions { text-align: right; white-space: nowrap; width: 150px; }
 .editable-table .actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
-#quotes-table th, #events-table th, .editable-table th { font-weight: 600; background-color: #f9f9f9; }
+#quotes-table .actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 
 .status-select { padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); background-color: #f5f5f5; -webkit-appearance: none; -moz-appearance: none; text-indent: 1px; text-overflow: ''; cursor: pointer; }
 
@@ -248,7 +271,6 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
 .export-menu div { padding: 0.8rem 1rem; cursor: pointer; }
 .export-menu div:hover { background-color: #f5f5f5; }
 
-
 /* =================================================================
    MODAL (Catálogo)
    ================================================================= */
@@ -258,7 +280,6 @@ h2 { font-size: 1.1rem; font-weight: 600; padding: 0; margin: 0; border: none; c
     background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
 .modal-content {
     background-color: #fefefe; margin: 5% auto;
     border: 1px solid var(--border-color); width: 90%;
