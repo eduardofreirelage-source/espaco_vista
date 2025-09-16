@@ -52,7 +52,9 @@ h4 { margin-bottom: 1rem; }
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
 }
-.collapsible-card.collapsed .card-header { border-bottom: 1px solid transparent; }
+.collapsible-card.collapsed .card-header {
+    border-bottom-color: transparent;
+}
 
 
 .form-group { margin-bottom: 1rem; }
@@ -229,3 +231,5 @@ h4 { margin-bottom: 1rem; }
 .catalog-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0.5rem; border-bottom: 1px solid var(--border-color); }
 .catalog-item .btn { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
 .catalog-item .btn-added { background-color: var(--success-color); border-color: var(--success-color); color: white; cursor: not-allowed; }
+
+/* FIM DO ARQUIVO CSS */
