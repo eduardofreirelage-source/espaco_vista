@@ -61,109 +61,120 @@
             </div>
 
             <div id="tab-content-catalogs" class="tab-content">
+                
                 <section class="card collapsible-card collapsed">
                     <div class="card-header"><h2>Cadastro de Itens (Pratos)</h2><span class="collapse-icon"></span></div>
-                    <div class="card-content">
-                        <p class="hint">Cadastre aqui os pratos individuais (ex: Strogonoff, Salada Caesar) que irão compor os cardápios.</p>
-                        <div class="table-container">
-                             <table id="cardapio-items-table" class="editable-table">
-                                 <thead><tr><th>Nome do Item</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
-                                 <tbody></tbody>
-                             </table>
+                    <div class="card-content-wrapper">
+                        <div class="card-content">
+                            <p class="hint">Cadastre aqui os pratos individuais (ex: Strogonoff, Salada Caesar) que irão compor os cardápios.</p>
+                            <div class="table-container">
+                                <table id="cardapio-items-table" class="editable-table">
+                                    <thead><tr><th>Nome do Item</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <form id="add-cardapio-item-form" class="inline-form">
+                                <div class="form-group"><label for="cardapioItemName">Nome do novo item</label><input type="text" id="cardapioItemName" placeholder="Ex: Strogonoff de Frango" required></div>
+                                <div class="form-group"><label for="cardapioItemDescription">Descrição</label><input type="text" id="cardapioItemDescription" placeholder="Opcional"></div>
+                            <button type="submit" class="btn btn-primary">Adicionar Item</button>
+                            </form>
                         </div>
-                        <form id="add-cardapio-item-form" class="inline-form">
-                            <div class="form-group"><label for="cardapioItemName">Nome do novo item</label><input type="text" id="cardapioItemName" placeholder="Ex: Strogonoff de Frango" required></div>
-                            <div class="form-group"><label for="cardapioItemDescription">Descrição</label><input type="text" id="cardapioItemDescription" placeholder="Opcional"></div>
-                           <button type="submit" class="btn btn-primary">Adicionar Item</button>
-                        </form>
                     </div>
                 </section>
                 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header"><h2>Cadastro de Cardápios e Serviços</h2><span class="collapse-icon"></span></div>
-                    <div class="card-content">
-                        <p class="hint">Cadastre os "pacotes" vendáveis, como "Almoço Executivo" (categoria Gastronomia), "Aluguel do Salão" (categoria Espaço), etc.</p>
-                        <div id="admin-catalog-container"></div> 
-                        <form id="addServiceForm" class="inline-form">
-                            <div class="form-group"><label for="serviceName">Nome do Serviço/Cardápio</label><input type="text" id="serviceName" required></div>
-                            <div class="form-group"><label for="serviceCategory">Categoria</label><select id="serviceCategory" required><option value="Gastronomia">Gastronomia (Cardápio)</option><option value="Espaço">Espaço</option><option value="Equipamentos">Equipamentos</option><option value="Serviços e Outros">Serviços e Outros</option></select></div>
-                            <div class="form-group"><label for="serviceUnit">Unidade</label><select id="serviceUnit" required></select></div>
-                            <button type="submit" class="btn btn-primary">Adicionar Serviço/Cardápio</button>
-                        </form>
+                    <div class="card-content-wrapper">
+                        <div class="card-content">
+                            <p class="hint">Cadastre os "pacotes" vendáveis, como "Almoço Executivo" (categoria Gastronomia), "Aluguel do Salão" (categoria Espaço), etc.</p>
+                            <div id="admin-catalog-container"></div> 
+                            <form id="addServiceForm" class="inline-form">
+                                <div class="form-group"><label for="serviceName">Nome do Serviço/Cardápio</label><input type="text" id="serviceName" required></div>
+                                <div class="form-group"><label for="serviceCategory">Categoria</label><select id="serviceCategory" required><option value="Gastronomia">Gastronomia (Cardápio)</option><option value="Espaço">Espaço</option><option value="Equipamentos">Equipamentos</option><option value="Serviços e Outros">Serviços e Outros</option></select></div>
+                                <div class="form-group"><label for="serviceUnit">Unidade</label><select id="serviceUnit" required></select></div>
+                                <button type="submit" class="btn btn-primary">Adicionar Serviço/Cardápio</button>
+                            </form>
+                        </div>
                     </div>
                 </section>
 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header"><h2>Montagem de Cardápios</h2><span class="collapse-icon"></span></div>
-                    <div class="card-content">
-                        <div class="form-group"><label for="select-cardapio-to-edit">Selecione um Cardápio para definir sua composição:</label><select id="select-cardapio-to-edit"><option value="">-- Selecione --</option></select></div>
-                        <div id="composition-section" style="display: none;">
-                            <hr class="section-divider">
-                            <h4>Itens em "<strong id="editing-cardapio-name"></strong>":</h4>
-                            <div class="table-container">
-                                <table id="composition-table" class="editable-table">
-                                    <thead><tr><th>Item</th><th class="actions">Ação</th></tr></thead>
-                                    <tbody></tbody>
-                                </table>
+                    <div class="card-content-wrapper">
+                        <div class="card-content">
+                            <div class="form-group"><label for="select-cardapio-to-edit">Selecione um Cardápio para definir sua composição:</label><select id="select-cardapio-to-edit"><option value="">-- Selecione --</option></select></div>
+                            <div id="composition-section" style="display: none;">
+                                <hr class="section-divider">
+                                <h4>Itens em "<strong id="editing-cardapio-name"></strong>":</h4>
+                                <div class="table-container">
+                                    <table id="composition-table" class="editable-table">
+                                        <thead><tr><th>Item</th><th class="actions">Ação</th></tr></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <form id="add-item-to-cardapio-form" class="inline-form">
+                                    <div class="form-group"><label for="select-item-to-add">Adicionar item ao cardápio</label><select id="select-item-to-add" required></select></div>
+                                    <button type="submit" class="btn btn-primary">Adicionar</button>
+                                </form>
                             </div>
-                            <form id="add-item-to-cardapio-form" class="inline-form">
-                                <div class="form-group"><label for="select-item-to-add">Adicionar item ao cardápio</label><select id="select-item-to-add" required></select></div>
-                                <button type="submit" class="btn btn-primary">Adicionar</button>
-                            </form>
                         </div>
                     </div>
                 </section>
 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header"><h2>Listas de Preços</h2><span class="collapse-icon"></span></div>
-                    <div class="card-content">
-                        <div id="price-tables-list" class="table-container">
-                             <table id="price-tables-table" class="editable-table">
-                                 <thead><tr><th>Nome</th><th class="price-column">Crédito Consumível</th><th>Ações</th></tr></thead>
-                                 <tbody></tbody>
-                             </table>
+                    <div class="card-content-wrapper">
+                        <div class="card-content">
+                            <div id="price-tables-list" class="table-container">
+                                <table id="price-tables-table" class="editable-table">
+                                    <thead><tr><th>Nome</th><th class="price-column">Crédito Consumível</th><th>Ações</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <form id="addPriceTableForm" class="inline-form">
+                                <div class="form-group"><label for="tableName">Nome da lista</label><input type="text" id="tableName" required></div>
+                                <div class="form-group"><label for="tableConsumable">Crédito R$</label><input type="number" step="0.01" min="0" id="tableConsumable" value="0"></div>
+                                <button type="submit" class="btn btn-primary">Adicionar Lista</button>
+                            </form>
                         </div>
-                        <form id="addPriceTableForm" class="inline-form">
-                            <div class="form-group"><label for="tableName">Nome da lista</label><input type="text" id="tableName" required></div>
-                            <div class="form-group"><label for="tableConsumable">Crédito R$</label><input type="number" step="0.01" min="0" id="tableConsumable" value="0"></div>
-                            <button type="submit" class="btn btn-primary">Adicionar Lista</button>
-                        </form>
                     </div>
                 </section>
 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header"><h2>Outros Cadastros</h2><span class="collapse-icon"></span></div>
-                    <div class="card-content">
-                        <div class="sub-section">
-                            <h4>Formas de Pagamento</h4>
-                            <div class="table-container">
-                                 <table id="payment-methods-table" class="editable-table">
-                                     <thead><tr><th>Nome</th><th class="actions">Ações</th></tr></thead>
-                                     <tbody></tbody>
-                                 </table>
+                    <div class="card-content-wrapper">
+                        <div class="card-content">
+                            <div class="sub-section">
+                                <h4>Formas de Pagamento</h4>
+                                <div class="table-container">
+                                    <table id="payment-methods-table" class="editable-table">
+                                        <thead><tr><th>Nome</th><th class="actions">Ações</th></tr></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <form id="addPaymentMethodForm" class="inline-form">
+                                <div class="form-group"><label for="paymentMethodName">Nome da Forma de Pagamento</label><input type="text" id="paymentMethodName" placeholder="Ex: PIX" required></div>
+                                    <button type="submit" class="btn btn-primary">Adicionar Forma</button>
+                                </form>
                             </div>
-                            <form id="addPaymentMethodForm" class="inline-form">
-                               <div class="form-group"><label for="paymentMethodName">Nome da Forma de Pagamento</label><input type="text" id="paymentMethodName" placeholder="Ex: PIX" required></div>
-                                <button type="submit" class="btn btn-primary">Adicionar Forma</button>
-                            </form>
-                        </div>
-                        <hr class="section-divider">
-                        <div class="sub-section">
-                            <h4>Unidades de Medida</h4>
-                            <div class="table-container">
-                                <table id="units-table" class="editable-table">
-                                    <thead><tr><th>Nome</th><th class="actions">Ações</th></tr></thead>
-                                    <tbody></tbody>
-                                </table>
+                            <hr class="section-divider">
+                            <div class="sub-section">
+                                <h4>Unidades de Medida</h4>
+                                <div class="table-container">
+                                    <table id="units-table" class="editable-table">
+                                        <thead><tr><th>Nome</th><th class="actions">Ações</th></tr></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <form id="addUnitForm" class="inline-form">
+                                <div class="form-group"><label for="unitName">Nome da Unidade</label><input type="text" id="unitName" placeholder="Ex: por_pessoa" required></div>
+                                    <button type="submit" class="btn btn-primary">Adicionar Unidade</button>
+                                </form>
                             </div>
-                             <form id="addUnitForm" class="inline-form">
-                               <div class="form-group"><label for="unitName">Nome da Unidade</label><input type="text" id="unitName" placeholder="Ex: por_pessoa" required></div>
-                                <button type="submit" class="btn btn-primary">Adicionar Unidade</button>
-                            </form>
                         </div>
                     </div>
                 </section>
-            </div>
+                </div>
         </main>
     </div>
     <div id="save-notification" class="notification"></div>
