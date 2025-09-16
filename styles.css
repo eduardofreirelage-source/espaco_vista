@@ -29,8 +29,8 @@ body {
 }
 
 .container {
-    /* CORRIGIDO: Largura máxima removida para garantir layout 100% fluido */
-    max-width: none;
+    /* CORRIGIDO: Largura máxima definida para criar o layout largo e centralizado do exemplo */
+    max-width: 1400px;
     width: 100%;
     margin: 1.5rem auto;
     padding: 1.5rem 2rem;
@@ -56,23 +56,23 @@ h4 { margin-bottom: 1rem; }
     border-bottom: 1px solid var(--border-color);
 }
 
-/* CORREÇÃO ROBUSTA PARA ALINHAMENTO DE TÍTULO E BOTÃO */
+/* Regra para alinhamento de título e botão nos cards expansíveis */
 summary.card-summary-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    list-style: none; /* Remove o marcador de seta padrão */
+    list-style: none;
     cursor: pointer;
 }
 summary.card-summary-header::-webkit-details-marker {
-    display: none; /* Remove o marcador para navegadores Webkit */
+    display: none;
 }
 .data-accordion[open] > summary.card-summary-header {
     border-bottom: 1px solid var(--border-color);
 }
 summary.card-summary-header h2 {
-    margin: 0; /* Garante que o H2 não quebre a linha */
+    margin: 0;
 }
 
 
@@ -159,7 +159,7 @@ summary.card-summary-header h2 {
 
 .summary-footer { padding-bottom: 0; }
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
-.summary-content { max-width: none; margin: 0 auto; display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; padding: 0 1rem; }
+.summary-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; padding: 0 1rem; }
 .summary-item { display: flex; align-items: center; gap: 0.5rem; }
 .summary-item label { font-size: 0.85rem; }
 .summary-item input { width: 100px; padding: 0.3rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
