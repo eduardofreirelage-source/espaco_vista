@@ -1,16 +1,30 @@
 @media print {
     @page { size: A4; margin: 1.5cm; }
-    body, html { background: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 9pt; color: #333; }
-    * { visibility: hidden; box-shadow: none !important; border-color: #ddd !important; }
+
+    body, html { 
+        background: #fff; 
+        font-family: 'Helvetica Neue', Arial, sans-serif; 
+        font-size: 9pt; 
+        color: #333; 
+    }
+
+    /* Esconde a interface principal e o rodapé */
+    .container, .summary-footer, header, main, footer, .modal, .notification {
+        display: none !important;
+        visibility: hidden !important;
+    }
     
-    #print-output, #print-output * { visibility: visible; }
+    /* Garante que a área de impressão e todo o seu conteúdo sejam visíveis */
+    #print-output, #print-output * { 
+        visibility: visible; 
+    }
     
     #print-output { 
         position: absolute; 
         left: 0; 
         top: 0; 
         width: 100%;
-        display: block !important; /* <-- LINHA ADICIONADA PARA CORRIGIR O PROBLEMA */
+        display: block !important;
         height: auto !important;
         overflow: visible !important;
     }
@@ -25,7 +39,7 @@
     .print-category-title { font-size: 14pt; font-weight: 600; color: #8B0000; margin-top: 25px; border-bottom: 1px solid #8B0000; padding-bottom: 5px; page-break-before: auto; page-break-after: avoid; }
     .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: avoid; }
     .print-table th, .print-table td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
-    .print-table th { background-color: #f9f9f9; font-weight: 600; font-size: 8pt; text-transform: uppercase; }
+    .print-table th { background-color: #f9f9f9; font-weight: 600; font-size: 8pt; text-transform: uppercase; border-color: #ddd !important; }
     .print-table td { vertical-align: top; }
     .print-table .price, .print-table .center { text-align: right; }
     .print-item-obs { font-style: italic; color: #666; font-size: 8pt; padding-top: 4px; }
