@@ -87,7 +87,7 @@
                         <div id="admin-catalog-container" class="table-container"></div>
                         <form id="addServiceForm" class="inline-form">
                             <div class="form-group"><label for="serviceName">Nome do Serviço/Cardápio</label><input type="text" id="serviceName" required></div>
-                            <div class="form-group"><label for="serviceCategory">Categoria</label><select id="serviceCategory" required><option value="Gastronomia">Gastronomia (Cardápio)</option><option value="Espaço">Espaço</option><option value="Equipamentos">Equipamentos</option><option value="Serviços / Outros">Serviços / Outros</option></select></div>
+                            <div class="form-group"><label for="serviceCategory">Categoria</label><select id="serviceCategory" required><option value="Gastronomia">Gastronomia (Cardápio)</option><option value="Espaço">Espaço</option><option value="Equipamentos">Equipamentos</option><option value="Serviços e Outros">Serviços e Outros</option></select></div>
                             <div class="form-group"><label for="serviceUnit">Unidade</label><select id="serviceUnit" required></select></div>
                             <button type="submit" class="btn btn-primary">Adicionar Serviço/Cardápio</button>
                         </form>
@@ -118,8 +118,8 @@
                 <section class="card collapsible-card collapsed">
                     <div class="card-header"><h2>Listas de Preços</h2><span class="collapse-icon"></span></div>
                     <div class="card-content">
-                        <div id="price-tables-list" class="table-container">
-                             <table class="editable-table">
+                        <div id="price-tables-container" class="table-container">
+                             <table id="price-tables-table" class="editable-table">
                                  <thead><tr><th>Nome</th><th class="price-column">Crédito Consumível</th><th>Ações</th></tr></thead>
                                  <tbody></tbody>
                              </table>
