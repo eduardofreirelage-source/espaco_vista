@@ -35,7 +35,7 @@ body {
     padding: 1.5rem 1rem;
 }
 
-/* CORREÇÃO 1: Usar Grid no <main> para controlar o layout e espaçamento dos cards. */
+/* CORREÇÃO: Usar Grid no <main> para controle robusto do layout e espaçamento. */
 main {
     display: grid;
     grid-template-columns: 1fr;
@@ -52,20 +52,20 @@ header {
     margin-bottom: 1.5rem; 
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color); 
+    flex-wrap: wrap; /* Permitir quebra de linha */
 }
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
-.header-actions { display: flex; gap: 0.8rem; align-items: center; }
+.header-actions { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
 
 .card { 
     background-color: var(--card-bg); 
     border-radius: 8px; 
     box-shadow: var(--shadow); 
     border: 1px solid var(--border-color); 
-    overflow: hidden; 
+    /* overflow: hidden; */ /* CORREÇÃO CRÍTICA: Removido. Impedia a contenção correta do overflow interno em layout Grid. */
     width: 100%;
-    /* margin-bottom: 1.5rem; */ /* CORREÇÃO 1: Removido, 'gap' no grid controla o espaçamento */
     
-    /* CORREÇÃO 1: Essencial para que o card respeite a largura do grid e não expanda com o conteúdo. */
+    /* CORREÇÃO: Essencial para que o card respeite a largura do grid pai e não expanda. */
     min-width: 0; 
 }
 
@@ -191,6 +191,8 @@ summary.card-summary-header h2 {
 
 .summary-footer { padding-bottom: 0; }
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
+
+/* CORREÇÃO: Adicionado overflow-x: auto para permitir rolagem interna no footer em vez de estourar a página. */
 .summary-content { 
     max-width: none; 
     margin: 0 auto; 
@@ -199,24 +201,27 @@ summary.card-summary-header h2 {
     align-items: center; 
     gap: 1.5rem; 
     padding: 0 1rem; 
+    overflow-x: auto;
+    flex-wrap: nowrap;
 }
-.summary-item { display: flex; align-items: center; gap: 0.5rem; }
+.summary-item { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
 .summary-item label { font-size: 0.85rem; }
 .summary-item input { width: 100px; padding: 0.3rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
-.summary-total { font-size: 1.1rem; font-weight: 600; }
+.summary-total { font-size: 1.1rem; font-weight: 600; white-space: nowrap; }
 
 /* =================================================================
    ESTILOS ESPECÍFICOS DO PAINEL
    ================================================================= */
 
-.tabs-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; }
-.tab-btn { padding: 1rem 1.5rem; cursor: pointer; background: none; border: none; border-bottom: 3px solid transparent; font-size: 1rem; font-weight: 500; color: #666; transition: all 0.2s; margin-bottom: -1px; }
+/* CORREÇÃO: Garantir que a navegação por abas role se necessário. */
+.tabs-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; overflow-x: auto; }
+.tab-btn { padding: 1rem 1.5rem; cursor: pointer; background: none; border: none; border-bottom: 3px solid transparent; font-size: 1rem; font-weight: 500; color: #666; transition: all 0.2s; margin-bottom: -1px; white-space: nowrap; }
 .tab-btn:hover { color: var(--text-color); }
 .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
 
 .tab-content { display: none; }
 
-/* CORREÇÃO 1: Aplica o Grid também ao conteúdo das abas ativas. */
+/* CORREÇÃO: Aplica o Grid também ao conteúdo das abas ativas. */
 .tab-content.active { 
     /* display: block; */
     display: grid;
@@ -228,9 +233,9 @@ summary.card-summary-header h2 {
 .collapse-icon::before { content: '−'; font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
 .collapsible-card.collapsed .collapse-icon::before { content: '+'; }
 
-/* CORREÇÃO 2: Removido overflow: hidden do estado aberto para permitir rolagem interna */
+/* CORREÇÃO: Garante que o overflow:hidden só seja aplicado durante a animação/estado fechado */
 .collapsible-card .card-content { 
-    /* overflow: hidden; */
+    /* overflow: hidden; */ /* Removido do estado aberto */
     transition: all 0.4s ease-out; 
     max-height: 5000px; 
 }
@@ -240,7 +245,7 @@ summary.card-summary-header h2 {
     padding-bottom: 0; 
     border-top: 1px solid transparent; 
     visibility: hidden; 
-    overflow: hidden; /* Manter oculto quando fechado */
+    overflow: hidden; /* Manter oculto apenas quando fechado */
 }
 
 /* Esta classe é crucial para conter o overflow horizontal internamente */
@@ -268,7 +273,7 @@ summary.card-summary-header h2 {
     gap: 1.5rem;
     align-items: flex-end;
     flex-wrap: wrap;
-    /* CORREÇÃO 3: Adicionado para conter overflow causado por margens negativas */
+    /* Adicionado para conter overflow causado por margens negativas */
     overflow-x: auto; 
 }
 .inline-form .form-group {
@@ -305,7 +310,7 @@ summary.card-summary-header h2 {
    ================================================================= */
 
 /* Página de Gestão de Evento */
-/* CORREÇÃO 1: Convertido de flex column para grid */
+/* CORREÇÃO: Convertido de flex column para grid */
 #event-details-grid { 
     /* display: flex; flex-direction: column; gap: 1.5rem; */
     display: grid;
