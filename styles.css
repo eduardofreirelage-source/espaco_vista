@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 /* =================================================================
-   ESTILOS GERAIS E LAYOUT GRID
+   ESTILOS GERAIS E LAYOUT GRID (CORREÇÃO DE LAYOUT)
    ================================================================= */
 
 :root {
@@ -35,7 +35,7 @@ body {
     padding: 1.5rem 1rem;
 }
 
-/* CORREÇÃO: Usar Grid no <main> para controle robusto do layout e espaçamento. */
+/* CORREÇÃO: Usar Grid no <main> para controle robusto do layout. */
 main {
     display: grid;
     grid-template-columns: 1fr;
@@ -62,14 +62,13 @@ header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
     border-radius: 8px; 
     box-shadow: var(--shadow); 
     border: 1px solid var(--border-color); 
-    /* overflow: hidden; */ /* CORREÇÃO CRÍTICA: Removido. Impedia a contenção correta do overflow interno em layout Grid. */
+    /* overflow: hidden; */ /* CORREÇÃO CRÍTICA: Removido. Causava conflito com Grid e impedia a contenção correta. */
     width: 100%;
     
-    /* CORREÇÃO: Essencial para que o card respeite a largura do grid pai e não expanda. */
+    /* CORREÇÃO CRÍTICA: Essencial para que o card respeite a largura do grid pai. */
     min-width: 0; 
 }
 
-/* Mantido para compatibilidade se algum layout não usar grid/gap */
 .card:last-child {
     margin-bottom: 0;
 }
@@ -192,7 +191,7 @@ summary.card-summary-header h2 {
 .summary-footer { padding-bottom: 0; }
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
 
-/* CORREÇÃO: Adicionado overflow-x: auto para permitir rolagem interna no footer em vez de estourar a página. */
+/* CORREÇÃO: Adicionado overflow-x: auto para permitir rolagem interna no footer. */
 .summary-content { 
     max-width: none; 
     margin: 0 auto; 
@@ -233,7 +232,7 @@ summary.card-summary-header h2 {
 .collapse-icon::before { content: '−'; font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
 .collapsible-card.collapsed .collapse-icon::before { content: '+'; }
 
-/* CORREÇÃO: Garante que o overflow:hidden só seja aplicado durante a animação/estado fechado */
+/* CORREÇÃO CRÍTICA: Garante que o overflow:hidden só seja aplicado durante a animação/estado fechado */
 .collapsible-card .card-content { 
     /* overflow: hidden; */ /* Removido do estado aberto */
     transition: all 0.4s ease-out; 
