@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, {});
 
         let html = '';
-        const categoryOrder = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
+        const categoryOrder = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços e Outros'];
         
         categoryOrder.forEach(category => {
             if(itemsByCategory[category]) {
@@ -152,7 +152,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 header.closest('.collapsible-card')?.classList.toggle('collapsed');
             }
             if (e.target.matches('#define-cardapio-btn')) {
-                window.location.href = 'app.html';
+                // CORRIGIDO: Redireciona para a proposta correta para edição
+                window.location.href = `index.html?quote_id=${quoteId}`;
             }
         });
     }
