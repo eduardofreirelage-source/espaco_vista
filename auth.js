@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             supabase.from('units').select('name').order('name')
         ]);
 
-        const [servicesRes, tablesRes, quotesRes, paymentsRes, itemsRes, compositionRes, unitsRes] = results;
+        const [servicesRes, tablesRes, pricesRes, quotesRes, paymentsRes, itemsRes, compositionRes, unitsRes] = results;
 
         services = (servicesRes.status === 'fulfilled') ? servicesRes.value.data : [];
         priceTables = (tablesRes.status === 'fulfilled') ? tablesRes.value.data : [];
@@ -218,9 +218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         serviceUnitSelect.innerHTML = '';
         units.forEach(unit => serviceUnitSelect.add(new Option(unit.name, unit.name)));
     }
-    
-    function renderAnalytics() { /* ... Lógica de Analytics aqui ... */ }
-// =================================================================
+    // =================================================================
     // EVENT LISTENERS E AÇÕES
     // =================================================================
     function addEventListeners() {
@@ -385,4 +383,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initialize();
 });
+
 // FIM DO ARQUIVO auth.js
+    function renderAnalytics() { /* ... Lógica de Analytics aqui ... */ }
