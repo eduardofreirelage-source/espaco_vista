@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const adminCatalogContainer = document.getElementById('admin-catalog-container');
     const priceTablesTbody = document.getElementById('price-tables-list')?.querySelector('tbody');
     const paymentMethodsTbody = document.getElementById('payment-methods-table')?.querySelector('tbody');
+    const gastronomyItemsTbody = document.getElementById('gastronomy-items-tbody');
     const selectParentService = document.getElementById('select-parent-service');
     const compositionSection = document.getElementById('composition-section');
     const editingParentServiceName = document.getElementById('editing-parent-service-name');
@@ -142,6 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderAdminCatalog();
         renderPriceTablesList();
         renderPaymentMethods();
+        renderGastronomyItems();
         renderCompositionView();
     }
     
@@ -199,12 +201,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderAdminCatalog() {
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
-        const servicesByCategory = services.reduce((acc, service) => { if (!acc[service.category]) { acc[service.category] = []; } acc[service.category].push(service); return acc; }, {});
-        const orderedCategories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
+        const otherServices = services.filter(s => s.category !== 'Gastronomia');
+        const servicesByCategory = otherServices.reduce((acc, service) => { if (!acc[service.category]) { acc[service.category] = []; } acc[service.category].push(service); return acc; }, {});
+        const orderedCategories = ['Espaço', 'Equipamentos', 'Serviços / Outros'];
         orderedCategories.forEach(category => {
             if (!servicesByCategory[category]) return;
             const categoryWrapper = document.createElement('div');
-            categoryWrapper.innerHTML = `<details class="category-accordion" open><summary class="category-header"><h3 class="category-title">${category}</h3></summary><div class="table-container"><table class="editable-table"><thead><tr><th>Nome</th><th>Unidade</th>${priceTables.map(pt => `<th class="price-column">${pt.name}</th>`).join('')}<th class="actions">Ações</th></tr></thead><tbody>${servicesByCategory[category].map(service => `<tr data-service-id="${service.id}"><td><input type="text" class="service-detail-input" data-field="name" value="${service.name}"></td><td>${createUnitSelect(service.unit)}</td>${priceTables.map(table => { const priceRecord = servicePrices.find(p => p.service_id === service.id && p.price_table_id === table.id); const price = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00'; return `<td class="price-column"><input type="number" step="0.01" min="0" class="service-price-input" data-table-id="${table.id}" value="${price}"></td>`; }).join('')}<td class="actions"><button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button></td></tr>`).join('')}</tbody></table></div></details>`;
+            categoryWrapper.innerHTML = `<details class="category-accordion" open><summary class="category-header"><h3 class="category-title">${category}</h3></summary><div class="table-container"><table class="editable-table"><thead><tr><th>Nome</th><th>Unidade</th><th class="actions">Ações</th></tr></thead><tbody>${servicesByCategory[category].map(service => `<tr data-service-id="${service.id}"><td><input type="text" class="service-detail-input" data-field="name" value="${service.name}"></td><td>${createUnitSelect(service.unit)}</td><td class="actions"><button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Serviço">&times;</button></td></tr>`).join('')}</tbody></table></div></details>`;
             adminCatalogContainer.appendChild(categoryWrapper);
         });
     }
@@ -230,19 +233,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
+    function renderGastronomyItems() {
+        if (!gastronomyItemsTbody) return;
+        gastronomyItemsTbody.innerHTML = '';
+        const gastronomyServices = services.filter(s => s.category === 'Gastronomia');
+        gastronomyServices.forEach(service => {
+            const row = gastronomyItemsTbody.insertRow();
+            row.dataset.serviceId = service.id; 
+            row.innerHTML = `
+                <td><input type="text" class="service-detail-input" data-field="name" value="${service.name}"></td>
+                <td>${createUnitSelect(service.unit)}</td>
+                <td class="actions">
+                    <button class="btn-remove" data-action="delete-service" data-id="${service.id}" title="Excluir Item">&times;</button>
+                </td>
+            `;
+        });
+    }
+
     function renderCompositionView() {
         if (!selectParentService) return;
         const gastronomyServices = services.filter(s => s.category === 'Gastronomia');
-        const currentVal = selectParentService.value;
-        selectParentService.innerHTML = '<option value="">-- Selecione um item de gastronomia --</option>';
+        const currentVal = selectedParentServiceId || selectParentService.value;
+        selectParentService.innerHTML = '<option value="">-- Selecione um cardápio --</option>';
         gastronomyServices.forEach(service => {
             const option = new Option(service.name, service.id);
             selectParentService.add(option);
         });
         selectParentService.value = currentVal;
-        if (selectedParentServiceId) {
-            renderCompositionDetails();
-        }
+        renderCompositionDetails();
     }
 
     function renderCompositionDetails() {
@@ -252,16 +270,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const parentService = services.find(s => s.id === selectedParentServiceId);
         if (!parentService) return;
-
         compositionSection.style.display = 'block';
         editingParentServiceName.textContent = parentService.name;
         compositionTbody.innerHTML = '';
         const components = serviceComponents.filter(c => c.parent_service_id === selectedParentServiceId);
-        components.forEach(component => {
-            const row = compositionTbody.insertRow();
-            row.dataset.id = component.id;
-            row.innerHTML = `<td>${component.child.name}</td><td><input type="number" class="editable-input" data-field="quantity" value="${component.quantity}" min="0" step="any"></td><td class="actions"><button class="btn-remove" data-action="delete-component" data-id="${component.id}" title="Remover item">&times;</button></td>`;
-        });
+        if(components.length > 0) {
+            components.forEach(component => {
+                const row = compositionTbody.insertRow();
+                row.dataset.id = component.id;
+                row.innerHTML = `<td>${component.child.name}</td><td><input type="number" class="editable-input" data-field="quantity" value="${component.quantity}" min="0" step="any"></td><td class="actions"><button class="btn-remove" data-action="delete-component" data-id="${component.id}" title="Remover item">&times;</button></td>`;
+            });
+        }
         selectChildService.innerHTML = '';
         const availableChildren = services.filter(s => s.category === 'Gastronomia' && s.id !== selectedParentServiceId);
         availableChildren.forEach(service => {
@@ -269,7 +288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             selectChildService.add(option);
         });
     }
-    
+
     function initializeCalendar() {
         if (!calendarEl || calendarInstance) return;
         let noticeEl = document.getElementById('calendar-notice');
@@ -317,8 +336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else { noticeEl.style.display = 'none'; }
         }
     }
-
-    // =================================================================
+// =================================================================
     // EVENT LISTENERS E AÇÕES
     // =================================================================
     function addEventListeners() {
@@ -329,20 +347,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!button) return;
             const { action, id } = button.dataset;
             const actions = {
-                'delete-quote': deleteQuote, 'delete-service': deleteService, 'delete-table': deletePriceTable,
-                'delete-payment-method': deletePaymentMethod, 'delete-component': deleteComponent
+                'delete-quote': deleteQuote,
+                'delete-service': deleteService,
+                'delete-table': deletePriceTable,
+                'delete-payment-method': deletePaymentMethod,
+                'delete-component': deleteComponent
             };
             if (actions[action]) actions[action](id);
         });
         document.getElementById('addServiceForm')?.addEventListener('submit', addService);
         document.getElementById('addPriceTableForm')?.addEventListener('submit', addPriceTable);
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', addPaymentMethod);
+        document.getElementById('addGastronomyItemForm')?.addEventListener('submit', addGastronomyItem);
         document.getElementById('add-component-form')?.addEventListener('submit', addComponent);
-        adminCatalogContainer?.addEventListener('change', (e) => { if (e.target.matches('.service-detail-input:not([type="text"])') || e.target.matches('.service-price-input')) handleServiceEdit(e.target, false); });
+        adminCatalogContainer?.addEventListener('change', (e) => { if (e.target.matches('.service-detail-input')) handleServiceEdit(e.target, false); });
         adminCatalogContainer?.addEventListener('input', (e) => { if (e.target.matches('.service-detail-input[type="text"]')) handleServiceEdit(e.target, true); });
-        priceTablesTbody?.addEventListener('change', (e) => { if (e.target.matches('.price-table-input[data-field="consumable_credit"]')) handlePriceTableEdit(e.target, false); });
+        priceTablesTbody?.addEventListener('change', (e) => { if (e.target.matches('.price-table-input')) handlePriceTableEdit(e.target, false); });
         priceTablesTbody?.addEventListener('input', (e) => { if (e.target.matches('.price-table-input[data-field="name"]')) handlePriceTableEdit(e.target, true); });
         paymentMethodsTbody?.addEventListener('change', (e) => { if (e.target.classList.contains('editable-input')) { const id = e.target.closest('tr').dataset.id; updatePaymentMethod(id, e.target.dataset.field, e.target.value); } });
+        gastronomyItemsTbody?.addEventListener('change', (e) => { if (e.target.classList.contains('service-detail-input')) handleServiceEdit(e.target, false); });
         quotesTable?.querySelector('tbody')?.addEventListener('change', async (e) => { if (e.target.classList.contains('status-select')) { const quoteId = e.target.dataset.id; const newStatus = e.target.value; await updateQuoteStatus(quoteId, newStatus); } });
         calendarStatusFilter?.addEventListener('change', updateCalendarEvents);
         selectParentService?.addEventListener('change', (e) => { selectedParentServiceId = e.target.value; renderCompositionDetails(); });
@@ -355,6 +378,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function addService(e) { e.preventDefault(); const newService = { name: document.getElementById('serviceName').value, category: document.getElementById('serviceCategory').value, unit: document.getElementById('serviceUnit').value }; const { error } = await supabase.from('services').insert([newService]); if (error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Serviço adicionado!'); e.target.reset(); fetchData(); } }
     async function addPriceTable(e) { e.preventDefault(); const newTable = { name: document.getElementById('tableName').value, consumable_credit: parseFloat(document.getElementById('tableConsumable').value) || 0 }; const { error } = await supabase.from('price_tables').insert([newTable]); if (error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Lista de preços adicionada!'); e.target.reset(); fetchData(); } }
     async function addPaymentMethod(e) { e.preventDefault(); const input = document.getElementById('paymentMethodName'); const name = input.value.trim(); if (!name) return; const { error } = await supabase.from('payment_methods').insert([{ name }]); if (error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Forma de pagamento adicionada.'); input.value = ''; await fetchData(); } }
+    async function addGastronomyItem(e) { e.preventDefault(); const nameInput = document.getElementById('gastronomyItemName'); const unitSelect = document.getElementById('gastronomyItemUnit'); const newService = { name: nameInput.value.trim(), unit: unitSelect.value, category: 'Gastronomia' }; if (!newService.name) return; const { error } = await supabase.from('services').insert([newService]); if (error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Item de cardápio adicionado.'); nameInput.value = ''; await fetchData(); } }
     async function addComponent(e) { e.preventDefault(); const child_service_id = selectChildService.value; const quantity = document.getElementById('component-quantity').value; if (!selectedParentServiceId || !child_service_id) return; const { error } = await supabase.from('service_components').insert([{ parent_service_id: selectedParentServiceId, child_service_id, quantity }]); if (error) { showNotification(`Erro: ${error.message}. O item já pode estar na composição.`, true); } else { showNotification('Item adicionado à composição.'); await fetchData(); } }
     
     async function updateComponent(id, field, value) { const { error } = await supabase.from('service_components').update({ [field]: value }).eq('id', id); if (error) { showNotification('Erro ao atualizar.', true); await fetchData(); } else { showFlash(document.querySelector(`#composition-table [data-id="${id}"] [data-field="${field}"]`)); } }
