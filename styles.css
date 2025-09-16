@@ -41,15 +41,15 @@ header { display: flex; justify-content: space-between; align-items: center; mar
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
 .header-actions { display: flex; gap: 0.8rem; align-items: center; }
 
-/* CORREÇÃO FINAL: Adicionado width: 100% para garantir que todos os cards ocupem a largura total */
 .card { 
     background-color: var(--card-bg); 
     border-radius: 8px; 
     box-shadow: var(--shadow); 
     border: 1px solid var(--border-color); 
     overflow: hidden; 
-    margin-bottom: 1.5rem; 
     width: 100%;
+    /* A margem inferior será controlada pelo 'gap' do container flex pai */
+    margin-bottom: 0;
 }
 
 h2, h3, h4, h5 { font-weight: 600; color: var(--heading-color); }
@@ -194,8 +194,14 @@ summary.card-summary-header h2 {
 .tab-btn { padding: 1rem 1.5rem; cursor: pointer; background: none; border: none; border-bottom: 3px solid transparent; font-size: 1rem; font-weight: 500; color: #666; transition: all 0.2s; margin-bottom: -1px; }
 .tab-btn:hover { color: var(--text-color); }
 .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+
 .tab-content { display: none; }
-.tab-content.active { display: block; }
+/* CORREÇÃO ROBUSTA: Transforma o conteúdo da aba em um container flex */
+.tab-content.active { 
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* Controla o espaçamento entre os cards */
+}
 
 .collapsible-card > .card-header { cursor: pointer; }
 .collapse-icon::before { content: '−'; font-size: 1.5rem; font-weight: 500; color: var(--primary-color); transition: transform 0.3s ease; }
