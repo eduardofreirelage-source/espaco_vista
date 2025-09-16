@@ -28,7 +28,7 @@
             </nav>
 
             <div id="tab-content-quotes" class="tab-content active">
-                 <section class="card">
+                <section class="card">
                     <div class="card-header"><h2>Todos os Orçamentos</h2></div>
                     <div class="card-content table-container">
                         <table id="quotes-table" class="quote-table">
@@ -39,7 +39,7 @@
                 </section>
             </div>
             <div id="tab-content-events" class="tab-content">
-                 <section class="card">
+                <section class="card">
                      <div class="card-header"><h2>Eventos Ganhos</h2></div>
                      <div class="card-content table-container">
                          <table id="events-table" class="quote-table">
@@ -50,7 +50,7 @@
                 </section>
             </div>
             <div id="tab-content-calendar" class="tab-content">
-                 <section class="card">
+                <section class="card">
                     <div class="card-header"><h2>Calendário</h2></div>
                     <div class="card-content"><div id="calendar"></div></div>
                 </section>
@@ -67,7 +67,7 @@
                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
-                        <p class="hint">Cadastre todos os seus serviços aqui, incluindo Cardápios (categoria Gastronomia), Espaços e Equipamentos.</p>
+                        <p class="hint">Cadastre aqui os serviços vendáveis: Cardápios (categoria Gastronomia), Espaços, Equipamentos, etc.</p>
                         <div id="admin-catalog-container" class="table-container"></div>
                         <form id="addServiceForm" class="inline-form">
                             <input type="text" id="serviceName" placeholder="Nome do Serviço ou Cardápio" required>
@@ -82,10 +82,61 @@
                         </form>
                     </div>
                 </section>
+                
+                <section class="card collapsible-card collapsed">
+                    <div class="card-header">
+                        <h2>Cadastro de Itens para Cardápios (Pratos)</h2>
+                        <span class="collapse-icon"></span>
+                    </div>
+                    <div class="card-content">
+                        <p class="hint">Cadastre aqui os pratos individuais (ex: Strogonoff, Salada Caesar) que irão compor os cardápios.</p>
+                        <div class="table-container">
+                             <table id="cardapio-items-table" class="editable-table">
+                                 <thead><tr><th>Nome do Item</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
+                                 <tbody></tbody>
+                             </table>
+                        </div>
+                        <form id="add-cardapio-item-form" class="inline-form">
+                           <input type="text" id="cardapioItemName" placeholder="Nome do novo item" required>
+                           <input type="text" id="cardapioItemDescription" placeholder="Descrição (opcional)">
+                           <button type="submit" class="btn btn-primary">Adicionar Item</button>
+                        </form>
+                    </div>
+                </section>
 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header">
-                        <h2>Cadastro de Listas de Preços</h2>
+                        <h2>Montagem de Cardápios</h2>
+                         <span class="collapse-icon"></span>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label for="select-cardapio-to-edit">Selecione um Cardápio (criado em "Cadastro de Serviços") para definir sua composição:</label>
+                            <select id="select-cardapio-to-edit"><option value="">-- Selecione --</option></select>
+                        </div>
+                        <div id="composition-section" style="display: none;">
+                            <hr class="section-divider">
+                            <h4>Itens em "<strong id="editing-cardapio-name"></strong>":</h4>
+                            <div class="table-container">
+                                <table id="composition-table" class="editable-table">
+                                    <thead><tr><th>Item</th><th class="actions">Ação</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <form id="add-item-to-cardapio-form" class="inline-form">
+                                <div class="form-group" style="flex-grow: 2;">
+                                    <label for="select-item-to-add">Adicionar item ao cardápio (criado em "Cadastro de Itens")</label>
+                                    <select id="select-item-to-add" required></select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Adicionar</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card collapsible-card collapsed">
+                    <div class="card-header">
+                        <h2>Listas de Preços</h2>
                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
@@ -100,54 +151,6 @@
                            <input type="number" step="0.01" min="0" id="tableConsumable" placeholder="Crédito R$" value="0">
                            <button type="submit" class="btn btn-primary">Adicionar Lista</button>
                         </form>
-                    </div>
-                </section>
-
-                <section class="card collapsible-card collapsed">
-                    <div class="card-header">
-                        <h2>Cadastro de Cardápios</h2>
-                        <span class="collapse-icon"></span>
-                    </div>
-                    <div class="card-content">
-                        <div class="sub-section">
-                            <h4>1. Cadastro de Itens para Cardápios (Pratos)</h4>
-                            <p class="hint">Cadastre aqui os pratos individuais (ex: Strogonoff, Salada Caesar) que irão compor os cardápios.</p>
-                            <div class="table-container">
-                                 <table id="cardapio-items-table" class="editable-table">
-                                     <thead><tr><th>Nome do Item</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
-                                     <tbody></tbody>
-                                 </table>
-                            </div>
-                            <form id="add-cardapio-item-form" class="inline-form">
-                               <input type="text" id="cardapioItemName" placeholder="Nome do novo item" required>
-                               <input type="text" id="cardapioItemDescription" placeholder="Descrição (opcional)">
-                               <button type="submit" class="btn btn-primary">Adicionar Item</button>
-                            </form>
-                        </div>
-                        <hr class="section-divider">
-                        <div class="sub-section">
-                            <h4>2. Montagem de Cardápios</h4>
-                            <div class="form-group">
-                                <label for="select-cardapio-to-edit">Selecione um Cardápio para definir sua composição:</label>
-                                <select id="select-cardapio-to-edit"><option value="">-- Selecione --</option></select>
-                            </div>
-                            <div id="composition-section" style="display: none;">
-                                <h5>Itens em "<strong id="editing-cardapio-name"></strong>":</h5>
-                                <div class="table-container">
-                                    <table id="composition-table" class="editable-table">
-                                        <thead><tr><th>Item</th><th class="actions">Ação</th></tr></thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                                <form id="add-item-to-cardapio-form" class="inline-form">
-                                    <div class="form-group" style="flex-grow: 2;">
-                                        <label for="select-item-to-add">Adicionar item ao cardápio</label>
-                                        <select id="select-item-to-add" required></select>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">Adicionar</button>
-                                </form>
-                            </div>
-                        </div>
                     </div>
                 </section>
 
