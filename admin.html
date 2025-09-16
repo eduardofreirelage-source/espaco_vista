@@ -87,82 +87,37 @@
 
 
             <div id="tab-content-catalogs" class="tab-content">
-                <section class="card collapsible-card collapsed">
+                
+                <section class="card collapsible-card">
                     <div class="card-header">
-                        <h2>Catálogo de Serviços</h2>
+                        <h2>Cadastro de Itens de Cardápio</h2>
                         <span class="collapse-icon"></span>
                     </div>
                     <div class="card-content">
-                        <p class="hint">Use esta seção para cadastrar <strong>TODOS</strong> os itens que sua empresa oferece. Para itens de cardápio, crie tanto os pratos individuais (ex: 'Strogonoff de Frango') quanto os cardápios completos (ex: 'Almoço Executivo'), sempre com a categoria 'Gastronomia'.</p>
-                        <div id="admin-catalog-container" class="table-container"></div>
-                        <form id="addServiceForm" class="inline-form">
-                            <input type="text" id="serviceName" placeholder="Nome do Serviço" required>
-                            <select id="serviceCategory" required>
-                                <option value="Espaço">Espaço</option>
-                                <option value="Gastronomia">Gastronomia</option>
-                                <option value="Equipamentos">Equipamentos</option>
-                                <option value="Serviços / Outros">Serviços / Outros</option>
-                            </select>
-                            <select id="serviceUnit" required>
+                        <p class="hint">Cadastre aqui todos os pratos, bebidas e sobremesas individuais (itens "filho") que poderão ser usados para montar um cardápio.</p>
+                        <div id="gastronomy-items-container" class="table-container">
+                            <table class="editable-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome do Item</th>
+                                        <th>Unidade</th>
+                                        <th class="actions">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gastronomy-items-tbody"></tbody>
+                            </table>
+                        </div>
+                        <form id="addGastronomyItemForm" class="inline-form">
+                           <input type="text" id="gastronomyItemName" placeholder="Nome do item (ex: Strogonoff)" required>
+                            <select id="gastronomyItemUnit" required>
                                 <option value="unidade">unidade</option>
-                                <option value="diaria">diária</option>
                                 <option value="por_pessoa">por pessoa</option>
                             </select>
-                            <button type="submit" class="btn btn-primary">Adicionar Serviço</button>
+                            <button type="submit" class="btn btn-primary">Adicionar Item de Cardápio</button>
                         </form>
                     </div>
                 </section>
 
-                <section class="card collapsible-card collapsed">
-                    <div class="card-header">
-                        <h2>Listas de Preços</h2>
-                         <span class="collapse-icon"></span>
-                    </div>
-                    <div class="card-content">
-                        <div id="price-tables-list" class="table-container">
-                             <table class="editable-table">
-                                 <thead>
-                                     <tr>
-                                         <th>Nome da Lista</th>
-                                         <th class="price-column">Crédito Consumível (R$)</th>
-                                         <th>Ações</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody></tbody>
-                             </table>
-                        </div>
-                        <form id="addPriceTableForm" class="inline-form">
-                           <input type="text" id="tableName" placeholder="Nome da nova lista" required>
-                            <input type="number" step="0.01" min="0" id="tableConsumable" placeholder="Crédito consumível" value="0">
-                            <button type="submit" class="btn btn-primary">Adicionar Lista</button>
-                        </form>
-                    </div>
-                </section>
-                
-                <section class="card collapsible-card collapsed">
-                    <div class="card-header">
-                        <h2>Formas de Pagamento</h2>
-                         <span class="collapse-icon"></span>
-                    </div>
-                    <div class="card-content">
-                        <div class="table-container">
-                             <table id="payment-methods-table" class="editable-table">
-                                 <thead>
-                                     <tr>
-                                         <th>Nome</th>
-                                         <th class="actions">Ações</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody></tbody>
-                             </table>
-                        </div>
-                        <form id="addPaymentMethodForm" class="inline-form">
-                           <input type="text" id="paymentMethodName" placeholder="Nome da forma de pagamento" required>
-                            <button type="submit" class="btn btn-primary">Adicionar Forma de Pag.</button>
-                        </form>
-                    </div>
-                </section>
-                
                 <section class="card collapsible-card collapsed">
                     <div class="card-header">
                         <h2>Montagem de Cardápios (Vincular Pratos)</h2>
@@ -171,7 +126,7 @@
                     <div class="card-content">
                         <div class="form-group">
                             <label for="select-parent-service">1. Selecione o Cardápio (item "Pai") que você quer montar:</label>
-                            <p class="hint" style="margin-bottom: 0.5rem;">(Os cardápios são os itens de 'Gastronomia' que você cadastrou no Catálogo de Serviços, como 'Almoço Executivo').</p>
+                            <p class="hint" style="margin-bottom: 0.5rem;">(Você também pode cadastrar novos cardápios, como "Almoço Executivo", no Catálogo de Serviços Geral).</p>
                             <select id="select-parent-service"><option value="">-- Selecione um item de gastronomia --</option></select>
                         </div>
                         
@@ -194,7 +149,6 @@
                             <form id="add-component-form" class="inline-form">
                                 <div class="form-group" style="flex-grow: 2;">
                                     <label for="select-child-service">2. Adicione um Prato a este Cardápio</label>
-                                    <p class="hint" style="margin-bottom: 0.5rem;">(Os pratos também são cadastrados no Catálogo de Serviços).</p>
                                     <select id="select-child-service" required></select>
                                 </div>
                                 <div class="form-group">
@@ -205,6 +159,56 @@
                             </form>
                         </div>
 
+                    </div>
+                </section>
+
+                <section class="card collapsible-card collapsed">
+                    <div class="card-header">
+                        <h2>Outros Cadastros</h2>
+                        <span class="collapse-icon"></span>
+                    </div>
+                    <div class="card-content">
+                        <h4>Catálogo de Serviços (Espaços, Equipamentos, etc.)</h4>
+                        <div id="admin-catalog-container" class="table-container"></div>
+                        <form id="addServiceForm" class="inline-form">
+                            <input type="text" id="serviceName" placeholder="Nome do Serviço" required>
+                            <select id="serviceCategory" required>
+                                <option value="Espaço">Espaço</option>
+                                <option value="Equipamentos">Equipamentos</option>
+                                <option value="Serviços / Outros">Serviços / Outros</option>
+                            </select>
+                            <select id="serviceUnit" required>
+                                <option value="unidade">unidade</option>
+                                <option value="diaria">diária</option>
+                                <option value="por_pessoa">por pessoa</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Adicionar Outro Serviço</button>
+                        </form>
+                        <hr style="margin: 2rem 0;">
+                        <h4>Listas de Preços</h4>
+                        <div id="price-tables-list" class="table-container">
+                             <table class="editable-table">
+                                 <thead> <tr> <th>Nome da Lista</th> <th class="price-column">Crédito Consumível (R$)</th> <th>Ações</th> </tr> </thead>
+                                 <tbody></tbody>
+                             </table>
+                        </div>
+                        <form id="addPriceTableForm" class="inline-form">
+                           <input type="text" id="tableName" placeholder="Nome da nova lista" required>
+                           <input type="number" step="0.01" min="0" id="tableConsumable" placeholder="Crédito consumível" value="0">
+                           <button type="submit" class="btn btn-primary">Adicionar Lista</button>
+                        </form>
+                        <hr style="margin: 2rem 0;">
+                        <h4>Formas de Pagamento</h4>
+                        <div class="table-container">
+                             <table id="payment-methods-table" class="editable-table">
+                                 <thead><tr><th>Nome</th><th class="actions">Ações</th></tr></thead>
+                                 <tbody></tbody>
+                             </table>
+                        </div>
+                        <form id="addPaymentMethodForm" class="inline-form">
+                           <input type="text" id="paymentMethodName" placeholder="Nome da forma de pagamento" required>
+                            <button type="submit" class="btn btn-primary">Adicionar Forma de Pag.</button>
+                        </form>
                     </div>
                 </section>
 
