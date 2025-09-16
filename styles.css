@@ -29,11 +29,10 @@ body {
 }
 
 .container {
-    /* CORREÇÃO FINAL: Removido padding lateral para o container ocupar 100% da tela */
     max-width: none;
     width: 100%;
     margin: 1.5rem auto;
-    padding: 1.5rem 1rem; /* Padding vertical mantido, horizontal reduzido */
+    padding: 1.5rem 1rem;
 }
 
 .print-only { display: none; }
@@ -56,7 +55,6 @@ h4 { margin-bottom: 1rem; }
     border-bottom: 1px solid var(--border-color);
 }
 
-/* Regra para alinhamento de título e botão nos cards expansíveis */
 summary.card-summary-header {
     display: flex;
     justify-content: space-between;
@@ -116,12 +114,10 @@ summary.card-summary-header h2 {
 .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); color: white; }
 .btn-primary:hover { background-color: #6d0000; border-color: #6d0000; }
 
-/* ADICIONADO: Estilo para tornar os botões de ação nas tabelas menores */
 .quote-table .actions .btn {
     padding: 0.3rem 0.8rem;
     font-size: 0.85rem;
 }
-
 
 .btn-remove {
     padding: 0; width: 34px; height: 34px;
@@ -271,6 +267,54 @@ summary.card-summary-header h2 {
 .fc .fc-button-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
 .fc .fc-daygrid-day.fc-day-today { background-color: rgba(139, 0, 0, 0.1); }
 .fc-event { cursor: pointer; }
+
+/* ADICIONADO: Estilos para a página de Analytics para garantir 100% de largura */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+.kpi-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.kpi-title {
+    font-weight: 600;
+    color: var(--subtle-text-color);
+    font-size: 0.9rem;
+}
+.kpi-value {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--heading-color);
+    margin: 0.5rem 0;
+}
+.kpi-sub-value {
+    color: var(--subtle-text-color);
+    margin-bottom: 1rem;
+}
+.kpi-comparison {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.kpi-comparison .percentage {
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.kpi-comparison .percentage.increase {
+    color: #1a6e3a;
+    background-color: #d1f7d9;
+}
+.kpi-comparison .percentage.decrease {
+    color: var(--danger-color);
+    background-color: #fce8e6;
+}
 
 /* =================================================================
    MODAL (Catálogo do Gerador de Propostas)
