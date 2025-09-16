@@ -24,7 +24,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const serviceUnitSelect = document.getElementById('serviceUnit');
 
     // =================================================================
-    // INICIALIZAÇÃO E DADOS
+    // FUNÇÕES UTILITÁRIAS (Helpers)
+    // =================================================================
+    function showNotification(message, isError = false) {
+        if (!notification) return;
+        notification.textContent = message;
+        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 5000);
+    }
+    
+    function showFlash(inputElement) {
+        if (inputElement) {
+            inputElement.classList.add('success-flash');
+            setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
+        }
+    }
+
+    function createUnitSelect(currentUnit) {
+        if(!units || units.length === 0) return `<input type="text" class="editable-input" data-field="unit" value="${currentUnit || ''}">`;
+        return `<select class="editable-input" data-field="unit">${units.map(unit => `<option value="${unit.name}" ${unit.name === currentUnit ? 'selected' : ''}>${unit.name}</option>`).join('')}</select>`;
+    }
+
+    // =================================================================
+    // FUNÇÕES PRINCIPAIS (INICIALIZAÇÃO E DADOS)
     // =================================================================
     async function initialize() {
         addEventListeners();
@@ -54,6 +77,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         cardapioComposition = (compositionRes.status === 'fulfilled') ? compositionRes.value.data : [];
         units = (unitsRes.status === 'fulfilled') ? unitsRes.value.data : [];
         
+        if (itemsRes.status === 'rejected') console.warn("Aviso: Tabela 'cardapio_items' não encontrada.", itemsRes.reason);
+        if (compositionRes.status === 'rejected') console.warn("Aviso: Tabela 'cardapio_composition' não encontrada.", compositionRes.reason);
+        if (unitsRes.status === 'rejected') console.warn("Aviso: Tabela 'units' não encontrada.", unitsRes.reason);
+        
         renderAll();
     }
 
@@ -70,6 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderAdminCatalog();
         renderCompositionView();
         populateUnitSelects();
+        renderAnalytics();
     }
     
     function renderSimpleTable(tableEl, data, rowCreator) {
@@ -123,7 +151,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return row;
     }
 
-    // FUNÇÃO CORRIGIDA
     function renderAdminCatalog() {
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
@@ -133,23 +160,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         orderedCategories.forEach(category => {
             if (!servicesByCategory[category]) return;
             const categoryWrapper = document.createElement('div');
-            
-            // Constrói os cabeçalhos da tabela, incluindo um para cada lista de preço
             let tableHeaders = `<th>Nome</th><th>Unidade</th>`;
             priceTables.forEach(pt => tableHeaders += `<th class="price-column">${pt.name}</th>`);
             tableHeaders += `<th class="actions">Ações</th>`;
-
-            // Constrói as linhas da tabela
             let rowsHtml = servicesByCategory[category].map(service => {
-                // Adiciona colunas de preço para cada lista
                 let priceColumns = priceTables.map(table => {
                     const priceRecord = servicePrices.find(p => p.service_id === service.id && p.price_table_id === table.id);
                     const price = priceRecord ? parseFloat(priceRecord.price).toFixed(2) : '0.00';
                     return `<td class="price-column"><input type="number" step="0.01" min="0" class="service-price-input" data-service-id="${service.id}" data-table-id="${table.id}" value="${price}"></td>`;
                 }).join('');
-
                 const duplicateButton = category === 'Gastronomia' ? `<button class="btn btn-slim" data-action="duplicate-cardapio" data-id="${service.id}" title="Duplicar Cardápio">⧉</button>` : '';
-                
                 return `<tr data-id="${service.id}">
                     <td><input type="text" class="editable-input" data-field="name" value="${service.name}"></td>
                     <td>${createUnitSelect(service.unit)}</td>
@@ -157,7 +177,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td class="actions">${duplicateButton}<button class="btn-remove" data-action="delete-service" data-id="${service.id}">&times;</button></td>
                 </tr>`;
             }).join('');
-
             categoryWrapper.innerHTML = `<details class="category-accordion" open><summary class="category-header"><h3 class="category-title">${category}</h3></summary><div class="table-container"><table class="editable-table"><thead><tr>${tableHeaders}</tr></thead><tbody>${rowsHtml}</tbody></table></div></details>`;
             adminCatalogContainer.appendChild(categoryWrapper);
         });
@@ -180,17 +199,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const cardapio = services.find(s => s.id === selectedCardapioId);
         if (!cardapio) return;
-
         compositionSection.style.display = 'block';
         editingCardapioName.textContent = cardapio.name;
-        
         const itemsInComposition = cardapioComposition.filter(c => c.cardapio_service_id === selectedCardapioId);
         renderSimpleTable(document.getElementById('composition-table'), itemsInComposition, item => {
             const row = document.createElement('tr');
             row.innerHTML = `<td>${item.item.name}</td><td class="actions"><button class="btn-remove" data-action="delete-composition-item" data-id="${item.id}">&times;</button></td>`;
             return row;
         });
-
         const itemIdsInComposition = itemsInComposition.map(c => c.item.id);
         const availableItems = cardapioItems.filter(item => !itemIdsInComposition.includes(item.id));
         selectItemToAdd.innerHTML = '';
@@ -203,14 +219,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         units.forEach(unit => serviceUnitSelect.add(new Option(unit.name, unit.name)));
     }
     
-    function createUnitSelect(currentUnit) {
-        if(!units || units.length === 0) return `<input type="text" class="editable-input" data-field="unit" value="${currentUnit || ''}">`;
-        return `<select class="editable-input" data-field="unit">${units.map(unit => `<option value="${unit.name}" ${unit.name === currentUnit ? 'selected' : ''}>${unit.name}</option>`).join('')}</select>`;
-    }
-    
     function renderAnalytics() { /* ... Lógica de Analytics ... */ }
-
-    // =================================================================
+// =================================================================
     // EVENT LISTENERS E AÇÕES
     // =================================================================
     function addEventListeners() {
@@ -233,6 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addUnitForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('add-item-to-cardapio-form')?.addEventListener('submit', handleFormSubmit);
+
         document.body.addEventListener('click', handleTableActions);
         document.body.addEventListener('change', handleTableEdits);
         selectCardapioToEdit?.addEventListener('change', (e) => { selectedCardapioId = e.target.value; renderCompositionDetails(); });
@@ -282,16 +293,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleTableActions(e) {
         const button = e.target.closest('button[data-action]');
         if (!button) return;
+        
         const { action, id } = button.dataset;
         if (action === 'duplicate-cardapio') {
             duplicateCardapio(id);
             return;
         }
+
         const tables = {
             'delete-quote': 'quotes', 'delete-service': 'services', 'delete-table': 'price_tables',
             'delete-payment-method': 'payment_methods', 'delete-cardapio-item': 'cardapio_items',
             'delete-composition-item': 'cardapio_composition', 'delete-unit': 'units'
         };
+
         if (tables[action]) {
             if (!confirm('Tem certeza?')) return;
             const { error } = await supabase.from(tables[action]).delete().eq(action === 'delete-unit' ? 'name' : 'id', id);
@@ -306,8 +320,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const row = input.closest('tr');
         const id = row.dataset.id;
-        if (!id) return;
-        
+        if(!id) return;
+
         if (input.classList.contains('service-price-input')) {
             const service_id = input.dataset.serviceId;
             const price_table_id = input.dataset.tableId;
@@ -328,7 +342,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (row.closest('#admin-catalog-container')) tableName = 'services';
         if (tableName) {
             const { error } = await supabase.from(tableName).update({ [field]: value }).eq(tableName === 'units' ? 'name' : 'id', id);
-            if (error) { showNotification(`Erro: ${error.message}`, true); fetchData(); } else { showFlash(input); }
+            if (error) { showNotification(`Erro: ${error.message}`, true); fetchData(); }
+            else { showFlash(input); }
         }
     }
     
@@ -368,5 +383,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Inicia a aplicação
     initialize();
 });
+
+// FIM DO ARQUIVO auth.js
