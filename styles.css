@@ -31,13 +31,27 @@ body {
 .container {
     max-width: none;
     width: 100%;
-    margin: 1.5rem auto;
+    margin: 0 auto;
     padding: 1.5rem 1rem;
+}
+
+/* CORREÇÃO ESTRUTURAL: Aplica Flexbox ao container principal para uniformizar o layout */
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* Espaçamento uniforme entre todos os cards */
 }
 
 .print-only { display: none; }
 
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 1.5rem; 
+    padding: 1rem 0; /* Ajustado para alinhar com o container */
+    border-bottom: 1px solid var(--border-color); 
+}
 header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
 .header-actions { display: flex; gap: 0.8rem; align-items: center; }
 
@@ -48,8 +62,7 @@ header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
     border: 1px solid var(--border-color); 
     overflow: hidden; 
     width: 100%;
-    /* A margem inferior será controlada pelo 'gap' do container flex pai */
-    margin-bottom: 0;
+    margin-bottom: 0; /* Removido para ser controlado pelo 'gap' do main */
 }
 
 h2, h3, h4, h5 { font-weight: 600; color: var(--heading-color); }
@@ -57,7 +70,8 @@ h2 { font-size: 1.1rem; }
 h4 { margin-bottom: 1rem; }
 
 .card-content { padding: 1.2rem 1.5rem; }
-.card .card-header {
+.card .card-header,
+summary.card-summary-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -66,10 +80,6 @@ h4 { margin-bottom: 1rem; }
 }
 
 summary.card-summary-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
     list-style: none;
     cursor: pointer;
 }
@@ -196,11 +206,10 @@ summary.card-summary-header h2 {
 .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
 
 .tab-content { display: none; }
-/* CORREÇÃO ROBUSTA: Transforma o conteúdo da aba em um container flex */
 .tab-content.active { 
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; /* Controla o espaçamento entre os cards */
+    gap: 1.5rem;
 }
 
 .collapsible-card > .card-header { cursor: pointer; }
