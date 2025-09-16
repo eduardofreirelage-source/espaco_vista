@@ -1,19 +1,30 @@
 import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (!document.querySelector('.tabs-nav')) return;
-
+    // Garante que o script só execute na página de admin
+    if (!document.querySelector('.tabs-nav')) {
+        return;
+    }
+    
+    // =================================================================
+    // VERIFICAÇÃO DE ACESSO
+    // =================================================================
     const { role } = await getSession();
     if (role !== 'admin') {
+        console.warn("Acesso negado ao painel administrativo. Redirecionando para login.");
         window.location.href = 'login.html';
         return;
     }
 
+    // =================================================================
     // ESTADO GLOBAL
+    // =================================================================
     let services = [], priceTables = [], quotes = [], paymentMethods = [], cardapioItems = [], cardapioComposition = [];
     let selectedCardapioId = null;
 
+    // =================================================================
     // SELETORES DO DOM
+    // =================================================================
     const notification = document.getElementById('save-notification');
     const adminCatalogContainer = document.getElementById('admin-catalog-container');
     const cardapioItemsTbody = document.getElementById('cardapio-items-table')?.querySelector('tbody');
@@ -24,7 +35,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const selectItemToAdd = document.getElementById('select-item-to-add');
 
     // =================================================================
-    // INICIALIZAÇÃO E DADOS
+    // FUNÇÕES UTILITÁRIAS (Helpers)
+    // =================================================================
+    function showNotification(message, isError = false) {
+        if (!notification) return;
+        notification.textContent = message;
+        notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 5000);
+    }
+    
+    function showFlash(inputElement) {
+        if (inputElement) {
+            inputElement.classList.add('success-flash');
+            setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
+        }
+    }
+
+    // =================================================================
+    // FUNÇÕES PRINCIPAIS (INICIALIZAÇÃO E DADOS)
     // =================================================================
     async function initialize() {
         addEventListeners();
@@ -113,20 +142,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return row;
     }
 
-    // FUNÇÃO CORRIGIDA
     function renderAdminCatalog() {
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
         
-        // CORREÇÃO: Usa todos os serviços, sem filtrar 'Gastronomia'
         const servicesByCategory = services.reduce((acc, service) => {
             if (!acc[service.category]) acc[service.category] = [];
             acc[service.category].push(service);
             return acc;
         }, {});
         
-        // CORREÇÃO: Adiciona 'Gastronomia' de volta à lista de categorias
-        const orderedCategories = ['Gastronomia', 'Espaço', 'Equipamentos', 'Serviços / Outros'];
+        // CORREÇÃO: Ordem das categorias ajustada conforme solicitado
+        const orderedCategories = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços / Outros'];
         
         orderedCategories.forEach(category => {
             if (!servicesByCategory[category]) return;
@@ -170,9 +197,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         availableItems.forEach(item => selectItemToAdd.add(new Option(item.name, item.id)));
     }
     
-    function renderAnalytics() { /* ... Lógica de Analytics ... */ }
-
-    // =================================================================
+    function renderAnalytics() {
+        const analyticsContainer = document.getElementById('analytics-container');
+        const analyticsNotice = document.getElementById('analytics-notice');
+        if (!analyticsContainer || !analyticsNotice) return;
+        analyticsContainer.innerHTML = '';
+        if (quotes.length === 0) {
+            analyticsNotice.textContent = 'Nenhuma proposta encontrada para gerar análises.';
+            analyticsNotice.style.display = 'block';
+            return;
+        }
+        analyticsNotice.style.display = 'none';
+    }
+// =================================================================
     // EVENT LISTENERS E AÇÕES
     // =================================================================
     function addEventListeners() {
@@ -261,8 +298,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (tables[action]) {
             if (!confirm('Tem certeza?')) return;
             const { error } = await supabase.from(tables[action]).delete().eq('id', id);
-            if (error) { showNotification(`Erro: ${error.message}`, true); }
-            else { showNotification('Registro excluído.'); fetchData(); }
+            if (error) {
+                showNotification(`Erro: ${error.message}`, true);
+            } else {
+                showNotification('Registro excluído.');
+                fetchData();
+            }
         }
     }
     
@@ -272,7 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const row = input.closest('tr');
         const id = row.dataset.id;
-        if(!id) return; // Se a linha não tiver ID, ignora
+        if(!id) return;
         
         const { field } = input.dataset;
         const value = input.value;
@@ -281,7 +322,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const table = row.closest('table');
         if (!table) return;
 
-        // Mapeia o ID da tabela para o nome da tabela no Supabase
         const tableMap = {
             'cardapio-items-table': 'cardapio_items',
             'payment-methods-table': 'payment_methods',
@@ -290,15 +330,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         tableName = tableMap[table.id];
 
-        // Caso especial para o catálogo de serviços, que é mais complexo
         if (table.closest('#admin-catalog-container')) {
             tableName = 'services';
         }
 
         if (tableName) {
             const { error } = await supabase.from(tableName).update({ [field]: value }).eq('id', id);
-            if (error) { showNotification(`Erro: ${error.message}`, true); fetchData(); }
-            else { showFlash(input); }
+            if (error) {
+                showNotification(`Erro: ${error.message}`, true);
+                fetchData();
+            } else {
+                showFlash(input);
+            }
         }
     }
     
