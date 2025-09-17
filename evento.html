@@ -25,23 +25,27 @@
                             <strong id="summary-client-name" class="summary-value">Carregando...</strong>
                         </div>
                         <div class="summary-box">
+                            <span class="summary-label">Data Principal</span>
+                            <strong id="summary-event-dates" class="summary-value">...</strong>
+                        </div>
+                        <div class="summary-box">
+                            <span class="summary-label">Horário</span>
+                            <strong id="summary-event-times" class="summary-value">...</strong>
+                        </div>
+                        <div class="summary-box">
                             <span class="summary-label">Nº de Convidados</span>
                             <strong id="summary-guest-count" class="summary-value">...</strong>
                         </div>
-                        <div class="summary-box">
+                         <div class="summary-box">
                             <span class="summary-label">Valor Total</span>
                             <strong id="summary-total-value" class="summary-value">...</strong>
-                        </div>
-                        <div class="summary-box">
-                            <span class="summary-label">Datas do Evento</span>
-                            <strong id="summary-event-dates" class="summary-value">...</strong>
                         </div>
                     </div>
                     <a href="#" id="view-quote-link" class="btn btn-primary" style="margin-top: 1rem;">Ver/Editar Proposta Original</a>
                 </div>
             </section>
             
-            <section class="card collapsible-card collapsed">
+            <section class="card collapsible-card">
                  <div class="card-header">
                      <h2>Serviços Contratados e Cardápio</h2>
                      <span class="collapse-icon"></span>
@@ -53,68 +57,84 @@
             </section>
 
             <section class="card collapsible-card collapsed">
-                <div class="card-header"><h2>Gestão Financeira</h2><span class="collapse-icon"></span></div>
-                <div class="card-content-wrapper">
-                    <div class="card-content">
-                        <div class="table-container">
-                            <table id="payments-table">
-                                <thead><tr><th>Vencimento</th><th>Valor</th><th>Forma de Pag.</th><th>Status</th><th>Ações</th></tr></thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                        <button id="add-payment-btn" class="btn btn-primary" style="margin-top: 1rem;">+ Adicionar Parcela</button>
-                    </div>
-                </div>
-            </section>
-            
-            <section class="card collapsible-card collapsed">
                  <div class="card-header">
-                     <h2>Dados Completos do Cliente</h2>
-                     <span class="collapse-icon"></span>
-                 </div>
-                 <div class="card-content-wrapper">
-                    <form id="client-details-form" class="card-content">
-                        <h4>Dados de Contato e Faturamento</h4>
-                        <div class="form-grid">
-                            <div class="form-group"><label for="client-name">Nome Fantasia / Cliente</label><input type="text" id="client-name"></div>
-                            <div class="form-group"><label for="client-legal-name">Razão Social</label><input type="text" id="client-legal-name"></div>
-                            <div class="form-group"><label for="client-cnpj">CNPJ / CPF</label><input type="text" id="client-cnpj"></div>
-                            <div class="form-group"><label for="client-state-reg">Inscrição Estadual</label><input type="text" id="client-state-reg"></div>
-                            <div class="form-group"><label for="client-email">E-mail</label><input type="email" id="client-email"></div>
-                            <div class="form-group"><label for="client-phone">Telefone</label><input type="tel" id="client-phone"></div>
-                        </div>
-                        <hr class="section-divider">
-                        <h4>Endereço</h4>
-                        <div class="form-grid">
-                            <div class="form-group"><label for="client-address-street">Rua e Número</label><input type="text" id="client-address-street"></div>
-                            <div class="form-group"><label for="client-address-city">Cidade</label><input type="text" id="client-address-city"></div>
-                            <div class="form-group"><label for="client-address-state">Estado</label><input type="text" id="client-address-state"></div>
-                            <div class="form-group"><label for="client-address-zip">CEP</label><input type="text" id="client-address-zip"></div>
-                        </div>
-                        <hr class="section-divider">
-                        <h4>Representante Legal</h4>
-                        <div class="form-grid">
-                            <div class="form-group"><label for="client-rep-name">Nome do Representante</label><input type="text" id="client-rep-name"></div>
-                            <div class="form-group"><label for="client-rep-cpf">CPF do Representante</label><input type="text" id="client-rep-cpf"></div>
-                        </div>
-                        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Dados do Cliente</button>
-                    </form>
-                </div>
-            </section>
-            
-            <section class="card collapsible-card collapsed">
-                 <div class="card-header">
-                    <h2>Gestão do Contrato</h2>
+                    <h2>Gestão do Contrato e Cliente</h2>
                     <span class="collapse-icon"></span>
                 </div>
                 <div class="card-content-wrapper">
                     <div class="card-content">
-                        <p>Funcionalidades de contrato (geração, upload, assinatura) a serem implementadas.</p>
+                        
+                        <div class="sub-section">
+                            <h4>Dados Completos do Cliente</h4>
+                            <form id="client-details-form">
+                                <div class="form-grid">
+                                    <div class="form-group"><label for="client-name">Nome Fantasia / Cliente</label><input type="text" id="client-name"></div>
+                                    <div class="form-group"><label for="client-legal-name">Razão Social</label><input type="text" id="client-legal-name"></div>
+                                    <div class="form-group"><label for="client-cnpj">CNPJ / CPF</label><input type="text" id="client-cnpj"></div>
+                                    <div class="form-group"><label for="client-state-reg">Inscrição Estadual</label><input type="text" id="client-state-reg"></div>
+                                    <div class="form-group"><label for="client-email">E-mail</label><input type="email" id="client-email"></div>
+                                    <div class="form-group"><label for="client-phone">Telefone</label><input type="tel" id="client-phone"></div>
+                                </div>
+                                <hr class="section-divider">
+                                <h5>Endereço</h5>
+                                <div class="form-grid">
+                                    <div class="form-group"><label for="client-address-street">Rua e Número</label><input type="text" id="client-address-street"></div>
+                                    <div class="form-group"><label for="client-address-city">Cidade</label><input type="text" id="client-address-city"></div>
+                                    <div class="form-group"><label for="client-address-state">Estado</label><input type="text" id="client-address-state"></div>
+                                    <div class="form-group"><label for="client-address-zip">CEP</label><input type="text" id="client-address-zip"></div>
+                                </div>
+                                <hr class="section-divider">
+                                <h5>Representante Legal</h5>
+                                <div class="form-grid">
+                                    <div class="form-group"><label for="client-rep-name">Nome do Representante</label><input type="text" id="client-rep-name"></div>
+                                    <div class="form-group"><label for="client-rep-cpf">CPF do Representante</label><input type="text" id="client-rep-cpf"></div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Dados do Cliente</button>
+                            </form>
+                        </div>
+
+                        <hr class="section-divider">
+
+                        <div class="sub-section">
+                            <h4>Gestão Financeira</h4>
+                            <div class="table-container">
+                                <table id="payments-table">
+                                    <thead><tr><th>Vencimento</th><th>Valor</th><th>Forma de Pag.</th><th>Status</th><th>Ações</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <button id="add-payment-btn" class="btn btn-primary" style="margin-top: 1rem;">+ Adicionar Parcela</button>
+                        </div>
+
+                        <hr class="section-divider">
+
+                        <div class="sub-section">
+                            <h4>Gestão do Contrato</h4>
+                            <p>Funcionalidades de contrato (geração, upload, assinatura) a serem implementadas.</p>
+                        </div>
+
                     </div>
                 </div>
             </section>
         </main>
     </div>
+
+    <div id="cardapioModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="cardapio-modal-title">Definir Itens do Cardápio</h2>
+                <span class="close-button" id="close-cardapio-modal-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="cardapio-items-checklist" class="checklist-container">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-cardapio-btn" class="btn btn-primary">Salvar Cardápio</button>
+            </div>
+        </div>
+    </div>
+
     <div id="save-notification" class="notification"></div>
     <script type="module" src="evento.js"></script>
 </body>
