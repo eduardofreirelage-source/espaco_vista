@@ -150,9 +150,11 @@ summary.card-summary-header::-webkit-details-marker {
     align-items: center;
     justify-content: center;
     padding-bottom: 0.3rem;
+    transition: background-color 0.2s, color 0.2s;
 }
 .btn-icon:hover { background-color: #f0f0f0; }
 .remove-date-btn:hover { background-color: #fce8e6; color: var(--danger-color); }
+.remove-item-btn:hover { background-color: #fce8e6; color: var(--danger-color); }
 
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; font-weight: 500; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--subtle-text-color); }
@@ -165,7 +167,7 @@ summary.card-summary-header::-webkit-details-marker {
     transition: all 0.2s;
 }
 .form-group input:focus, .form-group select:focus {
-    border-color: var(--primary-color);
+    border-color: rgba(var(--primary-color-rgb), 1);
     outline: none;
     box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
 }
@@ -306,7 +308,7 @@ summary.card-summary-header::-webkit-details-marker {
 
 .editable-table input:focus, 
 .editable-table select:focus { 
-    border-color: var(--primary-color); 
+    border-color: rgba(var(--primary-color-rgb), 1);
     background-color: white; 
     outline: none; 
     box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.1);
@@ -332,7 +334,7 @@ summary.card-summary-header::-webkit-details-marker {
     border-color: #c0c0c0;
 }
 .quote-table select.status-select:focus {
-    border-color: var(--primary-color);
+    border-color: rgba(var(--primary-color-rgb), 1);
     box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
     outline: none;
     background-color: white;
@@ -362,6 +364,37 @@ summary.card-summary-header::-webkit-details-marker {
     justify-content: flex-end; 
     align-items: center;
 }
+
+/* MELHORIAS PARA TABELA DO GERADOR DE PROPOSTAS */
+.category-accordion .quote-table th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: var(--subtle-text-color);
+}
+.category-accordion .quote-table td {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+.category-accordion .quote-table td input,
+.category-accordion .quote-table td select {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background-color: #fff;
+}
+.category-accordion .quote-table td input:focus,
+.category-accordion .quote-table td select:focus {
+    border-color: rgba(var(--primary-color-rgb), 1);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+}
+.item-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+/* FIM DAS MELHORIAS */
+
 
 /* =================================================================
    RODAPÉ, RESUMO E NOTIFICAÇÕES
@@ -626,11 +659,14 @@ summary.card-summary-header::-webkit-details-marker {
 #tab-content-calendar .card {
     display: flex;
     flex-direction: column;
-    min-height: 75vh; /* Garante que o card tenha altura suficiente */
+    /* Ajuste para não forçar uma altura mínima tão grande em telas menores */
+    height: 80vh; 
+    max-height: 700px;
 }
 #tab-content-calendar .card-content {
     flex-grow: 1;
     display: flex;
+    padding: 0.5rem; /* Reduz padding para dar mais espaço */
 }
 #calendar { 
     width: 100%;
