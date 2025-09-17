@@ -4,7 +4,8 @@
    BASE
    ================================================================= */
 :root {
-    --primary-color: #c0392b; /* COR SUAVIZADA */
+    --primary-color-rgb: 139, 0, 0; /* COR VINHO ORIGINAL EM RGB */
+    --primary-color: rgba(var(--primary-color-rgb), 0.85); /* COR SUAVIZADA COM TRANSPARÊNCIA */
     --secondary-color: #f8f8ff;
     --heading-color: #2c2c2c;
     --text-color: #333333;
@@ -99,7 +100,7 @@ summary.card-summary-header::-webkit-details-marker {
 .tabs-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; overflow-x: auto; }
 .tab-btn { padding: 1rem 1.5rem; cursor: pointer; background: none; border: none; border-bottom: 3px solid transparent; font-size: 1rem; font-weight: 500; color: #666; transition: all 0.2s; margin-bottom: -1px; white-space: nowrap; }
 .tab-btn:hover { color: var(--text-color); }
-.tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+.tab-btn.active { color: rgba(var(--primary-color-rgb), 1); border-bottom-color: rgba(var(--primary-color-rgb), 1); }
 
 .tab-content { display: none; }
 .tab-content.active { 
@@ -166,18 +167,18 @@ summary.card-summary-header::-webkit-details-marker {
 .form-group input:focus, .form-group select:focus {
     border-color: var(--primary-color);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
 }
 
 .hint { font-size: 0.85rem; color: var(--subtle-text-color); margin-top: -0.5rem; margin-bottom: 1rem; }
 
 .btn {
-    padding: 0.4rem 1rem; /* TAMANHO REDUZIDO */
+    padding: 0.4rem 1rem;
     background-color: #f0f0f0;
     color: var(--heading-color);
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    font-size: 0.85rem; /* FONTE REDUZIDA */
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
@@ -186,8 +187,15 @@ summary.card-summary-header::-webkit-details-marker {
     white-space: nowrap;
 }
 .btn:hover { background-color: #e0e0e0; border-color: #c0c0c0; }
-.btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); color: white; }
-.btn-primary:hover { background-color: #a93226; border-color: #a93226; } /* COR DE HOVER AJUSTADA */
+.btn-primary { 
+    background-color: var(--primary-color); 
+    border-color: transparent; 
+    color: white; 
+}
+.btn-primary:hover { 
+    background-color: rgba(var(--primary-color-rgb), 1); /* HOVER FICA SÓLIDO */
+    border-color: transparent;
+}
 
 .btn-remove {
     padding: 0; width: 34px; height: 34px;
@@ -301,7 +309,7 @@ summary.card-summary-header::-webkit-details-marker {
     border-color: var(--primary-color); 
     background-color: white; 
     outline: none; 
-    box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.1);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.1);
 }
 
 .quote-table select.status-select {
@@ -325,11 +333,16 @@ summary.card-summary-header::-webkit-details-marker {
 }
 .quote-table select.status-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
     outline: none;
     background-color: white;
 }
 
+/* CORREÇÃO PARA ALINHAMENTO DA COLUNA DE AÇÕES */
+#quotes-table th.actions,
+#quotes-table td.actions {
+    width: 220px; /* Largura fixa para a coluna */
+}
 
 .actions { 
     text-align: right; 
@@ -338,14 +351,15 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 .quote-table .actions .btn {
-    padding: 0.25rem 0.6rem; /* BOTÕES DE AÇÃO MENORES */
-    font-size: 0.8rem; /* FONTE DOS BOTÕES DE AÇÃO MENOR */
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
 }
 
 #quotes-table .actions, #events-table .actions { 
     display: flex; 
     gap: 0.5rem; 
     justify-content: flex-end; 
+    align-items: center;
 }
 
 .editable-table .actions { 
@@ -470,7 +484,7 @@ summary.card-summary-header::-webkit-details-marker {
     content: '−'; 
     font-size: 1.5rem; 
     font-weight: 500; 
-    color: var(--primary-color); 
+    color: rgba(var(--primary-color-rgb), 1); 
     transition: transform 0.3s ease; 
 }
 .collapsible-card.collapsed .collapse-icon::before { 
@@ -554,7 +568,7 @@ summary.card-summary-header::-webkit-details-marker {
 }
 .catalog-category-tab:hover { background-color: #f9f9f9; }
 .catalog-category-tab.active { 
-    background-color: var(--primary-color); 
+    background-color: rgba(var(--primary-color-rgb), 1); 
     color: white; 
     font-weight: 600; 
 }
@@ -609,15 +623,21 @@ summary.card-summary-header::-webkit-details-marker {
 #payments-table input, #payments-table select { width: 100%; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; }
 #payments-table th { background-color: #f9f9f9; font-weight: 600; }
 .service-summary-category { margin-bottom: 1.5rem; }
-.service-summary-category h3 { font-size: 1rem; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+.service-summary-category h3 { font-size: 1rem; font-weight: 600; color: rgba(var(--primary-color-rgb), 1); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem; }
 .service-summary-item { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.9rem; border-bottom: 1px solid #f5f5f5;}
 .service-summary-item:last-child { border-bottom: none; }
 .service-summary-item span:first-child { font-weight: 500; }
 
 /* Página do Calendário */
 #calendar { min-height: 70vh; }
-.fc .fc-button-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
-.fc .fc-daygrid-day.fc-day-today { background-color: rgba(192, 57, 43, 0.1); }
+.fc .fc-button-primary { 
+    background-color: var(--primary-color) !important; 
+    border-color: transparent !important; 
+}
+.fc .fc-button-primary:hover {
+    background-color: rgba(var(--primary-color-rgb), 1) !important;
+}
+.fc .fc-daygrid-day.fc-day-today { background-color: rgba(var(--primary-color-rgb), 0.1); }
 .fc-event { cursor: pointer; }
 
 /* Página de Analytics */
