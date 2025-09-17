@@ -17,7 +17,11 @@
     --success-color: #28a745;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { 
+    box-sizing: border-box; 
+    margin: 0;
+    padding: 0;
+}
 
 body { 
     font-family: 'Inter', sans-serif; 
@@ -35,8 +39,8 @@ body {
     padding: 1.5rem 1rem;
 }
 
-/* CORREÇÃO: Usar Grid nos contêineres principais para controle robusto do layout. */
-main, #event-details-grid {
+/* BASE FUNCIONAL: Contêineres principais usam Grid para layout robusto. */
+main, #event-details-grid, .tab-content.active {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.5rem;
@@ -63,11 +67,10 @@ header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
     border: 1px solid var(--border-color); 
     width: 100%;
     
-    /* CORREÇÃO CRÍTICA: Força o card a respeitar a largura do grid pai (essencial em layouts Grid). */
+    /* BASE FUNCIONAL: Cards são forçados a não expandir além do seu contêiner. */
     min-width: 0; 
 }
 
-/* Remove a margem do último card (o 'gap' do grid resolve isso) */
 .card:last-child {
     margin-bottom: 0;
 }
@@ -84,14 +87,9 @@ summary.card-summary-header {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-}
-
-/* Regras de borda para cards simples (não colapsáveis e não details) */
-.card:not(.collapsible-card):not(.data-accordion) > .card-header {
     border-bottom: 1px solid var(--border-color);
 }
 
-/* Regras para <details> (usado em index.html) */
 summary.card-summary-header {
     list-style: none;
     cursor: pointer;
@@ -106,49 +104,111 @@ summary.card-summary-header h2 {
     margin: 0;
 }
 
-/* =================================================================
-   CORREÇÃO CRÍTICA: Cards Colapsáveis (Preparados para Animação JS)
-   ================================================================= */
 
-.collapsible-card > .card-header { 
-    cursor: pointer; 
-    border-bottom: 1px solid var(--border-color);
-}
+.collapsible-card > .card-header { cursor: pointer; }
 
-/* Quando aberto, DEVE permitir overflow para que as barras de rolagem internas funcionem. */
-.collapsible-card .card-content {
-    overflow: visible; /* CRUCIAL */
-    display: block;
-    /* Transições de CSS removidas, serão gerenciadas pelo JS */
-}
-
-/* Quando fechado (estado inicial), esconder o conteúdo. O JS gerenciará a animação. */
-.collapsible-card.collapsed .card-content {
-    display: none; 
-}
-
-/* Quando fechado, a borda inferior do header desaparece */
 .collapsible-card.collapsed > .card-header {
     border-bottom-color: transparent;
+}
+
+.collapsible-card.collapsed .card-content-wrapper {
+    display: none;
 }
 
 .collapse-icon::before { content: '−'; font-size: 1.5rem; font-weight: 500; color: var(--primary-color); }
 .collapsible-card.collapsed .collapse-icon::before { content: '+'; }
 
-
 /* =================================================================
-   FORMULÁRIOS E BOTÕES (Preservado do original)
+   FORMULÁRIOS E BOTÕES (COMPLETADO)
    ================================================================= */
 
-/* ... (Estilos de Formulários e Botões) ... */
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--subtle-text-color); }
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+.form-group input:focus, .form-group select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+}
+
+.hint { font-size: 0.85rem; color: var(--subtle-text-color); margin-top: -0.5rem; margin-bottom: 1rem; }
+
+.btn {
+    padding: 0.5rem 1.2rem;
+    background-color: #f0f0f0;
+    color: var(--heading-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn:hover { background-color: #e0e0e0; border-color: #c0c0c0; }
+.btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); color: white; }
+.btn-primary:hover { background-color: #6d0000; border-color: #6d0000; }
+
+.quote-table .actions .btn {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.btn-remove {
+    padding: 0; width: 34px; height: 34px;
+    border-radius: 50%; border: 1px solid transparent;
+    color: var(--subtle-text-color); background-color: transparent;
+    cursor: pointer; font-size: 1.5rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease;
+}
+.btn-remove:hover { background-color: var(--danger-color); color: white; }
+
+.export-container {
+    position: relative;
+    display: inline-block;
+}
+.export-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+    z-index: 100;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.export-menu.show {
+    display: block;
+}
+.export-menu div {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.export-menu div:hover {
+    background-color: #f1f1f1;
+}
 
 /* =================================================================
-   RODAPÉ (FOOTER)
+   RODAPÉ, ABAS E TABELAS (COMPLETADO)
    ================================================================= */
 
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
 
-/* CORREÇÃO: Permitir rolagem interna no footer. */
 .summary-content { 
     max-width: none; 
     margin: 0 auto; 
@@ -161,37 +221,32 @@ summary.card-summary-header h2 {
     flex-wrap: nowrap;
 }
 .summary-item { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+.summary-item label { font-size: 0.85rem; }
+.summary-item input { width: 100px; padding: 0.3rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
+.summary-total { font-size: 1.1rem; font-weight: 600; white-space: nowrap; }
 
-/* =================================================================
-   ESTILOS ESPECÍFICOS DO PAINEL (TABS E TABELAS)
-   ================================================================= */
 
-/* CORREÇÃO: Garantir que a navegação por abas role. */
 .tabs-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; overflow-x: auto; }
 .tab-btn { padding: 1rem 1.5rem; cursor: pointer; background: none; border: none; border-bottom: 3px solid transparent; font-size: 1rem; font-weight: 500; color: #666; transition: all 0.2s; margin-bottom: -1px; white-space: nowrap; }
 .tab-btn:hover { color: var(--text-color); }
 .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
 
-.tab-content { display: none; }
-
-/* CORREÇÃO: Aplica o Grid também ao conteúdo das abas ativas. */
-.tab-content.active { 
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+/* BASE FUNCIONAL: O contêiner da tabela rola horizontalmente. */
+.table-container { 
+    overflow-x: auto; 
 }
 
-
-/* Esta classe contém o overflow horizontal internamente */
-.table-container { overflow-x: auto; }
-
 .editable-table, .quote-table { width: 100%; border-collapse: collapse; }
+.editable-table th, .editable-table td, .quote-table th, .quote-table td { padding: 0.8rem; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border-color);}
+.editable-table th, .quote-table th { background-color: #f9f9f9; font-weight: 600; }
+.editable-table input, .editable-table select { width: 100%; padding: 0.5rem; border: 1px solid transparent; background-color: inherit; border-radius: 4px; transition: all 0.2s; font-size: 0.9rem; }
+.editable-table td.price-column, .editable-table th.price-column { text-align: right; }
+.editable-table td.price-column input { text-align: right; }
+.editable-table tr:hover input, .editable-table tr:hover select { border-color: #eee; background-color: #fdfdfd; }
+.editable-table input:focus, .editable-table select:focus { border-color: var(--primary-color); background-color: white; outline: none; box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.1); }
 
-/* ... (Estilos de Tabela) ... */
-
-/* CORREÇÃO CRÍTICA: Impede que o elemento <details> interno (gerado via JS) expanda o layout. */
+/* BASE FUNCIONAL: O <details> dinâmico também é forçado a não expandir. */
 .category-accordion {
-    width: 100%;
     min-width: 0; 
 }
 
@@ -204,10 +259,104 @@ summary.card-summary-header h2 {
     gap: 1.5rem;
     align-items: flex-end;
     flex-wrap: wrap;
-    /* CORREÇÃO: Conter overflow causado por margens negativas */
     overflow-x: auto; 
 }
+.inline-form .form-group {
+    flex-grow: 1;
+    flex-basis: 220px;
+    margin-bottom: 0;
+}
+.inline-form button {
+    flex-shrink: 0;
+}
 
-/* ... (Estilos de Inline Form, Actions, Notifications, Specific Pages, Modal) ... */
+.actions { text-align: right; white-space: nowrap; width: 150px; }
+.editable-table .actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+#quotes-table .actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 
-/* FIM DO ARQUIVO CSS */
+.section-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 2rem 0;
+}
+
+/* =================================================================
+   COMPONENTES E PÁGINAS ESPECÍFICAS (COMPLETADO)
+   ================================================================= */
+   
+.notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); padding: 15px 25px; color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1100; transition: bottom 0.5s ease-in-out; }
+.notification.show { bottom: 20px; }
+
+.modal {
+    display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+    width: 100%; height: 100%; overflow: auto; 
+    background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
+    background-color: #fefefe; margin: 5% auto;
+    border: 1px solid var(--border-color); width: 90%;
+    max-width: 1200px; border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column;
+}
+.modal-header {
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h2 { font-size: 1.2rem; }
+.close-button { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+.close-button:hover, .close-button:focus { color: black; }
+.modal-body { padding: 1.5rem; flex-grow: 1; overflow: hidden; }
+.catalog-modal-content { height: 85vh; }
+#catalog-search { width: 100%; padding: 0.6rem; font-size: 1rem; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 1rem; }
+.catalog-container { display: flex; height: calc(100% - 60px); }
+.catalog-categories { flex-basis: 220px; flex-shrink: 0; border-right: 1px solid var(--border-color); overflow-y: auto; }
+.catalog-category-tab { padding: 0.8rem 1rem; cursor: pointer; font-weight: 500; border-bottom: 1px solid #f0f0f0; }
+.catalog-category-tab:hover { background-color: #f9f9f9; }
+.catalog-category-tab.active { background-color: var(--primary-color); color: white; font-weight: 600; }
+.catalog-items { flex-grow: 1; padding-left: 1.5rem; overflow-y: auto; }
+.catalog-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0.5rem; border-bottom: 1px solid var(--border-color); }
+.catalog-item .btn { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+.catalog-item .btn-added { background-color: var(--success-color); border-color: var(--success-color); color: white; cursor: not-allowed; }
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+.kpi-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.kpi-title {
+    font-weight: 600;
+    color: var(--subtle-text-color);
+    font-size: 0.9rem;
+}
+.kpi-value {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--heading-color);
+    margin: 0.5rem 0;
+}
+.kpi-sub-value {
+    color: var(--subtle-text-color);
+    margin-bottom: 1rem;
+}
+.kpi-comparison {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.kpi-comparison .percentage.increase {
+    color: #1a6e3a;
+    background-color: #d1f7d9;
+}
+.kpi-comparison .percentage.decrease {
+    color: var(--danger-color);
+    background-color: #fce8e6;
+}
