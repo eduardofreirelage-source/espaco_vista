@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             supabase.from('payment_methods').select('*').order('name'),
             supabase.from('menu_items').select('*').order('name'),
             supabase.from('menu_subitems').select('*').order('name'),
-            supabase.from('menu_composition').select('*, item:item_id(*), subitem:subitem_id(*)'),
+            supabase.from('menu_composition').select('*, service:service_id(*), item:item_id(*), subitem:subitem_id(*)'),
             supabase.from('units').select('name').order('name')
         ]);
 
@@ -224,8 +224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${cardapios.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
                 </select>
             </div>
-            <div id="composition-details" style="display:none;"></div>
-        `;
+            <div id="composition-details" style="display:none;"></div>`;
         compositionManager.innerHTML = html;
     }
     
@@ -234,54 +233,73 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!container) return;
 
         const compositionForService = menuComposition.filter(c => c.service_id === serviceId);
-        const itemIdsInService = [...new Set(compositionForService.map(c => c.item_id))];
-        const itemsInService = itemIdsInService.map(id => menuItems.find(mi => mi.id === id));
+        const standaloneSubitems = compositionForService.filter(c => c.item_id === null && c.subitem_id);
+        const itemsInService = [...new Set(compositionForService.filter(c => c.item_id).map(c => c.item_id))]
+            .map(id => menuItems.find(mi => mi.id === id))
+            .filter(Boolean); // Filtra qualquer item que possa não ser encontrado
 
-        let html = `
-            <hr class="section-divider">
-            <h4>2. Adicione Itens (Seções) ao Cardápio</h4>
+        let html = `<hr class="section-divider">
+            <h4>2. Composição do Cardápio</h4>
+            
+            <div id="items-and-subitems-container">`;
+
+        // Renderiza as seções (Itens) e seus subitens
+        itemsInService.forEach(item => {
+            const subitemsInItem = compositionForService.filter(c => c.item_id === item.id && c.subitem_id);
+            const subitemIdsInItem = subitemsInItem.map(comp => comp.subitem_id);
+            const availableSubitems = menuSubitems.filter(sub => !subitemIdsInItem.includes(sub.id));
+            const compositionEntryForItem = compositionForService.find(c => c.item_id === item.id && c.subitem_id === null);
+
+            html += `<div class="sub-section item-composition-group">
+                        <div class="composition-header">
+                            <h5>${item.name}</h5>
+                            <button class="btn-remove" title="Remover seção '${item.name}'" data-action="remove-composition" data-composition-id="${compositionEntryForItem?.id}">&times;</button>
+                        </div>
+                        <ul class="subitem-list">
+                            ${subitemsInItem.map(comp => `<li><span>${comp.subitem.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>`).join('') || '<li>Nenhum subitem adicionado.</li>'}
+                        </ul>
+                        <form class="add-subitem-form" data-action="add-subitem-to-item" data-service-id="${serviceId}" data-item-id="${item.id}">
+                             <div class="form-group">
+                                <select name="subitem_id" required>
+                                     <option value="">-- Adicionar subitem a esta seção --</option>
+                                    ${availableSubitems.map(sub => `<option value="${sub.id}">${sub.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn">Adicionar</button>
+                        </form>
+                    </div>`;
+        });
+        html += `</div>
+        
             <form id="add-item-to-service-form" class="inline-form" data-service-id="${serviceId}">
                 <div class="form-group">
-                    <label>Selecione um Item para adicionar</label>
+                    <label>Adicionar Nova Seção (Item)</label>
                     <select name="item_id" required>
-                        <option value="">-- Selecione uma seção --</option>
-                        ${menuItems.map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
+                        <option value="">-- Selecione --</option>
+                        ${menuItems.filter(item => !itemsInService.some(i => i.id === item.id)).map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary">Adicionar Seção ao Cardápio</button>
             </form>
-            <div id="items-and-subitems-container">`;
+            <hr class="section-divider">
 
-        itemsInService.forEach(item => {
-            if (!item) return;
-            const subitemsInItem = compositionForService.filter(c => c.item_id === item.id);
-            const subitemIdsInItem = subitemsInItem.map(comp => comp.subitem_id);
-            const availableSubitems = menuSubitems.filter(sub => !subitemIdsInItem.includes(sub.id));
-
-            html += `
-                <div class="sub-section item-composition-group">
-                    <div class="composition-header">
-                        <h5>${item.name}</h5>
-                        <button class="btn-remove" title="Remover seção '${item.name}' e todos os seus subitens deste cardápio" data-action="remove-item-from-service" data-service-id="${serviceId}" data-item-id="${item.id}">&times;</button>
+            <div class="sub-section item-composition-group">
+                <h5>Pratos Avulsos (sem seção)</h5>
+                <ul class="subitem-list">
+                    ${standaloneSubitems.map(comp => `<li><span>${comp.subitem.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>`).join('') || '<li>Nenhum prato avulso adicionado.</li>'}
+                </ul>
+                <form id="add-standalone-subitem-form" class="inline-form" data-service-id="${serviceId}">
+                    <div class="form-group">
+                        <label>Adicionar Prato Avulso</label>
+                        <select name="subitem_id" required>
+                             <option value="">-- Selecione --</option>
+                            ${menuSubitems.map(sub => `<option value="${sub.id}">${sub.name}</option>`).join('')}
+                        </select>
                     </div>
-                    <ul class="subitem-list">
-                        ${subitemsInItem.map(comp => `
-                            <li><span>${comp.subitem.name}</span><button class="btn-remove-inline" data-action="remove-subitem-from-item" data-composition-id="${comp.id}">&times;</button></li>
-                        `).join('') || '<li>Nenhum subitem adicionado.</li>'}
-                    </ul>
-                    <form class="add-subitem-form" data-action="add-subitem-to-item" data-service-id="${serviceId}" data-item-id="${item.id}">
-                         <div class="form-group">
-                            <select name="subitem_id" required>
-                                 <option value="">-- Adicionar um subitem --</option>
-                                ${availableSubitems.map(sub => `<option value="${sub.id}">${sub.name}</option>`).join('')}
-                            </select>
-                        </div>
-                        <button type="submit" class="btn">Adicionar</button>
-                    </form>
-                </div>`;
-        });
-        
-        html += `</div>`;
+                    <button type="submit" class="btn btn-primary">Adicionar Prato Avulso</button>
+                </form>
+            </div>
+        `;
         container.innerHTML = html;
     }
     
@@ -393,46 +411,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        compositionManager?.addEventListener('submit', async e => {
-            e.preventDefault();
-            const form = e.target;
-            const serviceId = form.dataset.serviceId;
-            const itemId = form.dataset.itemId || new FormData(form).get('item_id');
-            
-            if (form.id === 'add-item-to-service-form') {
-                 if (!menuSubitems.length) {
-                    showNotification("Cadastre ao menos um Subitem antes de montar um cardápio.", true);
-                    return;
-                }
-                const { error } = await supabase.from('menu_composition').insert({ service_id: serviceId, item_id: itemId, subitem_id: menuSubitems[0].id });
-                if (error) { showNotification(`Erro ao adicionar item: ${error.message}`, true); } 
-                else { showNotification("Seção adicionada. Agora adicione ou troque os subitens."); await fetchData(); renderCompositionDetails(serviceId); }
-            } else if (form.classList.contains('add-subitem-form')) {
-                const subitemId = new FormData(form).get('subitem_id');
-                if(!subitemId) { showNotification("Selecione um subitem para adicionar.", true); return; }
-                const { error } = await supabase.from('menu_composition').insert({ service_id: serviceId, item_id: itemId, subitem_id: subitemId });
-                if (error) { showNotification(`Erro ao adicionar subitem: ${error.message}`, true); } 
-                else { showNotification("Subitem adicionado."); await fetchData(); renderCompositionDetails(serviceId); }
-            }
-        });
-        
-        compositionManager?.addEventListener('click', async e => {
-            const button = e.target.closest('button[data-action]');
-            if (!button) return;
-            const serviceId = document.getElementById('select-main-cardapio').value;
-            
-            if (button.dataset.action === 'remove-subitem-from-item') {
-                if (!confirm("Remover este subitem do cardápio?")) return;
-                const { error } = await supabase.from('menu_composition').delete().eq('id', button.dataset.compositionId);
-                if (error) { showNotification(error.message, true); } else { showNotification("Subitem removido."); await fetchData(); renderCompositionDetails(serviceId); }
-            }
-            if (button.dataset.action === 'remove-item-from-service') {
-                if (!confirm("Remover esta seção e todos os seus subitens do cardápio?")) return;
-                const { itemId } = button.dataset;
-                const { error } = await supabase.from('menu_composition').delete().match({ service_id: serviceId, item_id: itemId });
-                 if (error) { showNotification(error.message, true); } else { showNotification("Seção removida."); await fetchData(); renderCompositionDetails(serviceId); }
-            }
-        });
+        compositionManager?.addEventListener('submit', handleCompositionSubmit);
+        compositionManager?.addEventListener('click', handleCompositionClick);
     }
 
     async function handleFormSubmit(e) {
@@ -466,6 +446,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             fetchData();
         } catch (error) {
             showNotification(`Erro: ${error.message}`, true);
+        }
+    }
+
+    async function handleCompositionSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const serviceId = form.dataset.serviceId;
+        const itemId = form.dataset.itemId || new FormData(form).get('item_id');
+        const subitemId = new FormData(form).get('subitem_id');
+
+        let dataToInsert = { service_id: serviceId };
+        let successMessage = "Adicionado com sucesso.";
+
+        if (form.id === 'add-item-to-service-form') {
+            dataToInsert.item_id = itemId;
+            dataToInsert.subitem_id = null;
+            successMessage = "Seção adicionada ao cardápio.";
+        } else if (form.id === 'add-standalone-subitem-form') {
+            dataToInsert.item_id = null;
+            dataToInsert.subitem_id = subitemId;
+            successMessage = "Prato avulso adicionado.";
+        } else if (form.classList.contains('add-subitem-form')) {
+            dataToInsert.item_id = itemId;
+            dataToInsert.subitem_id = subitemId;
+            successMessage = "Subitem adicionado à seção.";
+        }
+
+        if (!dataToInsert.item_id && !dataToInsert.subitem_id) {
+            showNotification("Selecione um item ou subitem.", true);
+            return;
+        }
+
+        const { error } = await supabase.from('menu_composition').insert(dataToInsert);
+        if (error) {
+            showNotification(`Erro: ${error.message}`, true);
+        } else {
+            showNotification(successMessage);
+            await fetchData();
+            renderCompositionDetails(serviceId);
+        }
+    }
+
+    async function handleCompositionClick(e) {
+        const button = e.target.closest('button[data-action]');
+        if (!button) return;
+        const serviceId = document.getElementById('select-main-cardapio').value;
+        const compositionId = button.dataset.compositionId;
+
+        if (button.dataset.action === 'remove-composition') {
+            if (!confirm("Tem certeza que deseja remover?")) return;
+            const { error } = await supabase.from('menu_composition').delete().eq('id', compositionId);
+            if (error) {
+                showNotification(error.message, true);
+            } else {
+                showNotification("Removido com sucesso.");
+                await fetchData();
+                renderCompositionDetails(serviceId);
+            }
         }
     }
 
