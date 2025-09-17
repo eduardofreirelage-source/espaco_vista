@@ -124,7 +124,6 @@ summary.card-summary-header::-webkit-details-marker {
     gap: 1rem 1.5rem;
 }
 
-/* CORREÇÃO PARA O LAYOUT DE DATAS */
 .event-dates-wrapper {
     margin-top: 1.5rem;
     display: grid;
@@ -153,8 +152,6 @@ summary.card-summary-header::-webkit-details-marker {
 }
 .btn-icon:hover { background-color: #f0f0f0; }
 .remove-date-btn:hover { background-color: #fce8e6; color: var(--danger-color); }
-/* FIM DA CORREÇÃO */
-
 
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; font-weight: 500; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--subtle-text-color); }
@@ -305,6 +302,19 @@ summary.card-summary-header::-webkit-details-marker {
     background-color: white; 
     outline: none; 
     box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.1); 
+}
+
+/* MELHORIA PARA O DROPDOWN DE STATUS */
+.quote-table select.status-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23333333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1em;
+    cursor: pointer;
 }
 
 .actions { 
@@ -572,7 +582,7 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 /* =================================================================
-   ETAPA FINAL: ESTILOS DE PÁGINAS ESPECÍFICAS
+   ESTILOS DE PÁGINAS ESPECÍFICAS
    ================================================================= */
 
 /* Página de Gestão de Evento */
