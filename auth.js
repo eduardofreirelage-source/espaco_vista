@@ -224,8 +224,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderSubmenusManager() {
         const container = document.getElementById('submenus-manager');
         if (!container) return;
-        container.innerHTML = `<div id="submenu-composition-details"></div>`;
         renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
+        container.innerHTML += `<div id="submenu-composition-details"></div>`;
     }
     
     function renderSubmenuCompositionDetails(submenuId) {
@@ -521,7 +521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(form.classList.contains('add-item-to-submenu-form')){
             const submenuId = form.dataset.submenuId;
             const itemId = new FormData(form).get('item_id');
-            const { error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId, service_id: null }); // Ligação direta
+            const { error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId, service_id: null });
             if (error) { showNotification(`Erro: ${error.message}`, true); } 
             else { 
                 showNotification("Item adicionado ao subcardápio."); 
