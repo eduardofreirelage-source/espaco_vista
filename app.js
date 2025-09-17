@@ -1,4 +1,3 @@
-
 import { supabase, getSession } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -231,11 +230,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         let nonConsumableSubtotal = 0;
         const guestCount = currentQuote.guest_count;
         const priceTableId = currentQuote.price_table_id;
-
+    
         currentQuote.items.forEach(item => {
             const service = services.find(s => s.id === item.service_id);
             if (!service) return;
-
+    
             let basePrice = 0;
             if (userRole === 'admin' && priceTableId) {
                 const priceRecord = servicePrices.find(p => p.service_id === item.service_id && p.price_table_id === priceTableId);
@@ -247,21 +246,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 quantity = guestCount;
                 item.quantity = quantity;
             }
-
+    
             const cost = basePrice * quantity;
             const discountRate = (userRole === 'admin' ? (parseFloat(item.discount_percent) || 0) : 0) / 100;
             const total = cost * (1 - discountRate);
-
+    
             item.calculated_unit_price = basePrice;
             item.calculated_total = total;
             
-            if (service.category === 'Serviços e Outros' || service.category === 'Espaço') {
-                nonConsumableSubtotal += total;
-            } else {
+            if (service.category === 'Gastronomia' || service.category === 'Espaço') {
                 consumableSubtotal += total;
+            } else {
+                nonConsumableSubtotal += total;
             }
         });
-
+    
         const subtotal = consumableSubtotal + nonConsumableSubtotal;
         const discountGeneral = userRole === 'admin' ? (parseFloat(currentQuote.discount_general) || 0) : 0;
         
@@ -270,10 +269,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const table = priceTables.find(t => t.id === priceTableId);
             availableConsumableCredit = table ? (parseFloat(table.consumable_credit) || 0) : 0;
         }
-
+    
         const consumableCreditUsed = Math.min(consumableSubtotal, availableConsumableCredit);
         const total = subtotal - discountGeneral - consumableCreditUsed;
-
+    
         return { subtotal, consumableCredit: consumableCreditUsed, discountGeneral, total: Math.max(0, total) };
     }
 
