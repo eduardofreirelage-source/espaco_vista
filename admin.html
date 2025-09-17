@@ -112,18 +112,43 @@
                     <div class="card-header"><h2>Montagem de Cardápios</h2><span class="collapse-icon"></span></div>
                     <div class="card-content-wrapper">
                         <div class="card-content">
-                            <div class="form-group"><label for="select-cardapio-to-edit">Selecione um Cardápio para definir sua composição:</label><select id="select-cardapio-to-edit"><option value="">-- Selecione --</option></select></div>
+                            <div class="form-group">
+                                <label for="select-cardapio-to-edit">1. Selecione um Cardápio Principal:</label>
+                                <select id="select-cardapio-to-edit"><option value="">-- Selecione --</option></select>
+                            </div>
+
+                            <div id="submenus-section" style="display: none;">
+                                <hr class="section-divider">
+                                <h4>2. Gerencie os Subcardápios de "<strong id="editing-cardapio-name"></strong>"</h4>
+                                <div class="table-container">
+                                    <table id="submenus-table" class="editable-table">
+                                        <thead><tr><th>Nome do Subcardápio</th><th class="actions">Ações</th></tr></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <form id="add-submenu-form" class="inline-form">
+                                    <div class="form-group">
+                                        <label for="submenuName">Nome do novo Subcardápio</label>
+                                        <input type="text" id="submenuName" placeholder="Ex: Almoço Executivo Tipo 1" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Adicionar Subcardápio</button>
+                                </form>
+                            </div>
+
                             <div id="composition-section" style="display: none;">
                                 <hr class="section-divider">
-                                <h4>Itens em "<strong id="editing-cardapio-name"></strong>":</h4>
+                                <h4>3. Gerencie os Itens de "<strong id="editing-submenu-name"></strong>"</h4>
                                 <div class="table-container">
                                     <table id="composition-table" class="editable-table">
                                         <thead><tr><th>Item</th><th class="actions">Ação</th></tr></thead>
                                         <tbody></tbody>
                                     </table>
                                 </div>
-                                <form id="add-item-to-cardapio-form" class="inline-form">
-                                    <div class="form-group"><label for="select-item-to-add">Adicionar item ao cardápio</label><select id="select-item-to-add" required></select></div>
+                                <form id="add-item-to-submenu-form" class="inline-form">
+                                    <div class="form-group">
+                                        <label for="select-item-to-add">Adicionar item ao subcardápio</label>
+                                        <select id="select-item-to-add" required></select>
+                                    </div>
                                     <button type="submit" class="btn btn-primary">Adicionar</button>
                                 </form>
                             </div>
