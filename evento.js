@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let services = [];
     let cardapioItems = [];
     let hasInitializedListeners = false;
-    let selectedCardapioServiceId = null; // Para saber qual cardápio estamos editando
+    let selectedCardapioServiceId = null;
 
     const urlParams = new URLSearchParams(window.location.search);
     const quoteId = urlParams.get('quote_id');
@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // --- CARREGAMENTO DE DADOS ---
     async function loadData() {
         try {
             const [quoteRes, servicesRes, cardapioItemsRes] = await Promise.all([
@@ -31,10 +30,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (cardapioItemsRes.error) throw cardapioItemsRes.error;
 
             currentQuote = quoteRes.data;
-            currentClient = quoteRes.data.clients;
+            currentClient = currentQuote.clients;
             services = servicesRes.data;
             cardapioItems = cardapioItemsRes.data;
             
+            // Garante que a estrutura de dados para o cardápio selecionado exista
+            if (!currentQuote.quote_data.selected_cardapio) {
+                currentQuote.quote_data.selected_cardapio = {};
+            }
+
             populatePage();
             if (!hasInitializedListeners) {
                 setupEventListeners();
@@ -47,9 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- RENDERIZAÇÃO ---
     function populatePage() {
-        // Resumo do Evento
         document.getElementById('summary-client-name').textContent = currentQuote.client_name;
         document.getElementById('summary-guest-count').textContent = currentQuote.quote_data.guest_count;
         document.getElementById('summary-total-value').textContent = formatCurrency(currentQuote.total_value);
@@ -68,9 +70,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function populateClientForm() {
         document.getElementById('client-name').value = currentQuote.client_name || '';
-        document.getElementById('client-cnpj').value = currentQuote.quote_data.client_cnpj || currentQuote.clients?.cnpj || '';
-        document.getElementById('client-email').value = currentQuote.quote_data.client_email || currentQuote.clients?.email ||'';
-        document.getElementById('client-phone').value = currentQuote.quote_data.client_phone || currentQuote.clients?.phone || '';
+        document.getElementById('client-cnpj').value = currentQuote.quote_data.client_cnpj || currentClient?.cnpj || '';
+        document.getElementById('client-email').value = currentQuote.quote_data.client_email || currentClient?.email ||'';
+        document.getElementById('client-phone').value = currentQuote.quote_data.client_phone || currentClient?.phone || '';
         if (currentClient) {
             document.getElementById('client-legal-name').value = currentClient.legal_name || '';
             document.getElementById('client-state-reg').value = currentClient.state_registration || '';
@@ -149,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>${date}</td>
                     <td>${start}</td>
                     <td>${end}</td>
-                    <td>${actionButton}</td>
+                    <td class="actions">${actionButton}</td>
                 </tr>
             `;
         });
@@ -158,36 +160,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.innerHTML = tableHtml;
     }
 
-    // --- LÓGICA DO MODAL DE CARDÁPIO ---
-    
-    async function openCardapioModal(serviceId) {
+    function openCardapioModal(serviceId) {
         selectedCardapioServiceId = serviceId;
         const service = services.find(s => s.id === serviceId);
         document.getElementById('cardapio-modal-title').textContent = `Definir Itens para "${service.name}"`;
-        await populateCardapioModal(serviceId);
+        populateCardapioModal(serviceId);
         document.getElementById('cardapioModal').style.display = 'block';
     }
 
-    async function populateCardapioModal(serviceId) {
+    function populateCardapioModal(serviceId) {
         const checklistContainer = document.getElementById('cardapio-items-checklist');
         checklistContainer.innerHTML = '<div>Carregando itens...</div>';
 
-        // Pega os itens já selecionados para este cardápio/evento
-        const { data: currentComposition, error } = await supabase
-            .from('cardapio_composition')
-            .select('item_id')
-            .eq('quote_id', quoteId)
-            .eq('cardapio_service_id', serviceId);
+        const selectedItemIds = new Set(currentQuote.quote_data.selected_cardapio[serviceId] || []);
 
-        if (error) {
-            showNotification('Erro ao buscar itens do cardápio.', true);
-            console.error(error);
-            return;
-        }
-
-        const selectedItemIds = new Set(currentComposition.map(item => item.item_id));
-
-        // Monta a lista de checkboxes
         if (cardapioItems.length > 0) {
             checklistContainer.innerHTML = cardapioItems.map(item => `
                 <div class="checkbox-item">
@@ -207,39 +193,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedInputs = checklistContainer.querySelectorAll('input[type="checkbox"]:checked');
         const selectedItemIds = Array.from(selectedInputs).map(input => input.value);
         
-        // 1. Deleta a composição antiga para este cardápio e evento
-        const { error: deleteError } = await supabase
-            .from('cardapio_composition')
-            .delete()
-            .eq('quote_id', quoteId)
-            .eq('cardapio_service_id', selectedCardapioServiceId);
-
-        if (deleteError) {
-            showNotification('Erro ao atualizar o cardápio (etapa 1).', true);
-            console.error(deleteError);
-            return;
-        }
-
-        // 2. Insere a nova composição, se houver itens selecionados
-        if (selectedItemIds.length > 0) {
-            const newComposition = selectedItemIds.map(itemId => ({
-                quote_id: quoteId,
-                cardapio_service_id: selectedCardapioServiceId,
-                item_id: itemId
-            }));
-            
-            const { error: insertError } = await supabase
-                .from('cardapio_composition')
-                .insert(newComposition);
-
-            if (insertError) {
-                showNotification('Erro ao atualizar o cardápio (etapa 2).', true);
-                console.error(insertError);
-                return;
-            }
-        }
+        currentQuote.quote_data.selected_cardapio[selectedCardapioServiceId] = selectedItemIds;
         
-        showNotification('Cardápio salvo com sucesso!');
+        await saveQuoteData('Cardápio salvo com sucesso!');
         closeCardapioModal();
     }
 
@@ -248,8 +204,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectedCardapioServiceId = null;
     }
 
-
-    // --- EVENT LISTENERS E AÇÕES ---
     function setupEventListeners() {
         document.getElementById('client-details-form').addEventListener('submit', handleClientFormSubmit);
         document.getElementById('add-payment-btn').addEventListener('click', handleAddPayment);
@@ -263,13 +217,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (header) {
                 header.closest('.collapsible-card')?.classList.toggle('collapsed');
             }
-            if (e.target.matches('.define-cardapio-btn')) {
-                const serviceId = e.target.dataset.serviceId;
+            const defineCardapioBtn = e.target.closest('.define-cardapio-btn');
+            if (defineCardapioBtn) {
+                const serviceId = defineCardapioBtn.dataset.serviceId;
                 openCardapioModal(serviceId);
             }
         });
 
-        // Listeners do Modal
         document.getElementById('close-cardapio-modal-btn').addEventListener('click', closeCardapioModal);
         document.getElementById('save-cardapio-btn').addEventListener('click', handleCardapioSave);
     }
@@ -289,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             address: { street: document.getElementById('client-address-street').value, city: document.getElementById('client-address-city').value, state: document.getElementById('client-address-state').value, zip: document.getElementById('client-address-zip').value }
         };
 
-        const { data: savedClient, error: clientError } = await supabase.from('clients').upsert(clientData).select().single();
+        const { data: savedClient, error: clientError } = await supabase.from('clients').upsert(clientData, { onConflict: 'id' }).select().single();
         if (clientError) { showNotification('Erro ao salvar cliente.', true); console.error(clientError); return; }
         
         let quoteUpdateData = { client_name: savedClient.name };
