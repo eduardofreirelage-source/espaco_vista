@@ -72,17 +72,31 @@
 
             <div id="tab-content-catalogs" class="tab-content">
                 
-                <section class="card collapsible-card">
-                    <div class="card-header"><h2>Gestão de Cardápios</h2><span class="collapse-icon"></span></div>
+                <section class="card collapsible-card collapsed">
+                    <div class="card-header"><h2>Gerenciar Cardápios Principais e Serviços</h2><span class="collapse-icon"></span></div>
                     <div class="card-content-wrapper">
                         <div class="card-content">
-                            
+                             <p class="hint">Cadastre os "pacotes" vendáveis, como "Almoço Executivo" (Cardápio Principal), ou outros serviços como "Aluguel do Salão".</p>
+                            <div id="admin-catalog-container"></div> 
+                            <form id="addServiceForm" class="inline-form">
+                                <div class="form-group"><label for="serviceName">Nome do Serviço/Cardápio</label><input type="text" id="serviceName" required></div>
+                                <div class="form-group"><label for="serviceCategory">Categoria</label><select id="serviceCategory" required><option value="Gastronomia">Gastronomia (Cardápio Principal)</option><option value="Espaço">Espaço</option><option value="Equipamentos">Equipamentos</option><option value="Serviços e Outros">Serviços e Outros</option></select></div>
+                                <div class="form-group"><label for="serviceUnit">Unidade</label><select id="serviceUnit" required></select></div>
+                                <button type="submit" class="btn btn-primary">Adicionar Serviço/Cardápio</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card collapsible-card collapsed">
+                    <div class="card-header"><h2>Gestão de Cardápios (Itens e Subitens)</h2><span class="collapse-icon"></span></div>
+                    <div class="card-content-wrapper">
+                        <div class="card-content">
                             <div class="sub-section">
                                 <h4>Montagem de Cardápio Principal</h4>
                                 <div id="composition-manager">
                                     </div>
                             </div>
-
                             <div class="sub-section">
                                 <h4>Gerenciar Itens (Seções)</h4>
                                 <p class="hint">Cadastre as seções que organizarão os pratos dentro de um cardápio (ex: Entradas, Pratos Principais, Bebidas).</p>
@@ -98,7 +112,6 @@
                                     <button type="submit" class="btn btn-primary">Adicionar Item</button>
                                 </form>
                             </div>
-
                             <div class="sub-section">
                                 <h4>Gerenciar Subitens (Pratos)</h4>
                                 <p class="hint">Cadastre aqui os pratos individuais (ex: Strogonoff, Salada Caesar) que irão compor os cardápios.</p>
@@ -114,23 +127,6 @@
                                     <button type="submit" class="btn btn-primary">Adicionar Subitem</button>
                                 </form>
                             </div>
-
-                        </div>
-                    </div>
-                </section>
-                
-                <section class="card collapsible-card collapsed">
-                    <div class="card-header"><h2>Cadastro de Cardápios Principais e Serviços</h2><span class="collapse-icon"></span></div>
-                    <div class="card-content-wrapper">
-                        <div class="card-content">
-                             <p class="hint">Cadastre os "pacotes" vendáveis, como "Almoço Executivo" (Cardápio Principal), ou outros serviços como "Aluguel do Salão".</p>
-                            <div id="admin-catalog-container"></div> 
-                            <form id="addServiceForm" class="inline-form">
-                                <div class="form-group"><label for="serviceName">Nome do Serviço/Cardápio</label><input type="text" id="serviceName" required></div>
-                                <div class="form-group"><label for="serviceCategory">Categoria</label><select id="serviceCategory" required><option value="Gastronomia">Gastronomia (Cardápio Principal)</option><option value="Espaço">Espaço</option><option value="Equipamentos">Equipamentos</option><option value="Serviços e Outros">Serviços e Outros</option></select></div>
-                                <div class="form-group"><label for="serviceUnit">Unidade</label><select id="serviceUnit" required></select></div>
-                                <button type="submit" class="btn btn-primary">Adicionar Serviço/Cardápio</button>
-                            </form>
                         </div>
                     </div>
                 </section>
