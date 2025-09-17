@@ -72,8 +72,56 @@
 
             <div id="tab-content-catalogs" class="tab-content">
                 
+                <section class="card collapsible-card">
+                    <div class="card-header"><h2>Gerenciar Cardápios (Montagem)</h2><span class="collapse-icon"></span></div>
+                    <div class="card-content-wrapper">
+                        <div class="card-content" id="composition-manager">
+                            </div>
+                    </div>
+                </section>
+
                 <section class="card collapsible-card collapsed">
-                    <div class="card-header"><h2>Gerenciar Cardápios Principais e Serviços</h2><span class="collapse-icon"></span></div>
+                    <div class="card-header"><h2>Gerenciar Subcardápios</h2><span class="collapse-icon"></span></div>
+                    <div class="card-content-wrapper">
+                        <div class="card-content">
+                            <p class="hint">Crie e gerencie os Subcardápios, que funcionam como seções para agrupar itens (ex: Entradas, Pratos Principais).</p>
+                            <div class="table-container">
+                                <table id="submenus-table" class="editable-table">
+                                    <thead><tr><th>Nome do Subcardápio</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <form id="add-submenu-form" class="inline-form">
+                                <div class="form-group"><label for="submenuName">Nome do novo Subcardápio</label><input type="text" id="submenuName" required></div>
+                                <div class="form-group"><label for="submenuDescription">Descrição</label><input type="text" id="submenuDescription"></div>
+                                <button type="submit" class="btn btn-primary">Criar Subcardápio</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card collapsible-card collapsed">
+                    <div class="card-header"><h2>Gerenciar Itens (Pratos)</h2><span class="collapse-icon"></span></div>
+                    <div class="card-content-wrapper">
+                        <div class="card-content">
+                            <p class="hint">Crie e gerencie os Itens (pratos individuais) que serão adicionados aos Subcardápios ou diretamente a um Cardápio Principal.</p>
+                            <div class="table-container">
+                                <table id="menu-items-table" class="editable-table">
+                                    <thead><tr><th>Nome do Item</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <form id="add-menu-item-form" class="inline-form">
+                                <div class="form-group"><label for="itemName">Nome do novo Item</label><input type="text" id="itemName" required></div>
+                                <div class="form-group"><label for="itemDescription">Descrição</label><input type="text" id="itemDescription"></div>
+                                <button type="submit" class="btn btn-primary">Criar Item</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="card collapsible-card collapsed">
+                    <div class="card-header"><h2>Cadastrar Serviços e Cardápios Principais</h2><span class="collapse-icon"></span></div>
                     <div class="card-content-wrapper">
                         <div class="card-content">
                              <p class="hint">Cadastre os "pacotes" vendáveis, como "Almoço Executivo" (Cardápio Principal), ou outros serviços como "Aluguel do Salão".</p>
@@ -84,53 +132,6 @@
                                 <div class="form-group"><label for="serviceUnit">Unidade</label><select id="serviceUnit" required></select></div>
                                 <button type="submit" class="btn btn-primary">Adicionar Serviço/Cardápio</button>
                             </form>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="card collapsible-card collapsed">
-                    <div class="card-header"><h2>Gestão de Cardápios (Montagem, Itens e Subitens)</h2><span class="collapse-icon"></span></div>
-                    <div class="card-content-wrapper">
-                        <div class="card-content">
-                            
-                            <div class="sub-section">
-                                <h4>Montagem de Cardápio Principal</h4>
-                                <div id="composition-manager">
-                                    </div>
-                            </div>
-
-                            <div class="sub-section">
-                                <h4>Gerenciar Itens (Seções)</h4>
-                                <p class="hint">Cadastre as seções que organizarão os pratos dentro de um cardápio (ex: Entradas, Pratos Principais, Bebidas).</p>
-                                <div class="table-container">
-                                    <table id="menu-items-table" class="editable-table">
-                                        <thead><tr><th>Nome do Item</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                                <form id="add-menu-item-form" class="inline-form">
-                                    <div class="form-group"><label for="itemName">Nome do novo Item</label><input type="text" id="itemName" placeholder="Ex: Pratos Principais" required></div>
-                                    <div class="form-group"><label for="itemDescription">Descrição</label><input type="text" id="itemDescription" placeholder="Opcional"></div>
-                                    <button type="submit" class="btn btn-primary">Adicionar Item</button>
-                                </form>
-                            </div>
-
-                            <div class="sub-section">
-                                <h4>Gerenciar Subitens (Pratos)</h4>
-                                <p class="hint">Cadastre aqui os pratos individuais (ex: Strogonoff, Salada Caesar) que irão compor os cardápios.</p>
-                                <div class="table-container">
-                                    <table id="menu-subitems-table" class="editable-table">
-                                        <thead><tr><th>Nome do Subitem</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                                <form id="add-menu-subitem-form" class="inline-form">
-                                    <div class="form-group"><label for="subitemName">Nome do novo Subitem</label><input type="text" id="subitemName" placeholder="Ex: Strogonoff de Frango" required></div>
-                                    <div class="form-group"><label for="subitemDescription">Descrição</label><input type="text" id="subitemDescription" placeholder="Opcional"></div>
-                                    <button type="submit" class="btn btn-primary">Adicionar Subitem</button>
-                                </form>
-                            </div>
-
                         </div>
                     </div>
                 </section>
