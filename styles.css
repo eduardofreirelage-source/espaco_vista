@@ -35,7 +35,7 @@ body {
     padding: 1.5rem 1rem;
 }
 
-/* CORREÇÃO PRESERVADA: Usar Grid nos contêineres principais para controle robusto do layout. */
+/* CORREÇÃO CRÍTICA: Contêineres principais usam Grid para layout robusto. */
 main, #event-details-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -63,7 +63,7 @@ header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
     border: 1px solid var(--border-color); 
     width: 100%;
     
-    /* CORREÇÃO CRÍTICA PRESERVADA: Força o card a respeitar a largura do grid pai. */
+    /* CORREÇÃO CRÍTICA: Força o card a respeitar a largura da coluna do grid pai. */
     min-width: 0; 
 }
 
@@ -112,24 +112,23 @@ summary.card-summary-header h2 {
     border-bottom: 1px solid var(--border-color);
 }
 
-.collapsible-card .card-content {
-    overflow: visible;
-    display: block;
-}
-
-.collapsible-card.collapsed .card-content {
-    display: none; 
-}
-
 .collapsible-card.collapsed > .card-header {
     border-bottom-color: transparent;
+}
+
+.collapsible-card .card-content-wrapper {
+    /* Este wrapper não precisa de estilos, mas o seletor abaixo precisa dele */
+}
+
+.collapsible-card.collapsed .card-content-wrapper {
+    display: none;
 }
 
 .collapse-icon::before { content: '−'; font-size: 1.5rem; font-weight: 500; color: var(--primary-color); }
 .collapsible-card.collapsed .collapse-icon::before { content: '+'; }
 
 /* =================================================================
-   FORMULÁRIOS E BOTÕES (RESTAURADO)
+   FORMULÁRIOS E BOTÕES
    ================================================================= */
 
 .form-group { margin-bottom: 1rem; }
@@ -214,7 +213,7 @@ summary.card-summary-header h2 {
 }
 
 /* =================================================================
-   RODAPÉ (FOOTER) (RESTAURADO)
+   RODAPÉ (FOOTER)
    ================================================================= */
 
 .summary-footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.8rem 1rem; z-index: 50; }
@@ -236,7 +235,7 @@ summary.card-summary-header h2 {
 .summary-total { font-size: 1.1rem; font-weight: 600; white-space: nowrap; }
 
 /* =================================================================
-   ESTILOS ESPECÍFICOS DO PAINEL (TABS E TABELAS)
+   PAINEL ADMIN (TABS E TABELAS)
    ================================================================= */
 
 .tabs-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; overflow-x: auto; }
@@ -246,7 +245,7 @@ summary.card-summary-header h2 {
 
 .tab-content { display: none; }
 
-/* CORREÇÃO PRESERVADA: Aplica o Grid também ao conteúdo das abas ativas. */
+/* CORREÇÃO CRÍTICA: Conteúdo das abas também é um grid para conter seus filhos. */
 .tab-content.active { 
     display: grid;
     grid-template-columns: 1fr;
@@ -264,7 +263,7 @@ summary.card-summary-header h2 {
 .editable-table tr:hover input, .editable-table tr:hover select { border-color: #eee; background-color: #fdfdfd; }
 .editable-table input:focus, .editable-table select:focus { border-color: var(--primary-color); background-color: white; outline: none; box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.1); }
 
-/* CORREÇÃO PRESERVADA: Impede que o <details> interno expanda o layout. */
+/* CORREÇÃO CRÍTICA: O <details> gerado dinamicamente também precisa ser contido pelo grid. */
 .category-accordion {
     width: 100%;
     min-width: 0; 
@@ -301,11 +300,11 @@ summary.card-summary-header h2 {
 }
 
 /* =================================================================
-   COMPONENTES (NOTIFICAÇÃO, MODAL, ETC.) (RESTAURADO)
+   COMPONENTES (NOTIFICAÇÃO, MODAL, ETC.)
    ================================================================= */
    
-.notification { position: fixed; bottom: 20px; right: 20px; padding: 15px 20px; color: white; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1100; transition: opacity 0.3s, transform 0.3s; opacity: 0; transform: translateY(20px); pointer-events: none; }
-.notification.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); padding: 15px 25px; color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1100; transition: bottom 0.5s ease-in-out; }
+.notification.show { bottom: 20px; }
 
 .modal {
     display: none; position: fixed; z-index: 1000; left: 0; top: 0;
@@ -339,20 +338,11 @@ summary.card-summary-header h2 {
 .catalog-item .btn { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
 .catalog-item .btn-added { background-color: var(--success-color); border-color: var(--success-color); color: white; cursor: not-allowed; }
 
-
 /* =================================================================
-   PÁGINAS ESPECÍFICAS (EVENTO, CALENDÁRIO, ANALYTICS) (RESTAURADO)
+   PÁGINAS ESPECÍFICAS (EVENTO, CALENDÁRIO, ANALYTICS)
    ================================================================= */
 
 /* Página de Gestão de Evento */
-.event-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-.summary-box { background-color: #f9f9f9; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; }
-.summary-label { display: block; font-size: 0.8rem; color: var(--subtle-text-color); margin-bottom: 0.25rem; }
-.summary-value { font-size: 1.1rem; font-weight: 600; color: var(--heading-color); }
-#payments-table { width: 100%; table-layout: auto; border-collapse: collapse;}
-#payments-table th, #payments-table td { border-bottom: 1px solid var(--border-color); padding: 0.8rem; text-align: left;}
-#payments-table input, #payments-table select { width: 100%; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; }
-#payments-table th { background-color: #f9f9f9; font-weight: 600; }
 .service-summary-category { margin-bottom: 1.5rem; }
 .service-summary-category h3 { font-size: 1rem; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem; }
 .service-summary-item { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.9rem; border-bottom: 1px solid #f5f5f5;}
