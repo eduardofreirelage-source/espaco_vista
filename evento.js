@@ -118,7 +118,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Agrupa os serviços por categoria
         const itemsByCategory = items.reduce((acc, item) => {
             const service = services.find(s => s.id === item.service_id);
             if (service) {
@@ -131,31 +130,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             return acc;
         }, {});
         
-        let finalHtml = '';
+        let tableHtml = `<div class="table-container">
+            <table class="services-table">
+                <thead>
+                    <tr>
+                        <th>Serviço / Item</th>
+                        <th>Data</th>
+                        <th>Início</th>
+                        <th>Término</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        
         const categoryOrder = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços e Outros'];
 
         categoryOrder.forEach(category => {
             if (itemsByCategory[category]) {
-                finalHtml += `<div class="sub-section service-category-group"><h4>${category}</h4>`;
-                finalHtml += `<div class="table-container">
-                    <table class="services-table">
-                        <thead>
-                            <tr>
-                                <th>Serviço / Item</th>
-                                <th>Data</th>
-                                <th>Início</th>
-                                <th>Término</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
+                // Adiciona a linha de cabeçalho da categoria
+                tableHtml += `<tr class="category-divider-row"><td colspan="5"><h4>${category}</h4></td></tr>`;
                 
-                itemsByCategory[category].forEach((item, index) => {
+                itemsByCategory[category].forEach(item => {
                     const itemIdentifier = `${item.service_id}-${item.event_date}`;
                     const eventDateInfo = currentQuote.quote_data.event_dates.find(d => d.date === item.event_date);
                     const date = eventDateInfo ? new Date(eventDateInfo.date + 'T12:00:00Z').toLocaleDateString('pt-BR') : 'N/A';
                     
-                    // Se o item não tiver horário próprio, usa o do evento como padrão
                     const startTime = item.start_time || eventDateInfo?.start || '';
                     const endTime = item.end_time || eventDateInfo?.end || '';
 
@@ -164,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         actionButton = `<button class="btn define-cardapio-btn" data-service-id="${item.service_id}">Definir Cardápio</button>`;
                     }
 
-                    finalHtml += `
+                    tableHtml += `
                         <tr>
                             <td>${item.service_name}</td>
                             <td>${date}</td>
@@ -174,12 +173,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </tr>
                     `;
                 });
-
-                finalHtml += '</tbody></table></div></div>';
             }
         });
 
-        container.innerHTML = finalHtml || '<p>Nenhum serviço encontrado.</p>';
+        tableHtml += '</tbody></table></div>';
+        container.innerHTML = tableHtml;
     }
 
     function openCardapioModal(serviceId) {
@@ -246,7 +244,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Listener para salvar horários dos serviços
         document.getElementById('services-summary-container').addEventListener('change', handleServiceTimeChange);
 
         document.getElementById('close-cardapio-modal-btn').addEventListener('click', closeCardapioModal);
@@ -302,7 +299,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (itemIndex !== -1) {
                 currentQuote.quote_data.items[itemIndex][field] = value;
                 
-                // Debounce o salvamento para não salvar a cada keystroke
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
                     saveQuoteData('Horário salvo.');
