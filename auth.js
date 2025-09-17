@@ -108,6 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSimpleTable(document.getElementById('events-table'), quotes.filter(q => q.status === 'Ganho'), createEventRow);
         renderSimpleTable(document.getElementById('price-tables-table'), priceTables, createPriceTableRow);
         renderSimpleTable(document.getElementById('payment-methods-table'), paymentMethods, createPaymentMethodRow);
+        renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
         renderSimpleTable(document.getElementById('menu-items-table'), menuItems, createMenuItemRow);
         renderAdminCatalog();
         renderSubmenusManager();
@@ -530,6 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const form = e.target;
         const serviceId = form.dataset.serviceId;
+        
         let dataToInsert = { service_id: serviceId };
         
         if (form.id === 'add-submenu-to-service-form') {
