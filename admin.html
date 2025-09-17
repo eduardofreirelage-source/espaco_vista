@@ -73,7 +73,7 @@
             <div id="tab-content-catalogs" class="tab-content">
                 
                 <section class="card collapsible-card collapsed">
-                    <div class="card-header"><h2>Gerenciar Cardápios Principais e Serviços</h2><span class="collapse-icon"></span></div>
+                    <div class="card-header"><h2>Cadastrar Serviços e Cardápios Principais</h2><span class="collapse-icon"></span></div>
                     <div class="card-content-wrapper">
                         <div class="card-content">
                              <p class="hint">Cadastre os "pacotes" vendáveis, como "Almoço Executivo" (Cardápio Principal), ou outros serviços como "Aluguel do Salão".</p>
@@ -88,31 +88,27 @@
                     </div>
                 </section>
 
-                <section class="card collapsible-card collapsed">
+                <section class="card collapsible-card">
+                    <div class="card-header"><h2>Gerenciar Cardápio (Montagem)</h2><span class="collapse-icon"></span></div>
+                    <div class="card-content-wrapper">
+                        <div class="card-content" id="composition-manager">
+                            </div>
+                    </div>
+                </section>
+                
+                <section class="card collapsible-card">
                     <div class="card-header"><h2>Gerenciar Subcardápios</h2><span class="collapse-icon"></span></div>
                     <div class="card-content-wrapper">
-                        <div class="card-content">
-                            <p class="hint">Crie e gerencie os Subcardápios, que funcionam como seções para agrupar itens (ex: Entradas, Pratos Principais).</p>
-                            <div class="table-container">
-                                <table id="submenus-table" class="editable-table">
-                                    <thead><tr><th>Nome do Subcardápio</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                            <form id="add-submenu-form" class="inline-form">
-                                <div class="form-group"><label for="submenuName">Nome do novo Subcardápio</label><input type="text" id="submenuName" required></div>
-                                <div class="form-group"><label for="submenuDescription">Descrição</label><input type="text" id="submenuDescription"></div>
-                                <button type="submit" class="btn btn-primary">Criar Subcardápio</button>
-                            </form>
-                        </div>
+                        <div class="card-content" id="submenus-manager">
+                           </div>
                     </div>
                 </section>
 
-                <section class="card collapsible-card collapsed">
+                <section class="card collapsible-card">
                     <div class="card-header"><h2>Gerenciar Itens (Pratos)</h2><span class="collapse-icon"></span></div>
                     <div class="card-content-wrapper">
                         <div class="card-content">
-                            <p class="hint">Crie e gerencie os Itens (pratos individuais) que serão adicionados aos Subcardápios ou diretamente a um Cardápio Principal.</p>
+                            <p class="hint">Crie e gerencie os Itens (pratos individuais) que compõem os Subcardápios.</p>
                             <div class="table-container">
                                 <table id="menu-items-table" class="editable-table">
                                     <thead><tr><th>Nome do Item</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
@@ -127,19 +123,11 @@
                         </div>
                     </div>
                 </section>
-                
-                <section class="card collapsible-card">
-                    <div class="card-header"><h2>Gerenciar Cardápio (Montagem)</h2><span class="collapse-icon"></span></div>
-                    <div class="card-content-wrapper">
-                        <div class="card-content" id="composition-manager">
-                            </div>
-                    </div>
-                </section>
 
                 <section class="card collapsible-card collapsed">
                     <div class="card-header"><h2>Listas de Preços</h2><span class="collapse-icon"></span></div>
                     <div class="card-content-wrapper">
-                        <div class="card-content">
+                         <div class="card-content">
                             <div id="price-tables-list" class="table-container">
                                 <table id="price-tables-table" class="editable-table">
                                     <thead><tr><th>Nome</th><th class="price-column">Crédito Consumível</th><th>Ações</th></tr></thead>
