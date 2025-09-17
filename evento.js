@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -6,8 +5,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentQuote = null;
     let currentClient = null;
     let services = [];
+    let cardapioItems = [];
     let hasInitializedListeners = false;
-    
+    let selectedCardapioServiceId = null; // Para saber qual cardápio estamos editando
+
     const urlParams = new URLSearchParams(window.location.search);
     const quoteId = urlParams.get('quote_id');
 
@@ -19,17 +20,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- CARREGAMENTO DE DADOS ---
     async function loadData() {
         try {
-            const [quoteRes, servicesRes] = await Promise.all([
+            const [quoteRes, servicesRes, cardapioItemsRes] = await Promise.all([
                 supabase.from('quotes').select('*, clients(*)').eq('id', quoteId).single(),
-                supabase.from('services').select('*')
+                supabase.from('services').select('*'),
+                supabase.from('cardapio_items').select('*').order('name')
             ]);
             
             if (quoteRes.error || !quoteRes.data) throw quoteRes.error || new Error('Orçamento não encontrado.');
             if (servicesRes.error) throw servicesRes.error;
+            if (cardapioItemsRes.error) throw cardapioItemsRes.error;
 
             currentQuote = quoteRes.data;
             currentClient = quoteRes.data.clients;
             services = servicesRes.data;
+            cardapioItems = cardapioItemsRes.data;
             
             populatePage();
             if (!hasInitializedListeners) {
@@ -50,13 +54,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('summary-guest-count').textContent = currentQuote.quote_data.guest_count;
         document.getElementById('summary-total-value').textContent = formatCurrency(currentQuote.total_value);
         document.getElementById('view-quote-link').href = `index.html?quote_id=${quoteId}`;
-        const eventDates = currentQuote.quote_data.event_dates.map(d => new Date(d.date + 'T12:00:00Z').toLocaleDateString('pt-BR')).join(', ');
-        document.getElementById('summary-event-dates').textContent = eventDates;
         
-        // Dados do Cliente
+        const firstEventDate = currentQuote.quote_data.event_dates[0];
+        if (firstEventDate) {
+            document.getElementById('summary-event-dates').textContent = new Date(firstEventDate.date + 'T12:00:00Z').toLocaleDateString('pt-BR');
+            document.getElementById('summary-event-times').textContent = `${firstEventDate.start || ''} - ${firstEventDate.end || ''}`;
+        }
+        
         populateClientForm();
-        
-        // Seções dinâmicas
         renderServicesSummary();
         renderPayments();
     }
@@ -111,32 +116,138 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const itemsByCategory = items.reduce((acc, item) => {
-            const service = services.find(s => s.id === item.service_id);
-            if (!service) return acc;
-            const category = service.category || 'Outros';
-            if (!acc[category]) acc[category] = [];
-            acc[category].push({ ...item, name: service.name });
-            return acc;
-        }, {});
+        let tableHtml = `<div class="table-container">
+            <table id="services-table">
+                <thead>
+                    <tr>
+                        <th>Serviço / Item</th>
+                        <th>Data</th>
+                        <th>Início</th>
+                        <th>Término</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
-        let html = '';
-        const categoryOrder = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços e Outros'];
-        
-        categoryOrder.forEach(category => {
-            if(itemsByCategory[category]) {
-                html += `<div class="service-summary-category"><h3>${category}</h3>`;
-                itemsByCategory[category].forEach(item => {
-                    html += `<div class="service-summary-item"><span>${item.name}</span><span>${item.quantity} x ${formatCurrency(item.calculated_unit_price)}</span></div>`;
-                });
-                if (category === 'Gastronomia') {
-                    html += `<button id="define-cardapio-btn" class="btn btn-primary" style="margin-top: 1rem;">Definir Cardápio</button>`;
-                }
-                html += `</div>`;
+        items.forEach(item => {
+            const service = services.find(s => s.id === item.service_id);
+            if (!service) return;
+
+            const eventDateInfo = currentQuote.quote_data.event_dates.find(d => d.date === item.event_date);
+            const date = eventDateInfo ? new Date(eventDateInfo.date + 'T12:00:00Z').toLocaleDateString('pt-BR') : 'N/A';
+            const start = eventDateInfo?.start || 'N/A';
+            const end = eventDateInfo?.end || 'N/A';
+            
+            let actionButton = '';
+            if (service.category === 'Gastronomia') {
+                actionButton = `<button class="btn define-cardapio-btn" data-service-id="${service.id}">Definir Cardápio</button>`;
             }
+
+            tableHtml += `
+                <tr>
+                    <td>${service.name}</td>
+                    <td>${date}</td>
+                    <td>${start}</td>
+                    <td>${end}</td>
+                    <td>${actionButton}</td>
+                </tr>
+            `;
         });
-        container.innerHTML = html || '<p>Não foi possível detalhar os serviços.</p>';
+
+        tableHtml += '</tbody></table></div>';
+        container.innerHTML = tableHtml;
     }
+
+    // --- LÓGICA DO MODAL DE CARDÁPIO ---
+    
+    async function openCardapioModal(serviceId) {
+        selectedCardapioServiceId = serviceId;
+        const service = services.find(s => s.id === serviceId);
+        document.getElementById('cardapio-modal-title').textContent = `Definir Itens para "${service.name}"`;
+        await populateCardapioModal(serviceId);
+        document.getElementById('cardapioModal').style.display = 'block';
+    }
+
+    async function populateCardapioModal(serviceId) {
+        const checklistContainer = document.getElementById('cardapio-items-checklist');
+        checklistContainer.innerHTML = '<div>Carregando itens...</div>';
+
+        // Pega os itens já selecionados para este cardápio/evento
+        const { data: currentComposition, error } = await supabase
+            .from('cardapio_composition')
+            .select('item_id')
+            .eq('quote_id', quoteId)
+            .eq('cardapio_service_id', serviceId);
+
+        if (error) {
+            showNotification('Erro ao buscar itens do cardápio.', true);
+            console.error(error);
+            return;
+        }
+
+        const selectedItemIds = new Set(currentComposition.map(item => item.item_id));
+
+        // Monta a lista de checkboxes
+        if (cardapioItems.length > 0) {
+            checklistContainer.innerHTML = cardapioItems.map(item => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="item-${item.id}" value="${item.id}" ${selectedItemIds.has(item.id) ? 'checked' : ''}>
+                    <label for="item-${item.id}">${item.name}</label>
+                </div>
+            `).join('');
+        } else {
+            checklistContainer.innerHTML = '<div>Nenhum item de cardápio cadastrado.</div>';
+        }
+    }
+    
+    async function handleCardapioSave() {
+        if (!selectedCardapioServiceId) return;
+
+        const checklistContainer = document.getElementById('cardapio-items-checklist');
+        const selectedInputs = checklistContainer.querySelectorAll('input[type="checkbox"]:checked');
+        const selectedItemIds = Array.from(selectedInputs).map(input => input.value);
+        
+        // 1. Deleta a composição antiga para este cardápio e evento
+        const { error: deleteError } = await supabase
+            .from('cardapio_composition')
+            .delete()
+            .eq('quote_id', quoteId)
+            .eq('cardapio_service_id', selectedCardapioServiceId);
+
+        if (deleteError) {
+            showNotification('Erro ao atualizar o cardápio (etapa 1).', true);
+            console.error(deleteError);
+            return;
+        }
+
+        // 2. Insere a nova composição, se houver itens selecionados
+        if (selectedItemIds.length > 0) {
+            const newComposition = selectedItemIds.map(itemId => ({
+                quote_id: quoteId,
+                cardapio_service_id: selectedCardapioServiceId,
+                item_id: itemId
+            }));
+            
+            const { error: insertError } = await supabase
+                .from('cardapio_composition')
+                .insert(newComposition);
+
+            if (insertError) {
+                showNotification('Erro ao atualizar o cardápio (etapa 2).', true);
+                console.error(insertError);
+                return;
+            }
+        }
+        
+        showNotification('Cardápio salvo com sucesso!');
+        closeCardapioModal();
+    }
+
+    function closeCardapioModal() {
+        document.getElementById('cardapioModal').style.display = 'none';
+        selectedCardapioServiceId = null;
+    }
+
 
     // --- EVENT LISTENERS E AÇÕES ---
     function setupEventListeners() {
@@ -152,11 +263,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (header) {
                 header.closest('.collapsible-card')?.classList.toggle('collapsed');
             }
-            if (e.target.matches('#define-cardapio-btn')) {
-                // CORRIGIDO: Redireciona para a proposta correta para edição
-                window.location.href = `index.html?quote_id=${quoteId}`;
+            if (e.target.matches('.define-cardapio-btn')) {
+                const serviceId = e.target.dataset.serviceId;
+                openCardapioModal(serviceId);
             }
         });
+
+        // Listeners do Modal
+        document.getElementById('close-cardapio-modal-btn').addEventListener('click', closeCardapioModal);
+        document.getElementById('save-cardapio-btn').addEventListener('click', handleCardapioSave);
     }
 
     async function handleClientFormSubmit(e) {
@@ -186,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (quoteError) { showNotification('Erro ao vincular cliente ao orçamento.', true); console.error(quoteError); return; }
         
         showNotification('Dados do cliente salvos com sucesso!');
-        await loadData(); // Recarrega os dados para garantir consistência
+        await loadData();
     }
 
     function handleAddPayment() {
