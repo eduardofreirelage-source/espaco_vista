@@ -19,7 +19,26 @@
             <section class="card">
                 <div class="card-header"><h2>Resumo do Evento</h2></div>
                 <div class="card-content">
+                    <div class="event-summary-grid">
+                        <div class="summary-box">
+                            <span class="summary-label">Cliente</span>
+                            <strong id="summary-client-name" class="summary-value">Carregando...</strong>
+                        </div>
+                        <div class="summary-box">
+                            <span class="summary-label">Nº de Convidados</span>
+                            <strong id="summary-guest-count" class="summary-value">...</strong>
+                        </div>
+                        <div class="summary-box">
+                            <span class="summary-label">Valor Total</span>
+                            <strong id="summary-total-value" class="summary-value">...</strong>
+                        </div>
+                        <div class="summary-box">
+                            <span class="summary-label">Datas do Evento</span>
+                            <strong id="summary-event-dates" class="summary-value">...</strong>
+                        </div>
                     </div>
+                    <a href="#" id="view-quote-link" class="btn btn-primary" style="margin-top: 1rem;">Ver/Editar Proposta Original</a>
+                </div>
             </section>
             
             <section class="card collapsible-card collapsed">
@@ -29,12 +48,12 @@
                  </div>
                  <div class="card-content-wrapper">
                     <div id="services-summary-container" class="card-content">
-                    </div>
+                        </div>
                 </div>
             </section>
 
             <section class="card collapsible-card collapsed">
-                <div class="card-header"><h2>Gestão Financeira</h2></div>
+                <div class="card-header"><h2>Gestão Financeira</h2><span class="collapse-icon"></span></div>
                 <div class="card-content-wrapper">
                     <div class="card-content">
                         <div class="table-container">
@@ -55,7 +74,31 @@
                  </div>
                  <div class="card-content-wrapper">
                     <form id="client-details-form" class="card-content">
-                        </form>
+                        <h4>Dados de Contato e Faturamento</h4>
+                        <div class="form-grid">
+                            <div class="form-group"><label for="client-name">Nome Fantasia / Cliente</label><input type="text" id="client-name"></div>
+                            <div class="form-group"><label for="client-legal-name">Razão Social</label><input type="text" id="client-legal-name"></div>
+                            <div class="form-group"><label for="client-cnpj">CNPJ / CPF</label><input type="text" id="client-cnpj"></div>
+                            <div class="form-group"><label for="client-state-reg">Inscrição Estadual</label><input type="text" id="client-state-reg"></div>
+                            <div class="form-group"><label for="client-email">E-mail</label><input type="email" id="client-email"></div>
+                            <div class="form-group"><label for="client-phone">Telefone</label><input type="tel" id="client-phone"></div>
+                        </div>
+                        <hr class="section-divider">
+                        <h4>Endereço</h4>
+                        <div class="form-grid">
+                            <div class="form-group"><label for="client-address-street">Rua e Número</label><input type="text" id="client-address-street"></div>
+                            <div class="form-group"><label for="client-address-city">Cidade</label><input type="text" id="client-address-city"></div>
+                            <div class="form-group"><label for="client-address-state">Estado</label><input type="text" id="client-address-state"></div>
+                            <div class="form-group"><label for="client-address-zip">CEP</label><input type="text" id="client-address-zip"></div>
+                        </div>
+                        <hr class="section-divider">
+                        <h4>Representante Legal</h4>
+                        <div class="form-grid">
+                            <div class="form-group"><label for="client-rep-name">Nome do Representante</label><input type="text" id="client-rep-name"></div>
+                            <div class="form-group"><label for="client-rep-cpf">CPF do Representante</label><input type="text" id="client-rep-cpf"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Dados do Cliente</button>
+                    </form>
                 </div>
             </section>
             
@@ -66,10 +109,11 @@
                 </div>
                 <div class="card-content-wrapper">
                     <div class="card-content">
-                        </div>
+                        <p>Funcionalidades de contrato (geração, upload, assinatura) a serem implementadas.</p>
+                    </div>
                 </div>
             </section>
-            </main>
+        </main>
     </div>
     <div id="save-notification" class="notification"></div>
     <script type="module" src="evento.js"></script>
