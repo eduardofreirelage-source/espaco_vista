@@ -812,11 +812,7 @@ summary.card-summary-header::-webkit-details-marker {
     padding-top: 0;
     border-top: none;
 }
-.service-category-group {
-    padding: 0;
-    border: none;
-    margin-bottom: 0;
-}
+
 .services-table .category-divider-row td {
     background-color: #f1f1f1;
     font-weight: 600;
@@ -924,6 +920,10 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 /* Lógica de Composição do Admin */
+.service-name-highlight {
+    color: rgba(var(--primary-color-rgb), 1);
+}
+
 .item-composition-group .composition-header {
     display: flex;
     justify-content: space-between;
@@ -965,16 +965,20 @@ summary.card-summary-header::-webkit-details-marker {
     gap: 1.5rem;
 }
 #submenus-table tr.selected {
-    background-color: #fffbe8;
+    background-color: #fffbe8; /* Cor de destaque para a linha selecionada */
 }
 .editable-link {
-    color: var(--primary-color);
+    color: rgba(var(--primary-color-rgb), 1);
     text-decoration: none;
     font-weight: 600;
 }
 .editable-link:hover {
     text-decoration: underline;
 }
+.hidden {
+    display: none;
+}
+
 
 /* Visão do Cliente */
 body.client-view #priceTableSelect,
