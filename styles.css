@@ -42,7 +42,6 @@ main, #event-details-grid {
     gap: 1.5rem;
 }
 
-
 .print-only { display: none; }
 
 header { 
@@ -68,6 +67,7 @@ header h1 { color: var(--text-color); font-size: 1.2rem; font-weight: 600; }
     min-width: 0; 
 }
 
+/* Remove a margem do último card (o 'gap' do grid resolve isso) */
 .card:last-child {
     margin-bottom: 0;
 }
@@ -119,6 +119,7 @@ summary.card-summary-header h2 {
 .collapsible-card .card-content {
     overflow: visible; /* CRUCIAL */
     display: block;
+    /* Transições de CSS removidas, serão gerenciadas pelo JS */
 }
 
 /* Quando fechado (estado inicial), esconder o conteúdo. O JS gerenciará a animação. */
@@ -136,9 +137,10 @@ summary.card-summary-header h2 {
 
 
 /* =================================================================
-   FORMULÁRIOS E BOTÕES (Sem alterações relevantes, omitido por brevidade)
+   FORMULÁRIOS E BOTÕES (Preservado do original)
    ================================================================= */
-/* ... (CSS de Formulários e Botões) ... */
+
+/* ... (Estilos de Formulários e Botões) ... */
 
 /* =================================================================
    RODAPÉ (FOOTER)
@@ -184,8 +186,8 @@ summary.card-summary-header h2 {
 .table-container { overflow-x: auto; }
 
 .editable-table, .quote-table { width: 100%; border-collapse: collapse; }
-.editable-table th, .editable-table td, .quote-table th, .quote-table td { padding: 0.8rem; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border-color);}
-.editable-table th, .quote-table th { background-color: #f9f9f9; font-weight: 600; }
+
+/* ... (Estilos de Tabela) ... */
 
 /* CORREÇÃO CRÍTICA: Impede que o elemento <details> interno (gerado via JS) expanda o layout. */
 .category-accordion {
@@ -202,8 +204,10 @@ summary.card-summary-header h2 {
     gap: 1.5rem;
     align-items: flex-end;
     flex-wrap: wrap;
-    /* Adicionado para conter overflow causado por margens negativas */
+    /* CORREÇÃO: Conter overflow causado por margens negativas */
     overflow-x: auto; 
 }
 
-/* ... (Restante do CSS: Inline-form, Notifications, Specific Pages, Modal, etc. - Omitido por brevidade, mas mantido como no original) ... */
+/* ... (Estilos de Inline Form, Actions, Notifications, Specific Pages, Modal) ... */
+
+/* FIM DO ARQUIVO CSS */
