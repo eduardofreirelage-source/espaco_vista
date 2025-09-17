@@ -22,36 +22,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     let calendarInstance = null;
     const calendarStatusFilter = document.getElementById('calendar-status-filter');
     const compositionManager = document.getElementById('composition-manager');
+    const submenusManager = document.getElementById('submenus-manager');
 
     // =================================================================
     // FUNÇÕES UTILITÁRIAS
     // =================================================================
-    function showNotification(message, isError = false) {
+    const showNotification = (message, isError = false) => {
         if (!notification) return;
         notification.textContent = message;
         notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
         notification.classList.add('show');
         setTimeout(() => notification.classList.remove('show'), 5000);
-    }
-    
-    function showFlash(inputElement) {
+    };
+
+    const showFlash = (inputElement) => {
         if (inputElement) {
             inputElement.classList.add('success-flash');
             setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
         }
-    }
-
-    function createUnitSelect(currentUnit) {
+    };
+    
+    const createUnitSelect = (currentUnit) => {
         if (!units || units.length === 0) return `<input type="text" class="editable-input" data-field="unit" value="${currentUnit || ''}">`;
         return `<select class="editable-input" data-field="unit">${units.map(unit => `<option value="${unit.name}" ${unit.name === currentUnit ? 'selected' : ''}>${unit.name}</option>`).join('')}</select>`;
-    }
+    };
 
-    function aggregateQuoteMetrics(quoteArray) {
+    const aggregateQuoteMetrics = (quoteArray) => {
         const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } };
         return quoteArray.reduce((acc, quote) => { if (acc[quote.status]) { acc[quote.status].count++; acc[quote.status].value += parseFloat(quote.total_value || 0); } return acc; }, initialMetrics);
-    }
+    };
 
-    function createKpiCard(title, current, previous) {
+    const createKpiCard = (title, current, previous) => {
         const calculatePercentageChange = (current, previous) => {
             if (previous === 0) { return current > 0 ? '+∞%' : '0%'; }
             const change = ((current - previous) / previous) * 100;
@@ -62,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const trendIndicator = trendClass ? `<span class="percentage ${trendClass}">${percentageChange}</span>` : '';
         const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
         return `<div class="kpi-card"><div class="kpi-title">${title} (Mês Atual)</div><div class="kpi-value">${formatCurrency(current.value)}</div><div class="kpi-sub-value">${current.count} propostas</div><div class="kpi-comparison">${trendIndicator}<span>em relação ao mês anterior (${formatCurrency(previous.value)})</span></div></div>`;
-    }
+    };
 
     // =================================================================
     // INICIALIZAÇÃO E DADOS
@@ -108,7 +109,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSimpleTable(document.getElementById('events-table'), quotes.filter(q => q.status === 'Ganho'), createEventRow);
         renderSimpleTable(document.getElementById('price-tables-table'), priceTables, createPriceTableRow);
         renderSimpleTable(document.getElementById('payment-methods-table'), paymentMethods, createPaymentMethodRow);
-        renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
         renderSimpleTable(document.getElementById('menu-items-table'), menuItems, createMenuItemRow);
         renderAdminCatalog();
         renderSubmenusManager();
@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.tabs-nav .tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
             clickedTab.classList.add('active');
             document.getElementById(`tab-content-${clickedTab.dataset.tab}`).classList.add('active');
-            if (clickedTab.dataset.tab === 'calendar') initializeCalendar();
+            if (clickedTab.dataset.tab === 'calendar' && !calendarInstance) initializeCalendar();
         });
 
         const calendarStatusFilter = document.getElementById('calendar-status-filter');
@@ -523,7 +523,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const itemId = new FormData(form).get('item_id');
             const { error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId, service_id: null }); // Ligação direta
             if (error) { showNotification(`Erro: ${error.message}`, true); } 
-            else { showNotification("Item adicionado ao subcardápio."); await fetchData(); renderSubmenuCompositionDetails(submenuId); }
+            else { 
+                showNotification("Item adicionado ao subcardápio."); 
+                await fetchData(); 
+                renderSubmenuCompositionDetails(submenuId); 
+            }
         }
     }
 
