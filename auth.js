@@ -45,6 +45,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `<select class="editable-input" data-field="unit">${units.map(unit => `<option value="${unit.name}" ${unit.name === currentUnit ? 'selected' : ''}>${unit.name}</option>`).join('')}</select>`;
     }
 
+    function aggregateQuoteMetrics(quoteArray) {
+        const initialMetrics = { 'Ganho': { count: 0, value: 0 }, 'Perdido': { count: 0, value: 0 }, 'Em analise': { count: 0, value: 0 }, 'Rascunho': { count: 0, value: 0 } };
+        return quoteArray.reduce((acc, quote) => { if (acc[quote.status]) { acc[quote.status].count++; acc[quote.status].value += parseFloat(quote.total_value || 0); } return acc; }, initialMetrics);
+    }
+
+    function createKpiCard(title, current, previous) {
+        const calculatePercentageChange = (current, previous) => {
+            if (previous === 0) { return current > 0 ? '+∞%' : '0%'; }
+            const change = ((current - previous) / previous) * 100;
+            return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
+        };
+        const percentageChange = calculatePercentageChange(current.value, previous.value);
+        const trendClass = percentageChange.startsWith('+') && parseFloat(percentageChange) > 0 ? 'increase' : percentageChange.startsWith('-') ? 'decrease' : '';
+        const trendIndicator = trendClass ? `<span class="percentage ${trendClass}">${percentageChange}</span>` : '';
+        const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        return `<div class="kpi-card"><div class="kpi-title">${title} (Mês Atual)</div><div class="kpi-value">${formatCurrency(current.value)}</div><div class="kpi-sub-value">${current.count} propostas</div><div class="kpi-comparison">${trendIndicator}<span>em relação ao mês anterior (${formatCurrency(previous.value)})</span></div></div>`;
+    }
+
     // =================================================================
     // INICIALIZAÇÃO E DADOS
     // =================================================================
@@ -197,7 +215,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderCompositionManager() {
         if (!compositionManager) return;
-
         const cardapios = services.filter(s => s.category === 'Gastronomia');
         let html = `
             <div class="form-group">
@@ -238,6 +255,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         itemsInService.forEach(item => {
             if (!item) return;
             const subitemsInItem = compositionForService.filter(c => c.item_id === item.id);
+            const subitemIdsInItem = subitemsInItem.map(comp => comp.subitem_id);
+            const availableSubitems = menuSubitems.filter(sub => !subitemIdsInItem.includes(sub.id));
+
             html += `
                 <div class="sub-section item-composition-group">
                     <div class="composition-header">
@@ -253,7 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                          <div class="form-group">
                             <select name="subitem_id" required>
                                  <option value="">-- Adicionar um subitem --</option>
-                                ${menuSubitems.map(sub => `<option value="${sub.id}">${sub.name}</option>`).join('')}
+                                ${availableSubitems.map(sub => `<option value="${sub.id}">${sub.name}</option>`).join('')}
                             </select>
                         </div>
                         <button type="submit" class="btn">Adicionar</button>
@@ -271,9 +291,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         units.forEach(unit => serviceUnitSelect.add(new Option(unit.name, unit.name)));
     }
     
-    function renderAnalytics() { /* ... (sem alterações) ... */ }
-    function initializeCalendar() { /* ... (sem alterações) ... */ }
-    function updateCalendarEvents() { /* ... (sem alterações) ... */ }
+    function renderAnalytics() {
+        if (!analyticsContainer || !analyticsNotice) return;
+        analyticsContainer.innerHTML = '';
+        if (quotes.length === 0) {
+            analyticsNotice.textContent = 'Nenhuma proposta encontrada para gerar análises.';
+            analyticsNotice.style.display = 'block';
+            return;
+        }
+        const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentMonthQuotes = quotes.filter(q => new Date(q.created_at) >= startOfCurrentMonth);
+        if (currentMonthQuotes.length === 0) {
+            analyticsNotice.textContent = 'Nenhuma proposta encontrada para o mês atual.';
+            analyticsNotice.style.display = 'block';
+            return;
+        }
+        analyticsNotice.style.display = 'none';
+        const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        const previousMonthQuotes = quotes.filter(q => { const createdAt = new Date(q.created_at); return createdAt >= startOfPreviousMonth && createdAt <= endOfPreviousMonth; });
+        const currentMetrics = aggregateQuoteMetrics(currentMonthQuotes);
+        const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
+        analyticsContainer.innerHTML = `${createKpiCard('Ganhos', currentMetrics.Ganho, previousMetrics.Ganho)}${createKpiCard('Perdidos', currentMetrics.Perdido, previousMetrics.Perdido)}${createKpiCard('Em Análise', currentMetrics['Em analise'], previousMetrics['Em analise'])}`;
+    }
+    
+    function initializeCalendar() {
+        if (!calendarEl || calendarInstance) return;
+        calendarInstance = new FullCalendar.Calendar(calendarEl, {
+            locale: 'pt-br',
+            initialView: 'dayGridMonth',
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+            buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', list: 'Lista' },
+            eventClick: (info) => { const { quoteId } = info.event.extendedProps; window.location.href = `evento.html?quote_id=${quoteId}`; },
+            height: 'parent',
+        });
+        calendarInstance.render();
+        updateCalendarEvents();
+    }
+    
+    function updateCalendarEvents() {
+        if (!calendarInstance) return;
+        const statusFilter = calendarStatusFilter.value;
+        const statusColors = { 'Ganho': '#28a745', 'Em analise': '#ffc107', 'Rascunho': '#6c757d' };
+        let filteredQuotes = quotes.filter(q => q.quote_data?.event_dates?.[0]?.date);
+        if (statusFilter !== 'all') {
+            filteredQuotes = filteredQuotes.filter(q => q.status === statusFilter);
+        }
+        const events = filteredQuotes.map(q => {
+            const items = q.quote_data?.items || [];
+            const spaceNames = items.map(item => {
+                const service = services.find(s => s.id === item.service_id);
+                return service && service.category === 'Espaço' ? service.name : null;
+            }).filter(Boolean).join(' + ');
+            let eventTitle = q.client_name;
+            if (spaceNames) { eventTitle += ` - ${spaceNames}`; }
+            return {
+                title: eventTitle,
+                start: q.quote_data.event_dates[0].date,
+                extendedProps: { quoteId: q.id },
+                color: statusColors[q.status] || '#0d6efd',
+                borderColor: statusColors[q.status] || '#0d6efd'
+            };
+        });
+        calendarInstance.removeAllEvents();
+        calendarInstance.addEventSource(events);
+    }
 
     // =================================================================
     // EVENT LISTENERS E AÇÕES
@@ -317,36 +400,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             const itemId = form.dataset.itemId || new FormData(form).get('item_id');
             
             if (form.id === 'add-item-to-service-form') {
-                const subitemPlaceholder = menuSubitems[0]; // Adiciona o primeiro subitem como placeholder
-                if (!subitemPlaceholder) {
+                 if (!menuSubitems.length) {
                     showNotification("Cadastre ao menos um Subitem antes de montar um cardápio.", true);
                     return;
                 }
-                const { error } = await supabase.from('menu_composition').insert({ service_id: serviceId, item_id: itemId, subitem_id: subitemPlaceholder.id });
+                const { error } = await supabase.from('menu_composition').insert({ service_id: serviceId, item_id: itemId, subitem_id: menuSubitems[0].id });
                 if (error) { showNotification(`Erro ao adicionar item: ${error.message}`, true); } 
-                else { showNotification("Seção adicionada. Agora adicione ou troque os subitens."); fetchData(); }
-            } else if (form.dataset.action === 'add-subitem-to-item') {
+                else { showNotification("Seção adicionada. Agora adicione ou troque os subitens."); await fetchData(); renderCompositionDetails(serviceId); }
+            } else if (form.classList.contains('add-subitem-form')) {
                 const subitemId = new FormData(form).get('subitem_id');
+                if(!subitemId) { showNotification("Selecione um subitem para adicionar.", true); return; }
                 const { error } = await supabase.from('menu_composition').insert({ service_id: serviceId, item_id: itemId, subitem_id: subitemId });
                 if (error) { showNotification(`Erro ao adicionar subitem: ${error.message}`, true); } 
-                else { showNotification("Subitem adicionado."); fetchData(); }
+                else { showNotification("Subitem adicionado."); await fetchData(); renderCompositionDetails(serviceId); }
             }
         });
         
         compositionManager?.addEventListener('click', async e => {
             const button = e.target.closest('button[data-action]');
             if (!button) return;
+            const serviceId = document.getElementById('select-main-cardapio').value;
             
             if (button.dataset.action === 'remove-subitem-from-item') {
                 if (!confirm("Remover este subitem do cardápio?")) return;
                 const { error } = await supabase.from('menu_composition').delete().eq('id', button.dataset.compositionId);
-                if (error) { showNotification(error.message, true); } else { showNotification("Subitem removido."); fetchData(); }
+                if (error) { showNotification(error.message, true); } else { showNotification("Subitem removido."); await fetchData(); renderCompositionDetails(serviceId); }
             }
             if (button.dataset.action === 'remove-item-from-service') {
                 if (!confirm("Remover esta seção e todos os seus subitens do cardápio?")) return;
-                const { serviceId, itemId } = button.dataset;
+                const { itemId } = button.dataset;
                 const { error } = await supabase.from('menu_composition').delete().match({ service_id: serviceId, item_id: itemId });
-                 if (error) { showNotification(error.message, true); } else { showNotification("Seção removida."); fetchData(); }
+                 if (error) { showNotification(error.message, true); } else { showNotification("Seção removida."); await fetchData(); renderCompositionDetails(serviceId); }
             }
         });
     }
