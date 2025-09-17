@@ -110,10 +110,6 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 .table-container { overflow-x: auto; }
-.category-accordion {
-    width: 100%;
-    min-width: 0; 
-}
 
 /* =================================================================
    FORMULÁRIOS E BOTÕES
@@ -153,8 +149,11 @@ summary.card-summary-header::-webkit-details-marker {
     transition: background-color 0.2s, color 0.2s;
 }
 .btn-icon:hover { background-color: #f0f0f0; }
-.remove-date-btn:hover { background-color: #fce8e6; color: var(--danger-color); }
-.remove-item-btn:hover { background-color: #fce8e6; color: var(--danger-color); }
+.remove-date-btn:hover,
+.remove-item-btn:hover { 
+    background-color: #fce8e6; 
+    color: var(--danger-color); 
+}
 
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; font-weight: 500; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--subtle-text-color); }
@@ -365,16 +364,56 @@ summary.card-summary-header::-webkit-details-marker {
     align-items: center;
 }
 
-/* MELHORIAS PARA TABELA DO GERADOR DE PROPOSTAS */
+/* =================================================================
+   MELHORIAS PARA GERADOR DE PROPOSTAS (index.html)
+   ================================================================= */
+
+.category-accordion {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.category-accordion > summary.category-header {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1.2rem;
+    background-color: #f9f9f9;
+}
+.category-accordion[open] > summary.category-header {
+    border-bottom: 1px solid var(--border-color);
+}
+.category-accordion > summary.category-header::-webkit-details-marker {
+    display: none;
+}
+.category-accordion > summary.category-header::before {
+    content: '+';
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--subtle-text-color);
+    margin-right: 0.8rem;
+    transition: transform 0.2s;
+}
+.category-accordion[open] > summary.category-header::before {
+    content: '−';
+    color: rgba(var(--primary-color-rgb), 1);
+}
+.category-accordion .category-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--heading-color);
+}
+
 .category-accordion .quote-table th {
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.5px;
     color: var(--subtle-text-color);
+    padding: 0.6rem 0.8rem;
 }
 .category-accordion .quote-table td {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+    padding: 0.5rem 0.8rem;
 }
 .category-accordion .quote-table td input,
 .category-accordion .quote-table td select {
@@ -382,19 +421,30 @@ summary.card-summary-header::-webkit-details-marker {
     border: 1px solid var(--border-color);
     border-radius: 5px;
     background-color: #fff;
+    font-size: 0.85rem;
 }
 .category-accordion .quote-table td input:focus,
 .category-accordion .quote-table td select:focus {
     border-color: rgba(var(--primary-color-rgb), 1);
     box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
 }
+
+.quote-table select.date-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23666666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 0.9em;
+    padding-right: 2.2rem;
+}
+
 .item-actions {
     display: flex;
     align-items: center;
     justify-content: flex-end;
 }
-/* FIM DAS MELHORIAS */
-
 
 /* =================================================================
    RODAPÉ, RESUMO E NOTIFICAÇÕES
@@ -659,14 +709,13 @@ summary.card-summary-header::-webkit-details-marker {
 #tab-content-calendar .card {
     display: flex;
     flex-direction: column;
-    /* Ajuste para não forçar uma altura mínima tão grande em telas menores */
     height: 80vh; 
     max-height: 700px;
 }
 #tab-content-calendar .card-content {
     flex-grow: 1;
     display: flex;
-    padding: 0.5rem; /* Reduz padding para dar mais espaço */
+    padding: 0.5rem;
 }
 #calendar { 
     width: 100%;
