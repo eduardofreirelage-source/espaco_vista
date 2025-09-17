@@ -623,7 +623,19 @@ summary.card-summary-header::-webkit-details-marker {
 .service-summary-item span:first-child { font-weight: 500; }
 
 /* Página do Calendário */
-#calendar { min-height: 70vh; }
+#tab-content-calendar .card {
+    display: flex;
+    flex-direction: column;
+    min-height: 75vh; /* Garante que o card tenha altura suficiente */
+}
+#tab-content-calendar .card-content {
+    flex-grow: 1;
+    display: flex;
+}
+#calendar { 
+    width: 100%;
+    height: 100%;
+}
 .fc .fc-button-primary { 
     background-color: var(--primary-color) !important; 
     border-color: transparent !important; 
