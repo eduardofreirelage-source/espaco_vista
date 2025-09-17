@@ -746,6 +746,7 @@ summary.card-summary-header::-webkit-details-marker {
     cursor: pointer;
 }
 
+
 /* =================================================================
    ESTILOS DE PÁGINAS ESPECÍFICAS
    ================================================================= */
@@ -779,6 +780,7 @@ summary.card-summary-header::-webkit-details-marker {
     border-top: 1px solid #eee;
     margin: 2rem 0;
 }
+
 
 /* Página de Gestão de Evento */
 .event-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
@@ -845,6 +847,7 @@ summary.card-summary-header::-webkit-details-marker {
     width: 180px;
     text-align: center;
 }
+
 
 /* Página do Calendário */
 #tab-content-calendar .card {
@@ -960,6 +963,17 @@ summary.card-summary-header::-webkit-details-marker {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
+}
+#submenus-table tr.selected {
+    background-color: #fffbe8;
+}
+.editable-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+.editable-link:hover {
+    text-decoration: underline;
 }
 
 /* Visão do Cliente */
