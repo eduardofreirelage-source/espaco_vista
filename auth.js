@@ -152,14 +152,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         row.innerHTML = `<td><input type="text" class="editable-input" data-field="name" value="${method.name}"></td><td class="actions"><button class="btn-remove" data-action="delete-payment-method" data-id="${method.id}">&times;</button></td>`;
         return row;
     }
-
+    
     function createSubmenuRow(submenu) {
         const row = document.createElement('tr');
         row.dataset.id = submenu.id;
-        row.innerHTML = `<td><input type="text" class="editable-input" data-field="name" value="${submenu.name}"></td><td><input type="text" class="editable-input" data-field="description" value="${submenu.description || ''}"></td><td class="actions"><button class="btn-remove" data-action="delete-submenu" data-id="${submenu.id}">&times;</button></td>`;
+        row.innerHTML = `
+            <td><a href="#" class="editable-link" data-action="edit-submenu-composition">${submenu.name}</a></td>
+            <td>${submenu.description || ''}</td>
+            <td class="actions">
+                <button class="btn-remove" data-action="delete-submenu" data-id="${submenu.id}">&times;</button>
+            </td>`;
         return row;
     }
-    
+
     function createMenuItemRow(item) {
         const row = document.createElement('tr');
         row.dataset.id = item.id;
@@ -233,6 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('composition-details');
         if (!container || !serviceId) {
             if(container) container.innerHTML = '';
+            container?.classList.add('hidden');
             return;
         };
 
@@ -339,7 +345,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function initializeCalendar() {
-        if (!calendarEl || calendarInstance) return;
+        let calendarInstance = null;
+        if (!calendarEl) return;
         calendarInstance = new FullCalendar.Calendar(calendarEl, {
             locale: 'pt-br',
             initialView: 'dayGridMonth',
@@ -349,12 +356,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             height: 'parent',
         });
         calendarInstance.render();
-        updateCalendarEvents();
+        updateCalendarEvents(calendarInstance);
     }
     
-    function updateCalendarEvents() {
+    function updateCalendarEvents(calendarInstance) {
         if (!calendarInstance) return;
-        const statusFilter = calendarStatusFilter.value;
+        const statusFilter = document.getElementById('calendar-status-filter').value;
         const statusColors = { 'Ganho': '#28a745', 'Em analise': '#ffc107', 'Rascunho': '#6c757d' };
         let filteredQuotes = quotes.filter(q => q.quote_data?.event_dates?.[0]?.date);
         if (statusFilter !== 'all') {
@@ -393,8 +400,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (clickedTab.dataset.tab === 'calendar') initializeCalendar();
         });
 
+        const calendarStatusFilter = document.getElementById('calendar-status-filter');
         calendarStatusFilter?.addEventListener('change', () => {
-            if (calendarInstance) updateCalendarEvents();
+            const calendarApi = document.getElementById('calendar')?.__fullCalendar;
+            if(calendarApi) updateCalendarEvents(calendarApi);
         });
 
         document.body.addEventListener('click', (e) => {
@@ -411,12 +420,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.addEventListener('click', handleTableActions);
         document.body.addEventListener('change', handleTableEdits);
 
+        const submenusManager = document.getElementById('submenus-manager');
+        submenusManager?.addEventListener('click', e => {
+            const link = e.target.closest('a[data-action="edit-submenu-composition"]');
+            if (link) {
+                e.preventDefault();
+                const submenuId = link.closest('tr').dataset.id;
+                renderSubmenuCompositionDetails(submenuId);
+            }
+        });
+        submenusManager?.addEventListener('submit', async e => {
+            e.preventDefault();
+            const form = e.target;
+            if(form.classList.contains('add-item-to-submenu-form')){
+                const submenuId = form.dataset.submenuId;
+                const itemId = new FormData(form).get('item_id');
+                const { error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId });
+                if (error) { showNotification(`Erro: ${error.message}`, true); } 
+                else { showNotification("Item adicionado ao subcardápio."); await fetchData(); renderSubmenuCompositionDetails(submenuId); }
+            }
+        });
+        submenusManager?.addEventListener('click', async e => {
+            const button = e.target.closest('button[data-action="remove-composition"]');
+            if(button){
+                const compositionId = button.dataset.compositionId;
+                const submenuId = button.closest('.sub-section').querySelector('form').dataset.submenuId;
+                if (!confirm("Remover este item do subcardápio?")) return;
+                const { error } = await supabase.from('menu_composition').delete().eq('id', compositionId);
+                if (error) { showNotification(error.message, true); } 
+                else { showNotification("Item removido."); await fetchData(); renderSubmenuCompositionDetails(submenuId); }
+            }
+        });
+
         compositionManager?.addEventListener('change', e => {
             if (e.target.id === 'select-main-cardapio') {
                 renderCompositionDetails(e.target.value);
             }
         });
-
         compositionManager?.addEventListener('submit', handleCompositionSubmit);
         compositionManager?.addEventListener('click', handleCompositionClick);
     }
