@@ -252,7 +252,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.calculated_unit_price = basePrice;
             item.calculated_total = total;
             
-            if (service.category === 'Gastronomia' || service.category === 'Espaço') {
+            // *** LÓGICA CORRIGIDA CONFORME SOLICITADO ***
+            if (service.category === 'Gastronomia' || service.category === 'Equipamentos') {
                 consumableSubtotal += total;
             } else {
                 nonConsumableSubtotal += total;
