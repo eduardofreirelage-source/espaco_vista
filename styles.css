@@ -263,14 +263,14 @@ summary.card-summary-header::-webkit-details-marker {
    ESTILOS DE TABELA
    ================================================================= */
 
-.editable-table, .quote-table, #services-table, #payments-table { 
+.editable-table, .quote-table, .services-table, #payments-table { 
     width: 100%; 
     border-collapse: collapse; 
 }
 
 .editable-table th, .editable-table td, 
 .quote-table th, .quote-table td,
-#services-table th, #services-table td,
+.services-table th, .services-table td,
 #payments-table th, #payments-table td { 
     padding: 0.8rem; 
     text-align: left; 
@@ -278,7 +278,7 @@ summary.card-summary-header::-webkit-details-marker {
     border-bottom: 1px solid var(--border-color);
 }
 
-.editable-table th, .quote-table th, #services-table th, #payments-table th { 
+.editable-table th, .quote-table th, .services-table th, #payments-table th { 
     background-color: #f9f9f9; 
     font-weight: 600; 
 }
@@ -762,7 +762,7 @@ summary.card-summary-header::-webkit-details-marker {
 }
 .sub-section h4 {
     margin-top: 0;
-    font-size: 1.2rem;
+    font-size: 1.05rem; /* TAMANHO DO SUBTÍTULO CORRIGIDO */
     color: var(--heading-color);
     padding-bottom: 0.8rem;
     border-bottom: 1px solid var(--border-color);
@@ -778,7 +778,6 @@ summary.card-summary-header::-webkit-details-marker {
     border-top: 1px solid #eee;
     margin: 2rem 0;
 }
-
 
 /* Página de Gestão de Evento */
 .event-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
@@ -820,7 +819,6 @@ summary.card-summary-header::-webkit-details-marker {
     border: 1px solid var(--border-color);
     border-radius: 4px;
 }
-
 
 /* Página do Calendário */
 #tab-content-calendar .card {
