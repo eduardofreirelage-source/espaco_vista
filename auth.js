@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const analyticsContainer = document.getElementById('analytics-container');
     const analyticsNotice = document.getElementById('analytics-notice');
     const calendarEl = document.getElementById('calendar');
+    const calendarStatusFilter = document.getElementById('calendar-status-filter');
 
     // =================================================================
     // FUNÇÕES UTILITÁRIAS
@@ -275,6 +276,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             locale: 'pt-br',
             initialView: 'dayGridMonth',
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+            // Força a tradução dos botões
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                list: 'Lista'
+            },
             eventClick: (info) => { const { quoteId } = info.event.extendedProps; window.location.href = `evento.html?quote_id=${quoteId}`; },
             height: 'parent',
         });
@@ -285,32 +293,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateCalendarEvents() {
         if (!calendarInstance) return;
     
-        const events = quotes
-            .filter(q => q.status === 'Ganho' && q.quote_data?.event_dates?.[0]?.date)
-            .map(q => {
-                const items = q.quote_data?.items || [];
-                
-                // Encontra os nomes dos serviços da categoria "Espaço"
-                const spaceNames = items
-                    .map(item => {
-                        const service = services.find(s => s.id === item.service_id);
-                        return service && service.category === 'Espaço' ? service.name : null;
-                    })
-                    .filter(Boolean) // Remove os nulos
-                    .join(' + '); // Junta os nomes com " + "
+        const statusFilter = calendarStatusFilter.value;
+        const statusColors = {
+            'Ganho': '#28a745', // Verde
+            'Em analise': '#ffc107', // Amarelo
+            'Rascunho': '#6c757d'  // Cinza
+        };
+
+        let filteredQuotes = quotes.filter(q => q.quote_data?.event_dates?.[0]?.date);
+
+        if (statusFilter !== 'all') {
+            filteredQuotes = filteredQuotes.filter(q => q.status === statusFilter);
+        }
+
+        const events = filteredQuotes.map(q => {
+            const items = q.quote_data?.items || [];
+            
+            const spaceNames = items
+                .map(item => {
+                    const service = services.find(s => s.id === item.service_id);
+                    return service && service.category === 'Espaço' ? service.name : null;
+                })
+                .filter(Boolean)
+                .join(' + ');
     
-                // Monta o título do evento
-                let eventTitle = q.client_name;
-                if (spaceNames) {
-                    eventTitle += ` - ${spaceNames}`;
-                }
-    
-                return {
-                    title: eventTitle,
-                    start: q.quote_data.event_dates[0].date,
-                    extendedProps: { quoteId: q.id }
-                };
-            });
+            let eventTitle = q.client_name;
+            if (spaceNames) {
+                eventTitle += ` - ${spaceNames}`;
+            }
+
+            return {
+                title: eventTitle,
+                start: q.quote_data.event_dates[0].date,
+                extendedProps: { quoteId: q.id },
+                color: statusColors[q.status] || '#0d6efd', // Cor padrão azul
+                borderColor: statusColors[q.status] || '#0d6efd'
+            };
+        });
     
         calendarInstance.removeAllEvents();
         calendarInstance.addEventSource(events);
@@ -329,6 +348,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById(`tab-content-${clickedTab.dataset.tab}`).classList.add('active');
             if (clickedTab.dataset.tab === 'calendar') initializeCalendar();
         });
+
+        // Event listener para o novo filtro do calendário
+        calendarStatusFilter?.addEventListener('change', updateCalendarEvents);
+
         document.body.addEventListener('click', (e) => {
             const header = e.target.closest('.collapsible-card > .card-header');
             if (header) header.closest('.collapsible-card')?.classList.toggle('collapsed');
