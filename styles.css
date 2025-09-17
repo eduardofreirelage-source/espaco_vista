@@ -760,9 +760,12 @@ summary.card-summary-header::-webkit-details-marker {
 .sub-section:last-child {
     margin-bottom: 0;
 }
+.card-content > .sub-section + .sub-section {
+    margin-top: 2rem;
+}
 .sub-section h4 {
     margin-top: 0;
-    font-size: 1.05rem; /* TAMANHO DO SUBTÍTULO CORRIGIDO */
+    font-size: 1.05rem;
     color: var(--heading-color);
     padding-bottom: 0.8rem;
     border-bottom: 1px solid var(--border-color);
@@ -772,7 +775,6 @@ summary.card-summary-header::-webkit-details-marker {
     font-size: 0.9rem;
     color: var(--subtle-text-color);
 }
-
 .section-divider {
     border: none;
     border-top: 1px solid #eee;
