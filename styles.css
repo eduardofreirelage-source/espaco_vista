@@ -5,7 +5,7 @@
    ================================================================= */
 :root {
     --primary-color: #8B0000; 
-    --secondary-color: #f8f8f8;
+    --secondary-color: #f8f8ff;
     --heading-color: #2c2c2c;
     --text-color: #333333;
     --subtle-text-color: #666;
@@ -115,7 +115,7 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 /* =================================================================
-   ETAPA 1: FORMULÁRIOS E BOTÕES
+   FORMULÁRIOS E BOTÕES
    ================================================================= */
 
 .form-grid {
@@ -123,6 +123,38 @@ summary.card-summary-header::-webkit-details-marker {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem 1.5rem;
 }
+
+/* CORREÇÃO PARA O LAYOUT DE DATAS */
+.event-dates-wrapper {
+    margin-top: 1.5rem;
+    display: grid;
+    gap: 1rem;
+}
+.date-entry {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: flex-end;
+}
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: var(--subtle-text-color);
+    line-height: 1;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 0.3rem;
+}
+.btn-icon:hover { background-color: #f0f0f0; }
+.remove-date-btn:hover { background-color: #fce8e6; color: var(--danger-color); }
+/* FIM DA CORREÇÃO */
+
 
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; font-weight: 500; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--subtle-text-color); }
@@ -221,7 +253,7 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 /* =================================================================
-   ETAPA 2: ESTILOS ESSENCIAIS DE TABELA
+   ESTILOS DE TABELA
    ================================================================= */
 
 .editable-table, .quote-table { 
@@ -300,7 +332,7 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 /* =================================================================
-   ETAPA 3: RODAPÉ, RESUMO E NOTIFICAÇÕES
+   RODAPÉ, RESUMO E NOTIFICAÇÕES
    ================================================================= */
 
 .summary-footer {
@@ -400,10 +432,9 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 /* =================================================================
-   ETAPA 4: ANIMAÇÕES E MODAL
+   ANIMAÇÕES E MODAL
    ================================================================= */
 
-/* Animação para cards colapsáveis */
 .collapsible-card > .card-header { 
     cursor: pointer; 
     border-bottom: 1px solid var(--border-color);
@@ -431,7 +462,6 @@ summary.card-summary-header::-webkit-details-marker {
     border-top: 1px solid transparent; 
 }
 
-/* Estilos do Modal */
 .modal {
     display: none; 
     position: fixed; 
@@ -540,3 +570,90 @@ summary.card-summary-header::-webkit-details-marker {
     margin-bottom: 0.5rem;
     resize: vertical;
 }
+
+/* =================================================================
+   ETAPA FINAL: ESTILOS DE PÁGINAS ESPECÍFICAS
+   ================================================================= */
+
+/* Página de Gestão de Evento */
+.event-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.summary-box { background-color: #f9f9f9; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; }
+.summary-label { display: block; font-size: 0.8rem; color: var(--subtle-text-color); margin-bottom: 0.25rem; }
+.summary-value { font-size: 1.1rem; font-weight: 600; color: var(--heading-color); }
+#payments-table { width: 100%; table-layout: auto; border-collapse: collapse;}
+#payments-table th, #payments-table td { border-bottom: 1px solid var(--border-color); padding: 0.8rem; text-align: left;}
+#payments-table input, #payments-table select { width: 100%; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; }
+#payments-table th { background-color: #f9f9f9; font-weight: 600; }
+.service-summary-category { margin-bottom: 1.5rem; }
+.service-summary-category h3 { font-size: 1rem; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+.service-summary-item { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.9rem; border-bottom: 1px solid #f5f5f5;}
+.service-summary-item:last-child { border-bottom: none; }
+.service-summary-item span:first-child { font-weight: 500; }
+
+/* Página do Calendário */
+#calendar { min-height: 70vh; }
+.fc .fc-button-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+.fc .fc-daygrid-day.fc-day-today { background-color: rgba(139, 0, 0, 0.1); }
+.fc-event { cursor: pointer; }
+
+/* Página de Analytics */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+.kpi-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.kpi-title {
+    font-weight: 600;
+    color: var(--subtle-text-color);
+    font-size: 0.9rem;
+}
+.kpi-value {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--heading-color);
+    margin: 0.5rem 0;
+}
+.kpi-sub-value {
+    color: var(--subtle-text-color);
+    margin-bottom: 1rem;
+}
+.kpi-comparison {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.kpi-comparison .percentage {
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.kpi-comparison .percentage.increase {
+    color: #1a6e3a;
+    background-color: #d1f7d9;
+}
+.kpi-comparison .percentage.decrease {
+    color: var(--danger-color);
+    background-color: #fce8e6;
+}
+
+/* Visão do Cliente */
+body.client-view #priceTableSelect,
+body.client-view #discountValue,
+body.client-view .col-unit-price,
+body.client-view .col-discount,
+body.client-view .col-total-price,
+body.client-view #export-btn-container,
+body.client-view .summary-footer .summary-item:nth-child(3) {
+    display: none;
+}
+body.client-view .col-item { width: 70% !important; }
+body.client-view .col-qty { width: 15% !important; }
+body.client-view .col-actions { width: 15% !important; }
