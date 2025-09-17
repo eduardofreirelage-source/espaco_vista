@@ -110,6 +110,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function createDateSelect(selectedDate, availableDates, itemIdentifier) {
+        if (!availableDates || availableDates.length === 0) return 'N/A';
+        
+        const options = availableDates.map(d => {
+            const formattedDate = new Date(d.date + 'T12:00:00Z').toLocaleDateString('pt-BR');
+            return `<option value="${d.date}" ${d.date === selectedDate ? 'selected' : ''}>${formattedDate}</option>`;
+        }).join('');
+
+        return `<select class="service-date-select" data-id="${itemIdentifier}">${options}</select>`;
+    }
+
     function renderServicesSummary() {
         const container = document.getElementById('services-summary-container');
         const items = currentQuote?.quote_data?.items;
@@ -122,9 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const service = services.find(s => s.id === item.service_id);
             if (service) {
                 const category = service.category || 'Outros';
-                if (!acc[category]) {
-                    acc[category] = [];
-                }
+                if (!acc[category]) acc[category] = [];
                 acc[category].push({ ...item, service_name: service.name });
             }
             return acc;
@@ -135,6 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <thead>
                     <tr>
                         <th>Serviço / Item</th>
+                        <th class="quantity-column">Qtde.</th>
                         <th>Data</th>
                         <th>Início</th>
                         <th>Término</th>
@@ -147,13 +157,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         categoryOrder.forEach(category => {
             if (itemsByCategory[category]) {
-                // Adiciona a linha de cabeçalho da categoria
-                tableHtml += `<tr class="category-divider-row"><td colspan="5"><h4>${category}</h4></td></tr>`;
+                tableHtml += `<tr class="category-divider-row"><td colspan="6">${category}</td></tr>`;
                 
-                itemsByCategory[category].forEach(item => {
-                    const itemIdentifier = `${item.service_id}-${item.event_date}`;
+                itemsByCategory[category].forEach((item, index) => {
+                    const itemIdentifier = `${item.service_id}-${index}`; // Usar o índice para um ID único na tela
                     const eventDateInfo = currentQuote.quote_data.event_dates.find(d => d.date === item.event_date);
-                    const date = eventDateInfo ? new Date(eventDateInfo.date + 'T12:00:00Z').toLocaleDateString('pt-BR') : 'N/A';
                     
                     const startTime = item.start_time || eventDateInfo?.start || '';
                     const endTime = item.end_time || eventDateInfo?.end || '';
@@ -166,7 +174,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     tableHtml += `
                         <tr>
                             <td>${item.service_name}</td>
-                            <td>${date}</td>
+                            <td class="quantity-column">${item.quantity}</td>
+                            <td>${createDateSelect(item.event_date, currentQuote.quote_data.event_dates, itemIdentifier)}</td>
                             <td><input type="time" class="service-time-input" data-id="${itemIdentifier}" data-field="start_time" value="${startTime}"></td>
                             <td><input type="time" class="service-time-input" data-id="${itemIdentifier}" data-field="end_time" value="${endTime}"></td>
                             <td class="actions">${actionButton}</td>
@@ -244,7 +253,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        document.getElementById('services-summary-container').addEventListener('change', handleServiceTimeChange);
+        const servicesContainer = document.getElementById('services-summary-container');
+        servicesContainer.addEventListener('change', handleServiceTimeChange);
+        servicesContainer.addEventListener('change', handleServiceDateChange);
+
 
         document.getElementById('close-cardapio-modal-btn').addEventListener('click', closeCardapioModal);
         document.getElementById('save-cardapio-btn').addEventListener('click', handleCardapioSave);
@@ -294,15 +306,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             const field = e.target.dataset.field;
             const value = e.target.value;
 
-            const itemIndex = currentQuote.quote_data.items.findIndex(item => `${item.service_id}-${item.event_date}` === itemIdentifier);
+            const [serviceId, itemIndex] = itemIdentifier.split('-');
             
-            if (itemIndex !== -1) {
+            if (currentQuote.quote_data.items[itemIndex]) {
                 currentQuote.quote_data.items[itemIndex][field] = value;
                 
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
                     saveQuoteData('Horário salvo.');
                 }, 1000);
+            }
+        }
+    }
+    
+    async function handleServiceDateChange(e) {
+        if (e.target.classList.contains('service-date-select')) {
+            const itemIdentifier = e.target.dataset.id;
+            const newDate = e.target.value;
+
+            const [serviceId, itemIndex] = itemIdentifier.split('-');
+
+            if (currentQuote.quote_data.items[itemIndex]) {
+                currentQuote.quote_data.items[itemIndex].event_date = newDate;
+                
+                // Limpa o horário customizado para herdar o da nova data
+                delete currentQuote.quote_data.items[itemIndex].start_time;
+                delete currentQuote.quote_data.items[itemIndex].end_time;
+
+                await saveQuoteData('Data do serviço atualizada.');
+                renderServicesSummary(); // Re-renderiza para atualizar os horários
             }
         }
     }
