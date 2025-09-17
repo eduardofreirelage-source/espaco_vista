@@ -4,7 +4,7 @@
    BASE
    ================================================================= */
 :root {
-    --primary-color: #8B0000; 
+    --primary-color: #c0392b; /* COR SUAVIZADA */
     --secondary-color: #f8f8ff;
     --heading-color: #2c2c2c;
     --text-color: #333333;
@@ -166,18 +166,18 @@ summary.card-summary-header::-webkit-details-marker {
 .form-group input:focus, .form-group select:focus {
     border-color: var(--primary-color);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
 }
 
 .hint { font-size: 0.85rem; color: var(--subtle-text-color); margin-top: -0.5rem; margin-bottom: 1rem; }
 
 .btn {
-    padding: 0.5rem 1.2rem;
+    padding: 0.4rem 1rem; /* TAMANHO REDUZIDO */
     background-color: #f0f0f0;
     color: var(--heading-color);
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    font-size: 0.9rem;
+    font-size: 0.85rem; /* FONTE REDUZIDA */
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
@@ -187,7 +187,7 @@ summary.card-summary-header::-webkit-details-marker {
 }
 .btn:hover { background-color: #e0e0e0; border-color: #c0c0c0; }
 .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); color: white; }
-.btn-primary:hover { background-color: #6d0000; border-color: #6d0000; }
+.btn-primary:hover { background-color: #a93226; border-color: #a93226; } /* COR DE HOVER AJUSTADA */
 
 .btn-remove {
     padding: 0; width: 34px; height: 34px;
@@ -301,10 +301,9 @@ summary.card-summary-header::-webkit-details-marker {
     border-color: var(--primary-color); 
     background-color: white; 
     outline: none; 
-    box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.1); 
+    box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.1);
 }
 
-/* MELHORIA v2 PARA O DROPDOWN DE STATUS */
 .quote-table select.status-select {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -326,7 +325,7 @@ summary.card-summary-header::-webkit-details-marker {
 }
 .quote-table select.status-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
     outline: none;
     background-color: white;
 }
@@ -339,8 +338,8 @@ summary.card-summary-header::-webkit-details-marker {
 }
 
 .quote-table .actions .btn {
-    padding: 0.3rem 0.8rem;
-    font-size: 0.85rem;
+    padding: 0.25rem 0.6rem; /* BOTÕES DE AÇÃO MENORES */
+    font-size: 0.8rem; /* FONTE DOS BOTÕES DE AÇÃO MENOR */
 }
 
 #quotes-table .actions, #events-table .actions { 
@@ -618,7 +617,7 @@ summary.card-summary-header::-webkit-details-marker {
 /* Página do Calendário */
 #calendar { min-height: 70vh; }
 .fc .fc-button-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
-.fc .fc-daygrid-day.fc-day-today { background-color: rgba(139, 0, 0, 0.1); }
+.fc .fc-daygrid-day.fc-day-today { background-color: rgba(192, 57, 43, 0.1); }
 .fc-event { cursor: pointer; }
 
 /* Página de Analytics */
