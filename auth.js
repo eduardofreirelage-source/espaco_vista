@@ -108,9 +108,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSimpleTable(document.getElementById('events-table'), quotes.filter(q => q.status === 'Ganho'), createEventRow);
         renderSimpleTable(document.getElementById('price-tables-table'), priceTables, createPriceTableRow);
         renderSimpleTable(document.getElementById('payment-methods-table'), paymentMethods, createPaymentMethodRow);
-        renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
         renderSimpleTable(document.getElementById('menu-items-table'), menuItems, createMenuItemRow);
         renderAdminCatalog();
+        renderSubmenusManager();
         renderCompositionManager();
         populateUnitSelects();
         renderAnalytics();
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         row.dataset.id = submenu.id;
         row.innerHTML = `
             <td><a href="#" class="editable-link" data-action="edit-submenu-composition">${submenu.name}</a></td>
-            <td>${submenu.description || ''}</td>
+            <td><input type="text" class="editable-input" data-field="description" value="${submenu.description || ''}"></td>
             <td class="actions">
                 <button class="btn-remove" data-action="delete-submenu" data-id="${submenu.id}">&times;</button>
             </td>`;
@@ -180,6 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderAdminCatalog() {
+        const adminCatalogContainer = document.getElementById('admin-catalog-container');
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
         const servicesByCategory = services.reduce((acc, service) => { if (!acc[service.category]) acc[service.category] = []; acc[service.category].push(service); return acc; }, {});
@@ -219,7 +220,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function renderSubmenusManager() {
+        const container = document.getElementById('submenus-manager');
+        if (!container) return;
+        container.innerHTML = `<div id="submenu-composition-details"></div>`;
+        renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
+    }
+    
+    function renderSubmenuCompositionDetails(submenuId) {
+        const container = document.getElementById('submenu-composition-details');
+        if (!container) return;
+
+        document.querySelectorAll('#submenus-table tr').forEach(row => row.classList.remove('selected'));
+
+        if (!submenuId) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const selectedRow = document.querySelector(`#submenus-table tr[data-id="${submenuId}"]`);
+        if (selectedRow) selectedRow.classList.add('selected');
+
+        const submenu = submenus.find(s => s.id === submenuId);
+        const composition = menuComposition.filter(c => c.submenu_id === submenuId && c.service_id === null);
+        const itemIdsInSubmenu = composition.map(c => c.item_id);
+        const availableItems = menuItems.filter(item => !itemIdsInSubmenu.includes(item.id));
+
+        container.innerHTML = `
+            <hr class="section-divider">
+            <div class="sub-section">
+                <h4>Itens em "${submenu.name}"</h4>
+                <ul class="subitem-list">
+                    ${composition.map(c => c.item ? `<li><span>${c.item.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${c.id}">&times;</button></li>` : '').join('') || '<li>Nenhum item adicionado.</li>'}
+                </ul>
+                <form class="add-item-to-submenu-form" data-submenu-id="${submenuId}">
+                    <div class="form-group">
+                        <select name="item_id" required>
+                            <option value="">-- Adicionar item a este subcardápio --</option>
+                            ${availableItems.map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Adicionar Item</button>
+                </form>
+            </div>`;
+    }
+
     function renderCompositionManager() {
+        const compositionManager = document.getElementById('composition-manager');
         if (!compositionManager) return;
         const cardapios = services.filter(s => s.category === 'Gastronomia');
         let html = `
@@ -255,8 +302,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         submenusInService.forEach(submenu => {
             const itemsInSubmenu = compositionForService.filter(c => c.submenu_id === submenu.id && c.item);
-            const itemIdsInSubmenu = itemsInSubmenu.map(comp => comp.item_id);
-            const availableItems = menuItems.filter(item => !itemIdsInSubmenu.includes(item.id));
             
             html += `<div class="sub-section item-composition-group">
                         <div class="composition-header">
@@ -266,15 +311,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <ul class="subitem-list">
                             ${itemsInSubmenu.map(comp => `<li><span>${comp.item.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>`).join('') || '<li>Nenhum item adicionado.</li>'}
                         </ul>
-                        <form class="add-item-to-submenu-form" data-service-id="${serviceId}" data-submenu-id="${submenu.id}">
-                             <div class="form-group">
-                                <select name="item_id" required>
-                                     <option value="">-- Adicionar item a este subcardápio --</option>
-                                    ${availableItems.map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
-                                </select>
-                            </div>
-                            <button type="submit" class="btn">Adicionar Item</button>
-                        </form>
                     </div>`;
         });
         
@@ -312,6 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function populateUnitSelects() {
+        const serviceUnitSelect = document.getElementById('serviceUnit');
         if (!serviceUnitSelect) return;
         serviceUnitSelect.innerHTML = '';
         units.forEach(unit => serviceUnitSelect.add(new Option(unit.name, unit.name)));
@@ -346,6 +383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     function initializeCalendar() {
         let calendarInstance = null;
+        const calendarEl = document.getElementById('calendar');
         if (!calendarEl) return;
         calendarInstance = new FullCalendar.Calendar(calendarEl, {
             locale: 'pt-br',
@@ -417,6 +455,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('addPriceTableForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addUnitForm')?.addEventListener('submit', handleFormSubmit);
+        
         document.body.addEventListener('click', handleTableActions);
         document.body.addEventListener('change', handleTableEdits);
 
@@ -429,28 +468,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderSubmenuCompositionDetails(submenuId);
             }
         });
-        submenusManager?.addEventListener('submit', async e => {
-            e.preventDefault();
-            const form = e.target;
-            if(form.classList.contains('add-item-to-submenu-form')){
-                const submenuId = form.dataset.submenuId;
-                const itemId = new FormData(form).get('item_id');
-                const { error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId });
-                if (error) { showNotification(`Erro: ${error.message}`, true); } 
-                else { showNotification("Item adicionado ao subcardápio."); await fetchData(); renderSubmenuCompositionDetails(submenuId); }
-            }
-        });
-        submenusManager?.addEventListener('click', async e => {
-            const button = e.target.closest('button[data-action="remove-composition"]');
-            if(button){
-                const compositionId = button.dataset.compositionId;
-                const submenuId = button.closest('.sub-section').querySelector('form').dataset.submenuId;
-                if (!confirm("Remover este item do subcardápio?")) return;
-                const { error } = await supabase.from('menu_composition').delete().eq('id', compositionId);
-                if (error) { showNotification(error.message, true); } 
-                else { showNotification("Item removido."); await fetchData(); renderSubmenuCompositionDetails(submenuId); }
-            }
-        });
+        submenusManager?.addEventListener('submit', handleSubmenuCompositionSubmit);
+        submenusManager?.addEventListener('click', handleCompositionClick);
 
         compositionManager?.addEventListener('change', e => {
             if (e.target.id === 'select-main-cardapio') {
@@ -495,24 +514,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    async function handleSubmenuCompositionSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        if(form.classList.contains('add-item-to-submenu-form')){
+            const submenuId = form.dataset.submenuId;
+            const itemId = new FormData(form).get('item_id');
+            const { error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId, service_id: null }); // Ligação direta
+            if (error) { showNotification(`Erro: ${error.message}`, true); } 
+            else { showNotification("Item adicionado ao subcardápio."); await fetchData(); renderSubmenuCompositionDetails(submenuId); }
+        }
+    }
+
     async function handleCompositionSubmit(e) {
         e.preventDefault();
         const form = e.target;
         const serviceId = form.dataset.serviceId;
-        const submenuId = form.dataset.submenuId || new FormData(form).get('submenu_id');
-        const itemId = form.dataset.itemId || new FormData(form).get('item_id');
-
         let dataToInsert = { service_id: serviceId };
         
         if (form.id === 'add-submenu-to-service-form') {
-            dataToInsert.submenu_id = submenuId;
+            dataToInsert.submenu_id = new FormData(form).get('submenu_id');
             dataToInsert.item_id = null;
         } else if (form.id === 'add-standalone-item-form') {
             dataToInsert.submenu_id = null;
-            dataToInsert.item_id = itemId;
-        } else if (form.classList.contains('add-item-to-submenu-form')) {
-            dataToInsert.submenu_id = submenuId;
-            dataToInsert.item_id = itemId;
+            dataToInsert.item_id = new FormData(form).get('item_id');
         } else { return; }
 
         if (!dataToInsert.submenu_id && !dataToInsert.item_id) {
@@ -532,14 +557,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleCompositionClick(e) {
         const button = e.target.closest('button[data-action]');
         if (!button) return;
-        const serviceId = document.getElementById('select-main-cardapio').value;
+        
+        const serviceId = document.getElementById('select-main-cardapio')?.value;
         const compositionId = button.dataset.compositionId;
 
         if (button.dataset.action === 'remove-composition') {
             if (!confirm("Tem certeza que deseja remover?")) return;
             const { error } = await supabase.from('menu_composition').delete().eq('id', compositionId);
             if (error) { showNotification(error.message, true); } 
-            else { showNotification("Removido."); await fetchData(); renderCompositionDetails(serviceId); }
+            else { 
+                showNotification("Removido."); 
+                await fetchData(); 
+                if (serviceId) renderCompositionDetails(serviceId);
+                const submenuId = button.closest('.sub-section')?.querySelector('form')?.dataset.submenuId;
+                if(submenuId) renderSubmenuCompositionDetails(submenuId);
+            }
         }
         
         if (button.dataset.action === 'remove-submenu-from-service') {
@@ -547,7 +579,7 @@ document.addEventListener('DOMContentLoaded', async () => {
              const { submenuId } = button.dataset;
              const { error } = await supabase.from('menu_composition').delete().match({ service_id: serviceId, submenu_id: submenuId });
              if (error) { showNotification(error.message, true); } 
-             else { showNotification("Subcardápio removido."); await fetchData(); renderCompositionDetails(serviceId); }
+             else { showNotification("Subcardápio removido."); await fetchData(); if (serviceId) renderCompositionDetails(serviceId); }
         }
     }
 
