@@ -51,7 +51,17 @@
             </div>
             <div id="tab-content-calendar" class="tab-content">
                 <section class="card">
-                    <div class="card-header"><h2>Calendário</h2></div>
+                    <div class="card-header">
+                        <h2>Calendário</h2>
+                        <div class="form-group" style="margin-bottom: 0; min-width: 180px;">
+                            <select id="calendar-status-filter" class="editable-input">
+                                <option value="all">Todos Status Agendados</option>
+                                <option value="Ganho" selected>Ganhos</option>
+                                <option value="Em analise">Em Análise</option>
+                                <option value="Rascunho">Rascunhos</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="card-content"><div id="calendar"></div></div>
                 </section>
             </div>
