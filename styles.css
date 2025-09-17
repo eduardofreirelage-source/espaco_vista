@@ -779,6 +779,7 @@ summary.card-summary-header::-webkit-details-marker {
     margin: 2rem 0;
 }
 
+
 /* Página de Gestão de Evento */
 .event-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
 .summary-box { background-color: #f9f9f9; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; }
@@ -812,13 +813,28 @@ summary.card-summary-header::-webkit-details-marker {
 .service-category-group {
     padding: 0;
     border: none;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
 }
 .services-table td input[type="time"] {
     padding: 0.4rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
 }
+.services-table .category-divider-row td {
+    background-color: var(--secondary-color);
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-top: 2px solid var(--border-color);
+    border-bottom-width: 2px;
+}
+.services-table .category-divider-row:first-child td {
+    border-top: none;
+}
+.services-table .category-divider-row h4 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
 
 /* Página do Calendário */
 #tab-content-calendar .card {
