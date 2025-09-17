@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ESTADO GLOBAL
-    let services = [], priceTables = [], servicePrices = [], quotes = [], paymentMethods = [], menuItems = [], menuSubitems = [], menuComposition = [], units = [];
+    let services = [], priceTables = [], servicePrices = [], quotes = [], paymentMethods = [], menuItems = [], submenus = [], menuComposition = [], units = [];
     
     // SELETORES DO DOM
     const notification = document.getElementById('save-notification');
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const analyticsContainer = document.getElementById('analytics-container');
     const analyticsNotice = document.getElementById('analytics-notice');
     const calendarEl = document.getElementById('calendar');
+    let calendarInstance = null;
     const calendarStatusFilter = document.getElementById('calendar-status-filter');
     const compositionManager = document.getElementById('composition-manager');
 
@@ -78,21 +79,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             supabase.from('service_prices').select('*'),
             supabase.from('quotes').select('*, clients(*)').order('created_at', { ascending: false }),
             supabase.from('payment_methods').select('*').order('name'),
+            supabase.from('submenus').select('*').order('name'),
             supabase.from('menu_items').select('*').order('name'),
-            supabase.from('menu_subitems').select('*').order('name'),
-            supabase.from('menu_composition').select('*, service:service_id(*), item:item_id(*), subitem:subitem_id(*)'),
+            supabase.from('menu_composition').select('*, service:service_id(*), submenu:submenu_id(*), item:item_id(*)'),
             supabase.from('units').select('name').order('name')
         ]);
 
-        const [servicesRes, tablesRes, pricesRes, quotesRes, paymentsRes, itemsRes, subitemsRes, compositionRes, unitsRes] = results;
+        const [servicesRes, tablesRes, pricesRes, quotesRes, paymentsRes, submenusRes, itemsRes, compositionRes, unitsRes] = results;
         
         services = (servicesRes.status === 'fulfilled') ? servicesRes.value.data : [];
         priceTables = (tablesRes.status === 'fulfilled') ? tablesRes.value.data : [];
         servicePrices = (pricesRes.status === 'fulfilled') ? pricesRes.value.data : [];
         quotes = (quotesRes.status === 'fulfilled') ? quotesRes.value.data : [];
         paymentMethods = (paymentsRes.status === 'fulfilled') ? paymentsRes.value.data : [];
+        submenus = (submenusRes.status === 'fulfilled') ? submenusRes.value.data : [];
         menuItems = (itemsRes.status === 'fulfilled') ? itemsRes.value.data : [];
-        menuSubitems = (subitemsRes.status === 'fulfilled') ? subitemsRes.value.data : [];
         menuComposition = (compositionRes.status === 'fulfilled') ? compositionRes.value.data : [];
         units = (unitsRes.status === 'fulfilled') ? unitsRes.value.data : [];
         
@@ -107,8 +108,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSimpleTable(document.getElementById('events-table'), quotes.filter(q => q.status === 'Ganho'), createEventRow);
         renderSimpleTable(document.getElementById('price-tables-table'), priceTables, createPriceTableRow);
         renderSimpleTable(document.getElementById('payment-methods-table'), paymentMethods, createPaymentMethodRow);
+        renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
         renderSimpleTable(document.getElementById('menu-items-table'), menuItems, createMenuItemRow);
-        renderSimpleTable(document.getElementById('menu-subitems-table'), menuSubitems, createMenuSubitemRow);
         renderAdminCatalog();
         renderCompositionManager();
         populateUnitSelects();
@@ -152,17 +153,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         return row;
     }
     
+    function createSubmenuRow(submenu) {
+        const row = document.createElement('tr');
+        row.dataset.id = submenu.id;
+        row.innerHTML = `<td><input type="text" class="editable-input" data-field="name" value="${submenu.name}"></td><td><input type="text" class="editable-input" data-field="description" value="${submenu.description || ''}"></td><td class="actions"><button class="btn-remove" data-action="delete-submenu" data-id="${submenu.id}">&times;</button></td>`;
+        return row;
+    }
+
     function createMenuItemRow(item) {
         const row = document.createElement('tr');
         row.dataset.id = item.id;
         row.innerHTML = `<td><input type="text" class="editable-input" data-field="name" value="${item.name}"></td><td><input type="text" class="editable-input" data-field="description" value="${item.description || ''}"></td><td class="actions"><button class="btn-remove" data-action="delete-menu-item" data-id="${item.id}">&times;</button></td>`;
-        return row;
-    }
-    
-    function createMenuSubitemRow(subitem) {
-        const row = document.createElement('tr');
-        row.dataset.id = subitem.id;
-        row.innerHTML = `<td><input type="text" class="editable-input" data-field="name" value="${subitem.name}"></td><td><input type="text" class="editable-input" data-field="description" value="${subitem.description || ''}"></td><td class="actions"><button class="btn-remove" data-action="delete-menu-subitem" data-id="${subitem.id}">&times;</button></td>`;
         return row;
     }
     
@@ -230,76 +231,86 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     function renderCompositionDetails(serviceId) {
         const container = document.getElementById('composition-details');
-        if (!container) return;
+        if (!container || !serviceId) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            return;
+        };
 
+        const currentService = services.find(s=>s.id === serviceId);
         const compositionForService = menuComposition.filter(c => c.service_id === serviceId);
-        const standaloneSubitems = compositionForService.filter(c => c.item_id === null && c.subitem_id);
-        const itemsInService = [...new Set(compositionForService.filter(c => c.item_id).map(c => c.item_id))]
-            .map(id => menuItems.find(mi => mi.id === id))
-            .filter(Boolean); // Filtra qualquer item que possa não ser encontrado
+        
+        // Itens avulsos (sem subcardapio)
+        const standaloneItems = compositionForService.filter(c => c.submenu_id === null && c.item_id);
+
+        // Subcardápios neste cardápio
+        const submenusInService = [...new Set(compositionForService.filter(c => c.submenu_id).map(c => c.submenu_id))]
+            .map(id => submenus.find(s => s.id === id))
+            .filter(Boolean);
 
         let html = `<hr class="section-divider">
-            <h4>2. Composição do Cardápio</h4>
+            <h4>2. Composição do Cardápio: <span class="service-name-highlight">${currentService?.name}</span></h4>`;
+        
+        // Renderiza os subcardápios e seus itens
+        submenusInService.forEach(submenu => {
+            const itemsInSubmenu = compositionForService.filter(c => c.submenu_id === submenu.id && c.item_id);
+            const itemIdsInSubmenu = itemsInSubmenu.map(comp => comp.item_id);
+            const availableItems = menuItems.filter(item => !itemIdsInSubmenu.includes(item.id));
             
-            <div id="items-and-subitems-container">`;
-
-        // Renderiza as seções (Itens) e seus subitens
-        itemsInService.forEach(item => {
-            const subitemsInItem = compositionForService.filter(c => c.item_id === item.id && c.subitem_id);
-            const subitemIdsInItem = subitemsInItem.map(comp => comp.subitem_id);
-            const availableSubitems = menuSubitems.filter(sub => !subitemIdsInItem.includes(sub.id));
-            const compositionEntryForItem = compositionForService.find(c => c.item_id === item.id && c.subitem_id === null);
-
             html += `<div class="sub-section item-composition-group">
                         <div class="composition-header">
-                            <h5>${item.name}</h5>
-                            <button class="btn-remove" title="Remover seção '${item.name}'" data-action="remove-composition" data-composition-id="${compositionEntryForItem?.id}">&times;</button>
+                            <h5>${submenu.name}</h5>
+                            <button class="btn-remove" title="Remover subcardápio '${submenu.name}' e todos os seus itens deste cardápio" data-action="remove-submenu-from-service" data-service-id="${serviceId}" data-submenu-id="${submenu.id}">&times;</button>
                         </div>
                         <ul class="subitem-list">
-                            ${subitemsInItem.map(comp => `<li><span>${comp.subitem.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>`).join('') || '<li>Nenhum subitem adicionado.</li>'}
+                            ${itemsInSubmenu.map(comp => comp.item ? `<li><span>${comp.item.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>` : '').join('') || '<li>Nenhum item adicionado.</li>'}
                         </ul>
-                        <form class="add-subitem-form" data-action="add-subitem-to-item" data-service-id="${serviceId}" data-item-id="${item.id}">
+                        <form class="add-item-to-submenu-form" data-service-id="${serviceId}" data-submenu-id="${submenu.id}">
                              <div class="form-group">
-                                <select name="subitem_id" required>
-                                     <option value="">-- Adicionar subitem a esta seção --</option>
-                                    ${availableSubitems.map(sub => `<option value="${sub.id}">${sub.name}</option>`).join('')}
+                                <select name="item_id" required>
+                                     <option value="">-- Adicionar item a este subcardápio --</option>
+                                    ${availableItems.map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
                                 </select>
                             </div>
-                            <button type="submit" class="btn">Adicionar</button>
+                            <button type="submit" class="btn">Adicionar Item</button>
                         </form>
                     </div>`;
         });
-        html += `</div>
         
-            <form id="add-item-to-service-form" class="inline-form" data-service-id="${serviceId}">
-                <div class="form-group">
-                    <label>Adicionar Nova Seção (Item)</label>
-                    <select name="item_id" required>
-                        <option value="">-- Selecione --</option>
-                        ${menuItems.filter(item => !itemsInService.some(i => i.id === item.id)).map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">Adicionar Seção ao Cardápio</button>
-            </form>
+        // Renderiza os formulários para adicionar novos elementos
+        html += `
             <hr class="section-divider">
-
-            <div class="sub-section item-composition-group">
-                <h5>Pratos Avulsos (sem seção)</h5>
-                <ul class="subitem-list">
-                    ${standaloneSubitems.map(comp => `<li><span>${comp.subitem.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>`).join('') || '<li>Nenhum prato avulso adicionado.</li>'}
-                </ul>
-                <form id="add-standalone-subitem-form" class="inline-form" data-service-id="${serviceId}">
+            <div class="inline-form-group">
+                <form class="inline-form" id="add-submenu-to-service-form" data-service-id="${serviceId}">
                     <div class="form-group">
-                        <label>Adicionar Prato Avulso</label>
-                        <select name="subitem_id" required>
-                             <option value="">-- Selecione --</option>
-                            ${menuSubitems.map(sub => `<option value="${sub.id}">${sub.name}</option>`).join('')}
+                        <label>Adicionar Subcardápio ao Cardápio Principal</label>
+                        <select name="submenu_id" required>
+                            <option value="">-- Selecione --</option>
+                            ${submenus.filter(s => !submenusInService.some(ex => ex.id === s.id)).map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary">Adicionar Prato Avulso</button>
+                    <button type="submit" class="btn btn-primary">Adicionar Subcardápio</button>
+                </form>
+
+                <form class="inline-form" id="add-standalone-item-form" data-service-id="${serviceId}">
+                    <div class="form-group">
+                        <label>Adicionar Item Avulso ao Cardápio Principal</label>
+                        <select name="item_id" required>
+                             <option value="">-- Selecione --</option>
+                            ${menuItems.map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Adicionar Item Avulso</button>
                 </form>
             </div>
-        `;
+            <hr class="section-divider">
+            <div class="sub-section item-composition-group">
+                <h5>Itens Avulsos (sem subcardápio)</h5>
+                <ul class="subitem-list">
+                    ${standaloneItems.map(comp => comp.item ? `<li><span>${comp.item.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>` : '').join('') || '<li>Nenhum item avulso adicionado.</li>'}
+                </ul>
+            </div>
+            `;
         container.innerHTML = html;
     }
     
@@ -335,7 +346,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function initializeCalendar() {
-        if (!calendarEl || calendarInstance) return;
+        let calendarInstance = null;
+        if (!calendarEl) return;
         calendarInstance = new FullCalendar.Calendar(calendarEl, {
             locale: 'pt-br',
             initialView: 'dayGridMonth',
@@ -345,10 +357,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             height: 'parent',
         });
         calendarInstance.render();
-        updateCalendarEvents();
+        updateCalendarEvents(calendarInstance);
     }
     
-    function updateCalendarEvents() {
+    function updateCalendarEvents(calendarInstance) {
         if (!calendarInstance) return;
         const statusFilter = calendarStatusFilter.value;
         const statusColors = { 'Ganho': '#28a745', 'Em analise': '#ffc107', 'Rascunho': '#6c757d' };
@@ -389,13 +401,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (clickedTab.dataset.tab === 'calendar') initializeCalendar();
         });
 
-        calendarStatusFilter?.addEventListener('change', updateCalendarEvents);
+        calendarStatusFilter?.addEventListener('change', () => {
+            const calendarApi = document.getElementById('calendar')?.__fullCalendar;
+            if(calendarApi) updateCalendarEvents(calendarApi);
+        });
+
         document.body.addEventListener('click', (e) => {
             const header = e.target.closest('.collapsible-card > .card-header');
             if (header) header.closest('.collapsible-card')?.classList.toggle('collapsed');
         });
+
         document.getElementById('add-menu-item-form')?.addEventListener('submit', handleFormSubmit);
-        document.getElementById('add-menu-subitem-form')?.addEventListener('submit', handleFormSubmit);
+        document.getElementById('add-submenu-form')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addServiceForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPriceTableForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', handleFormSubmit);
@@ -406,8 +423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         compositionManager?.addEventListener('change', e => {
             if (e.target.id === 'select-main-cardapio') {
                 const serviceId = e.target.value;
-                document.getElementById('composition-details').style.display = serviceId ? 'block' : 'none';
-                if (serviceId) renderCompositionDetails(serviceId);
+                renderCompositionDetails(serviceId);
             }
         });
 
@@ -421,8 +437,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         let result, successMessage = 'Salvo com sucesso!';
         try {
             switch (form.id) {
-                case 'add-menu-subitem-form':
-                    result = await supabase.from('menu_subitems').insert([{ name: form.querySelector('#subitemName').value, description: form.querySelector('#subitemDescription').value }]);
+                case 'add-submenu-form':
+                    result = await supabase.from('submenus').insert([{ name: form.querySelector('#submenuName').value, description: form.querySelector('#submenuDescription').value }]);
                     break;
                 case 'add-menu-item-form':
                     result = await supabase.from('menu_items').insert([{ name: form.querySelector('#itemName').value, description: form.querySelector('#itemDescription').value }]);
@@ -453,29 +469,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const form = e.target;
         const serviceId = form.dataset.serviceId;
+        const submenuId = form.dataset.submenuId || new FormData(form).get('submenu_id');
         const itemId = form.dataset.itemId || new FormData(form).get('item_id');
-        const subitemId = new FormData(form).get('subitem_id');
 
         let dataToInsert = { service_id: serviceId };
         let successMessage = "Adicionado com sucesso.";
 
-        if (form.id === 'add-item-to-service-form') {
-            dataToInsert.item_id = itemId;
-            dataToInsert.subitem_id = null;
-            successMessage = "Seção adicionada ao cardápio.";
-        } else if (form.id === 'add-standalone-subitem-form') {
+        if (form.id === 'add-submenu-to-service-form') {
+            dataToInsert.submenu_id = submenuId;
             dataToInsert.item_id = null;
-            dataToInsert.subitem_id = subitemId;
-            successMessage = "Prato avulso adicionado.";
-        } else if (form.classList.contains('add-subitem-form')) {
+        } else if (form.id === 'add-standalone-item-form') {
+            dataToInsert.submenu_id = null;
             dataToInsert.item_id = itemId;
-            dataToInsert.subitem_id = subitemId;
-            successMessage = "Subitem adicionado à seção.";
-        }
+        } else if (form.classList.contains('add-item-to-submenu-form')) {
+            dataToInsert.submenu_id = submenuId;
+            dataToInsert.item_id = itemId;
+        } else { return; }
 
-        if (!dataToInsert.item_id && !dataToInsert.subitem_id) {
-            showNotification("Selecione um item ou subitem.", true);
-            return;
+        if (!dataToInsert.submenu_id && !dataToInsert.item_id) {
+            showNotification("Selecione uma opção.", true); return;
         }
 
         const { error } = await supabase.from('menu_composition').insert(dataToInsert);
@@ -492,18 +504,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const button = e.target.closest('button[data-action]');
         if (!button) return;
         const serviceId = document.getElementById('select-main-cardapio').value;
-        const compositionId = button.dataset.compositionId;
 
         if (button.dataset.action === 'remove-composition') {
             if (!confirm("Tem certeza que deseja remover?")) return;
-            const { error } = await supabase.from('menu_composition').delete().eq('id', compositionId);
-            if (error) {
-                showNotification(error.message, true);
-            } else {
-                showNotification("Removido com sucesso.");
-                await fetchData();
-                renderCompositionDetails(serviceId);
-            }
+            const { error } = await supabase.from('menu_composition').delete().eq('id', button.dataset.compositionId);
+            if (error) { showNotification(error.message, true); } 
+            else { showNotification("Removido com sucesso."); await fetchData(); renderCompositionDetails(serviceId); }
+        }
+        
+        if (button.dataset.action === 'remove-submenu-from-service') {
+            if (!confirm("Remover este subcardápio e todos os seus itens do cardápio principal?")) return;
+             const { submenuId } = button.dataset;
+             const { error } = await supabase.from('menu_composition').delete().match({ service_id: serviceId, submenu_id: submenuId });
+             if (error) { showNotification(error.message, true); } 
+             else { showNotification("Subcardápio removido."); await fetchData(); renderCompositionDetails(serviceId); }
         }
     }
 
@@ -514,8 +528,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tables = {
             'delete-quote': 'quotes', 'delete-service': 'services', 'delete-table': 'price_tables',
             'delete-payment-method': 'payment_methods',
+            'delete-submenu': 'submenus',
             'delete-menu-item': 'menu_items',
-            'delete-menu-subitem': 'menu_subitems',
             'delete-unit': 'units'
         };
         if (tables[action]) {
@@ -547,7 +561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!table) return;
 
         const tableMap = {
-            'menu-subitems-table': 'menu_subitems',
+            'submenus-table': 'submenus',
             'menu-items-table': 'menu_items',
             'payment-methods-table': 'payment_methods',
             'price-tables-table': 'price_tables',
