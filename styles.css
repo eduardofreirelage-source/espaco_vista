@@ -369,11 +369,12 @@ summary.card-summary-header::-webkit-details-marker {
    ================================================================= */
 
 .category-accordion {
+    min-width: 0;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
 }
-.category-accordion > summary.category-header {
+.category-accordion > summary {
     list-style: none;
     cursor: pointer;
     display: flex;
@@ -381,22 +382,24 @@ summary.card-summary-header::-webkit-details-marker {
     padding: 0.8rem 1.2rem;
     background-color: #f9f9f9;
 }
-.category-accordion[open] > summary.category-header {
+.category-accordion[open] > summary {
     border-bottom: 1px solid var(--border-color);
 }
-.category-accordion > summary.category-header::-webkit-details-marker {
+.category-accordion > summary::-webkit-details-marker {
     display: none;
 }
-.category-accordion > summary.category-header::before {
+.category-accordion > summary::before {
     content: '+';
     font-size: 1.5rem;
     font-weight: 500;
     color: var(--subtle-text-color);
     margin-right: 0.8rem;
     transition: transform 0.2s;
+    transform: rotate(0deg);
 }
-.category-accordion[open] > summary.category-header::before {
+.category-accordion[open] > summary::before {
     content: '−';
+    transform: rotate(180deg);
     color: rgba(var(--primary-color-rgb), 1);
 }
 .category-accordion .category-title {
@@ -415,20 +418,31 @@ summary.card-summary-header::-webkit-details-marker {
 .category-accordion .quote-table td {
     padding: 0.5rem 0.8rem;
 }
+
+/* ESTILO PADRÃO PARA INPUTS E SELECTS DENTRO DA TABELA E DADOS DO EVENTO */
 .category-accordion .quote-table td input,
-.category-accordion .quote-table td select {
-    padding: 0.4rem 0.6rem;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
+.category-accordion .quote-table td select,
+.date-entry input[type="date"],
+.date-entry input[type="time"] {
+    padding: 0.5rem 0.7rem;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
     background-color: #fff;
-    font-size: 0.85rem;
-}
-.category-accordion .quote-table td input:focus,
-.category-accordion .quote-table td select:focus {
-    border-color: rgba(var(--primary-color-rgb), 1);
-    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 0;
 }
 
+.category-accordion .quote-table td input:focus,
+.category-accordion .quote-table td select:focus,
+.date-entry input:focus {
+    border-color: rgba(var(--primary-color-rgb), 1);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+    outline: none;
+}
+
+/* ESTILO ESPECÍFICO PARA O SELECT DE DATA (SETA CUSTOMIZADA) */
 .quote-table select.date-select {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -438,6 +452,16 @@ summary.card-summary-header::-webkit-details-marker {
     background-position: right 0.6rem center;
     background-size: 0.9em;
     padding-right: 2.2rem;
+}
+
+/* ESTILO ESPECÍFICO PARA O INPUT DE DATA (ÍCONE CUSTOMIZADO) */
+.date-entry input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.date-entry input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
 }
 
 .item-actions {
@@ -557,7 +581,7 @@ summary.card-summary-header::-webkit-details-marker {
 .collapsible-card.collapsed > .card-header {
     border-bottom-color: transparent;
 }
-.collapse-icon::before { 
+.collapsible-card .collapse-icon::before { 
     content: '−'; 
     font-size: 1.5rem; 
     font-weight: 500; 
