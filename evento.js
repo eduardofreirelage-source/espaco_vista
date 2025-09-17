@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let cardapioItems = [];
     let hasInitializedListeners = false;
     let selectedCardapioServiceId = null;
+    let saveTimeout;
 
     const urlParams = new URLSearchParams(window.location.search);
     const quoteId = urlParams.get('quote_id');
@@ -34,7 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             services = servicesRes.data;
             cardapioItems = cardapioItemsRes.data;
             
-            // Garante que a estrutura de dados para o cardápio selecionado exista
             if (!currentQuote.quote_data.selected_cardapio) {
                 currentQuote.quote_data.selected_cardapio = {};
             }
@@ -118,46 +118,68 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        let tableHtml = `<div class="table-container">
-            <table id="services-table">
-                <thead>
-                    <tr>
-                        <th>Serviço / Item</th>
-                        <th>Data</th>
-                        <th>Início</th>
-                        <th>Término</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-        items.forEach(item => {
+        // Agrupa os serviços por categoria
+        const itemsByCategory = items.reduce((acc, item) => {
             const service = services.find(s => s.id === item.service_id);
-            if (!service) return;
-
-            const eventDateInfo = currentQuote.quote_data.event_dates.find(d => d.date === item.event_date);
-            const date = eventDateInfo ? new Date(eventDateInfo.date + 'T12:00:00Z').toLocaleDateString('pt-BR') : 'N/A';
-            const start = eventDateInfo?.start || 'N/A';
-            const end = eventDateInfo?.end || 'N/A';
-            
-            let actionButton = '';
-            if (service.category === 'Gastronomia') {
-                actionButton = `<button class="btn define-cardapio-btn" data-service-id="${service.id}">Definir Cardápio</button>`;
+            if (service) {
+                const category = service.category || 'Outros';
+                if (!acc[category]) {
+                    acc[category] = [];
+                }
+                acc[category].push({ ...item, service_name: service.name });
             }
+            return acc;
+        }, {});
+        
+        let finalHtml = '';
+        const categoryOrder = ['Espaço', 'Gastronomia', 'Equipamentos', 'Serviços e Outros'];
 
-            tableHtml += `
-                <tr>
-                    <td>${service.name}</td>
-                    <td>${date}</td>
-                    <td>${start}</td>
-                    <td>${end}</td>
-                    <td class="actions">${actionButton}</td>
-                </tr>
-            `;
+        categoryOrder.forEach(category => {
+            if (itemsByCategory[category]) {
+                finalHtml += `<div class="sub-section service-category-group"><h4>${category}</h4>`;
+                finalHtml += `<div class="table-container">
+                    <table class="services-table">
+                        <thead>
+                            <tr>
+                                <th>Serviço / Item</th>
+                                <th>Data</th>
+                                <th>Início</th>
+                                <th>Término</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                itemsByCategory[category].forEach((item, index) => {
+                    const itemIdentifier = `${item.service_id}-${item.event_date}`;
+                    const eventDateInfo = currentQuote.quote_data.event_dates.find(d => d.date === item.event_date);
+                    const date = eventDateInfo ? new Date(eventDateInfo.date + 'T12:00:00Z').toLocaleDateString('pt-BR') : 'N/A';
+                    
+                    // Se o item não tiver horário próprio, usa o do evento como padrão
+                    const startTime = item.start_time || eventDateInfo?.start || '';
+                    const endTime = item.end_time || eventDateInfo?.end || '';
+
+                    let actionButton = '';
+                    if (category === 'Gastronomia') {
+                        actionButton = `<button class="btn define-cardapio-btn" data-service-id="${item.service_id}">Definir Cardápio</button>`;
+                    }
+
+                    finalHtml += `
+                        <tr>
+                            <td>${item.service_name}</td>
+                            <td>${date}</td>
+                            <td><input type="time" class="service-time-input" data-id="${itemIdentifier}" data-field="start_time" value="${startTime}"></td>
+                            <td><input type="time" class="service-time-input" data-id="${itemIdentifier}" data-field="end_time" value="${endTime}"></td>
+                            <td class="actions">${actionButton}</td>
+                        </tr>
+                    `;
+                });
+
+                finalHtml += '</tbody></table></div></div>';
+            }
         });
 
-        tableHtml += '</tbody></table></div>';
-        container.innerHTML = tableHtml;
+        container.innerHTML = finalHtml || '<p>Nenhum serviço encontrado.</p>';
     }
 
     function openCardapioModal(serviceId) {
@@ -224,6 +246,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // Listener para salvar horários dos serviços
+        document.getElementById('services-summary-container').addEventListener('change', handleServiceTimeChange);
+
         document.getElementById('close-cardapio-modal-btn').addEventListener('click', closeCardapioModal);
         document.getElementById('save-cardapio-btn').addEventListener('click', handleCardapioSave);
     }
@@ -265,6 +290,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderPayments();
         saveQuoteData();
     }
+    
+    function handleServiceTimeChange(e) {
+        if (e.target.classList.contains('service-time-input')) {
+            const itemIdentifier = e.target.dataset.id;
+            const field = e.target.dataset.field;
+            const value = e.target.value;
+
+            const itemIndex = currentQuote.quote_data.items.findIndex(item => `${item.service_id}-${item.event_date}` === itemIdentifier);
+            
+            if (itemIndex !== -1) {
+                currentQuote.quote_data.items[itemIndex][field] = value;
+                
+                // Debounce o salvamento para não salvar a cada keystroke
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    saveQuoteData('Horário salvo.');
+                }, 1000);
+            }
+        }
+    }
 
     async function handlePaymentChange(e) {
         if (e.target.classList.contains('payment-input')) {
@@ -289,7 +334,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function saveQuoteData(message = 'Dados salvos.') {
         if (!currentQuote) return;
         const { error } = await supabase.from('quotes').update({ quote_data: currentQuote.quote_data }).eq('id', quoteId);
-        if (error) { showNotification('Erro ao salvar dados.', true); } 
+        if (error) { showNotification('Erro ao salvar dados.', true); console.error(error); } 
         else { showNotification(message); }
     }
 
