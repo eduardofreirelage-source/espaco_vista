@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         row.dataset.id = quote.id;
         const statusOptions = ['Rascunho', 'Em analise', 'Ganho', 'Perdido'];
         const selectHTML = `<select class="status-select editable-input" data-field="status">${statusOptions.map(opt => `<option value="${opt}" ${quote.status === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>`;
-        row.innerHTML = `<td>${quote.client_name || 'Rascunho'}</td><td>${new Date(quote.created_at).toLocaleDateString('pt-BR')}</td><td>${selectHTML}</td><td class="actions"><a href="index.html?quote_id=${quote.id}" class="btn">Editar</a><a href="evento.html?quote_id=${quote.id}" class="btn" style="${quote.status === 'Ganho' ? '' : 'display:none;'}">Gerenciar</a><button class="btn-remove" data-action="delete-quote" data-id="${quote.id}">&times;</button></td>`;
+        row.innerHTML = `<td>${quote.client_name || 'Rascunho'}</td><td>${new Date(quote.created_at).toLocaleDateString('pt-BR')}</td><td>${selectHTML}</td><td class="actions"><a href="evento.html?quote_id=${quote.id}" class="btn" style="${quote.status === 'Ganho' ? '' : 'visibility:hidden;'}">Gerenciar</a><a href="index.html?quote_id=${quote.id}" class="btn">Editar</a><button class="btn-remove" data-action="delete-quote" data-id="${quote.id}">&times;</button></td>`;
         return row;
     }
 
@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             initialView: 'dayGridMonth',
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
             eventClick: (info) => { const { quoteId } = info.event.extendedProps; window.location.href = `evento.html?quote_id=${quoteId}`; },
-            height: 'parent', // *** ALTERAÇÃO APLICADA AQUI ***
+            height: 'parent',
         });
         calendarInstance.render();
         updateCalendarEvents();
@@ -284,8 +284,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     function updateCalendarEvents() {
         if (!calendarInstance) return;
-        const events = quotes.filter(q => q.status === 'Ganho' && q.quote_data?.event_dates?.[0]?.date)
-                             .map(q => ({ title: q.client_name, start: q.quote_data.event_dates[0].date, extendedProps: { quoteId: q.id } }));
+    
+        const events = quotes
+            .filter(q => q.status === 'Ganho' && q.quote_data?.event_dates?.[0]?.date)
+            .map(q => {
+                const items = q.quote_data?.items || [];
+                
+                // Encontra os nomes dos serviços da categoria "Espaço"
+                const spaceNames = items
+                    .map(item => {
+                        const service = services.find(s => s.id === item.service_id);
+                        return service && service.category === 'Espaço' ? service.name : null;
+                    })
+                    .filter(Boolean) // Remove os nulos
+                    .join(' + '); // Junta os nomes com " + "
+    
+                // Monta o título do evento
+                let eventTitle = q.client_name;
+                if (spaceNames) {
+                    eventTitle += ` - ${spaceNames}`;
+                }
+    
+                return {
+                    title: eventTitle,
+                    start: q.quote_data.event_dates[0].date,
+                    extendedProps: { quoteId: q.id }
+                };
+            });
+    
         calendarInstance.removeAllEvents();
         calendarInstance.addEventSource(events);
     }
