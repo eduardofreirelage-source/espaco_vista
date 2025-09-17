@@ -152,14 +152,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         row.innerHTML = `<td><input type="text" class="editable-input" data-field="name" value="${method.name}"></td><td class="actions"><button class="btn-remove" data-action="delete-payment-method" data-id="${method.id}">&times;</button></td>`;
         return row;
     }
-    
+
     function createSubmenuRow(submenu) {
         const row = document.createElement('tr');
         row.dataset.id = submenu.id;
         row.innerHTML = `<td><input type="text" class="editable-input" data-field="name" value="${submenu.name}"></td><td><input type="text" class="editable-input" data-field="description" value="${submenu.description || ''}"></td><td class="actions"><button class="btn-remove" data-action="delete-submenu" data-id="${submenu.id}">&times;</button></td>`;
         return row;
     }
-
+    
     function createMenuItemRow(item) {
         const row = document.createElement('tr');
         row.dataset.id = item.id;
@@ -225,25 +225,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${cardapios.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
                 </select>
             </div>
-            <div id="composition-details" style="display:none;"></div>`;
+            <div id="composition-details" class="hidden"></div>`;
         compositionManager.innerHTML = html;
     }
     
     function renderCompositionDetails(serviceId) {
         const container = document.getElementById('composition-details');
         if (!container || !serviceId) {
-            container.innerHTML = '';
-            container.style.display = 'none';
+            if(container) container.innerHTML = '';
             return;
         };
 
         const currentService = services.find(s=>s.id === serviceId);
         const compositionForService = menuComposition.filter(c => c.service_id === serviceId);
         
-        // Itens avulsos (sem subcardapio)
-        const standaloneItems = compositionForService.filter(c => c.submenu_id === null && c.item_id);
-
-        // Subcardápios neste cardápio
+        const standaloneItems = compositionForService.filter(c => c.submenu_id === null && c.item);
         const submenusInService = [...new Set(compositionForService.filter(c => c.submenu_id).map(c => c.submenu_id))]
             .map(id => submenus.find(s => s.id === id))
             .filter(Boolean);
@@ -251,19 +247,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         let html = `<hr class="section-divider">
             <h4>2. Composição do Cardápio: <span class="service-name-highlight">${currentService?.name}</span></h4>`;
         
-        // Renderiza os subcardápios e seus itens
         submenusInService.forEach(submenu => {
-            const itemsInSubmenu = compositionForService.filter(c => c.submenu_id === submenu.id && c.item_id);
+            const itemsInSubmenu = compositionForService.filter(c => c.submenu_id === submenu.id && c.item);
             const itemIdsInSubmenu = itemsInSubmenu.map(comp => comp.item_id);
             const availableItems = menuItems.filter(item => !itemIdsInSubmenu.includes(item.id));
             
             html += `<div class="sub-section item-composition-group">
                         <div class="composition-header">
                             <h5>${submenu.name}</h5>
-                            <button class="btn-remove" title="Remover subcardápio '${submenu.name}' e todos os seus itens deste cardápio" data-action="remove-submenu-from-service" data-service-id="${serviceId}" data-submenu-id="${submenu.id}">&times;</button>
+                            <button class="btn-remove" title="Remover subcardápio '${submenu.name}' e seus itens" data-action="remove-submenu-from-service" data-service-id="${serviceId}" data-submenu-id="${submenu.id}">&times;</button>
                         </div>
                         <ul class="subitem-list">
-                            ${itemsInSubmenu.map(comp => comp.item ? `<li><span>${comp.item.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>` : '').join('') || '<li>Nenhum item adicionado.</li>'}
+                            ${itemsInSubmenu.map(comp => `<li><span>${comp.item.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>`).join('') || '<li>Nenhum item adicionado.</li>'}
                         </ul>
                         <form class="add-item-to-submenu-form" data-service-id="${serviceId}" data-submenu-id="${submenu.id}">
                              <div class="form-group">
@@ -277,9 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>`;
         });
         
-        // Renderiza os formulários para adicionar novos elementos
-        html += `
-            <hr class="section-divider">
+        html += `<hr class="section-divider">
             <div class="inline-form-group">
                 <form class="inline-form" id="add-submenu-to-service-form" data-service-id="${serviceId}">
                     <div class="form-group">
@@ -291,7 +284,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <button type="submit" class="btn btn-primary">Adicionar Subcardápio</button>
                 </form>
-
                 <form class="inline-form" id="add-standalone-item-form" data-service-id="${serviceId}">
                     <div class="form-group">
                         <label>Adicionar Item Avulso ao Cardápio Principal</label>
@@ -303,15 +295,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <button type="submit" class="btn btn-primary">Adicionar Item Avulso</button>
                 </form>
             </div>
-            <hr class="section-divider">
             <div class="sub-section item-composition-group">
                 <h5>Itens Avulsos (sem subcardápio)</h5>
                 <ul class="subitem-list">
-                    ${standaloneItems.map(comp => comp.item ? `<li><span>${comp.item.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>` : '').join('') || '<li>Nenhum item avulso adicionado.</li>'}
+                    ${standaloneItems.map(comp => `<li><span>${comp.item.name}</span><button class="btn-remove-inline" data-action="remove-composition" data-composition-id="${comp.id}">&times;</button></li>`).join('') || '<li>Nenhum item avulso adicionado.</li>'}
                 </ul>
-            </div>
-            `;
+            </div>`;
         container.innerHTML = html;
+        container.classList.remove('hidden');
     }
     
     function populateUnitSelects() {
@@ -321,6 +312,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function renderAnalytics() {
+        const analyticsContainer = document.getElementById('analytics-container');
+        const analyticsNotice = document.getElementById('analytics-notice');
         if (!analyticsContainer || !analyticsNotice) return;
         analyticsContainer.innerHTML = '';
         if (quotes.length === 0) {
@@ -346,8 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function initializeCalendar() {
-        let calendarInstance = null;
-        if (!calendarEl) return;
+        if (!calendarEl || calendarInstance) return;
         calendarInstance = new FullCalendar.Calendar(calendarEl, {
             locale: 'pt-br',
             initialView: 'dayGridMonth',
@@ -357,10 +349,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             height: 'parent',
         });
         calendarInstance.render();
-        updateCalendarEvents(calendarInstance);
+        updateCalendarEvents();
     }
     
-    function updateCalendarEvents(calendarInstance) {
+    function updateCalendarEvents() {
         if (!calendarInstance) return;
         const statusFilter = calendarStatusFilter.value;
         const statusColors = { 'Ganho': '#28a745', 'Em analise': '#ffc107', 'Rascunho': '#6c757d' };
@@ -402,8 +394,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         calendarStatusFilter?.addEventListener('change', () => {
-            const calendarApi = document.getElementById('calendar')?.__fullCalendar;
-            if(calendarApi) updateCalendarEvents(calendarApi);
+            if (calendarInstance) updateCalendarEvents();
         });
 
         document.body.addEventListener('click', (e) => {
@@ -411,8 +402,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (header) header.closest('.collapsible-card')?.classList.toggle('collapsed');
         });
 
-        document.getElementById('add-menu-item-form')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('add-submenu-form')?.addEventListener('submit', handleFormSubmit);
+        document.getElementById('add-menu-item-form')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addServiceForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPriceTableForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', handleFormSubmit);
@@ -422,8 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         compositionManager?.addEventListener('change', e => {
             if (e.target.id === 'select-main-cardapio') {
-                const serviceId = e.target.value;
-                renderCompositionDetails(serviceId);
+                renderCompositionDetails(e.target.value);
             }
         });
 
@@ -459,7 +449,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (result && result.error) throw result.error;
             showNotification(successMessage);
             if(form.tagName === 'FORM') form.reset();
-            fetchData();
+            await fetchData();
         } catch (error) {
             showNotification(`Erro: ${error.message}`, true);
         }
@@ -473,8 +463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const itemId = form.dataset.itemId || new FormData(form).get('item_id');
 
         let dataToInsert = { service_id: serviceId };
-        let successMessage = "Adicionado com sucesso.";
-
+        
         if (form.id === 'add-submenu-to-service-form') {
             dataToInsert.submenu_id = submenuId;
             dataToInsert.item_id = null;
@@ -494,7 +483,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error) {
             showNotification(`Erro: ${error.message}`, true);
         } else {
-            showNotification(successMessage);
+            showNotification("Cardápio atualizado.");
             await fetchData();
             renderCompositionDetails(serviceId);
         }
@@ -504,12 +493,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const button = e.target.closest('button[data-action]');
         if (!button) return;
         const serviceId = document.getElementById('select-main-cardapio').value;
+        const compositionId = button.dataset.compositionId;
 
         if (button.dataset.action === 'remove-composition') {
             if (!confirm("Tem certeza que deseja remover?")) return;
-            const { error } = await supabase.from('menu_composition').delete().eq('id', button.dataset.compositionId);
+            const { error } = await supabase.from('menu_composition').delete().eq('id', compositionId);
             if (error) { showNotification(error.message, true); } 
-            else { showNotification("Removido com sucesso."); await fetchData(); renderCompositionDetails(serviceId); }
+            else { showNotification("Removido."); await fetchData(); renderCompositionDetails(serviceId); }
         }
         
         if (button.dataset.action === 'remove-submenu-from-service') {
@@ -526,7 +516,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!button) return;
         const { action, id } = button.dataset;
         const tables = {
-            'delete-quote': 'quotes', 'delete-service': 'services', 'delete-table': 'price_tables',
+            'delete-quote': 'quotes', 
+            'delete-service': 'services', 
+            'delete-table': 'price_tables',
             'delete-payment-method': 'payment_methods',
             'delete-submenu': 'submenus',
             'delete-menu-item': 'menu_items',
