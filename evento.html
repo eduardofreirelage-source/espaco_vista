@@ -66,30 +66,28 @@
                         
                         <div class="sub-section">
                             <h4>Dados Completos do Cliente</h4>
-                            <form id="client-details-form">
-                                <div class="form-grid">
-                                    <div class="form-group"><label for="client-name">Nome Fantasia / Cliente</label><input type="text" id="client-name"></div>
-                                    <div class="form-group"><label for="client-legal-name">Razão Social</label><input type="text" id="client-legal-name"></div>
-                                    <div class="form-group"><label for="client-cnpj">CNPJ / CPF</label><input type="text" id="client-cnpj"></div>
-                                    <div class="form-group"><label for="client-state-reg">Inscrição Estadual</label><input type="text" id="client-state-reg"></div>
-                                    <div class="form-group"><label for="client-email">E-mail</label><input type="email" id="client-email"></div>
-                                    <div class="form-group"><label for="client-phone">Telefone</label><input type="tel" id="client-phone"></div>
+                            <form id="client-details-form" class="client-form-grid">
+                                <div class="form-group grid-col-span-2"><label for="client-name">Nome Fantasia / Cliente</label><input type="text" id="client-name"></div>
+                                <div class="form-group grid-col-span-2"><label for="client-legal-name">Razão Social</label><input type="text" id="client-legal-name"></div>
+                                <div class="form-group grid-col-span-2"><label for="client-cnpj">CNPJ / CPF</label><input type="text" id="client-cnpj"></div>
+                                <div class="form-group grid-col-span-2"><label for="client-state-reg">Inscrição Estadual</label><input type="text" id="client-state-reg"></div>
+                                
+                                <div class="form-group grid-col-span-2"><label for="client-email">E-mail</label><input type="email" id="client-email"></div>
+                                <div class="form-group grid-col-span-2"><label for="client-phone">Telefone</label><input type="tel" id="client-phone"></div>
+
+                                <h4 class="form-grid-title grid-col-span-4">Endereço</h4>
+                                <div class="form-group grid-col-span-3"><label for="client-address-street">Rua e Número</label><input type="text" id="client-address-street"></div>
+                                <div class="form-group grid-col-span-1"><label for="client-address-zip">CEP</label><input type="text" id="client-address-zip"></div>
+                                <div class="form-group grid-col-span-2"><label for="client-address-city">Cidade</label><input type="text" id="client-address-city"></div>
+                                <div class="form-group grid-col-span-2"><label for="client-address-state">Estado</label><input type="text" id="client-address-state"></div>
+                                
+                                <h4 class="form-grid-title grid-col-span-4">Representante Legal</h4>
+                                <div class="form-group grid-col-span-2"><label for="client-rep-name">Nome do Representante</label><input type="text" id="client-rep-name"></div>
+                                <div class="form-group grid-col-span-2"><label for="client-rep-cpf">CPF do Representante</label><input type="text" id="client-rep-cpf"></div>
+                                
+                                <div class="form-group grid-col-span-4">
+                                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Dados do Cliente</button>
                                 </div>
-                                <hr class="section-divider">
-                                <h5>Endereço</h5>
-                                <div class="form-grid">
-                                    <div class="form-group"><label for="client-address-street">Rua e Número</label><input type="text" id="client-address-street"></div>
-                                    <div class="form-group"><label for="client-address-city">Cidade</label><input type="text" id="client-address-city"></div>
-                                    <div class="form-group"><label for="client-address-state">Estado</label><input type="text" id="client-address-state"></div>
-                                    <div class="form-group"><label for="client-address-zip">CEP</label><input type="text" id="client-address-zip"></div>
-                                </div>
-                                <hr class="section-divider">
-                                <h5>Representante Legal</h5>
-                                <div class="form-grid">
-                                    <div class="form-group"><label for="client-rep-name">Nome do Representante</label><input type="text" id="client-rep-name"></div>
-                                    <div class="form-group"><label for="client-rep-cpf">CPF do Representante</label><input type="text" id="client-rep-cpf"></div>
-                                </div>
-                                <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Dados do Cliente</button>
                             </form>
                         </div>
 
