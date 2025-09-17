@@ -812,7 +812,11 @@ summary.card-summary-header::-webkit-details-marker {
     padding-top: 0;
     border-top: none;
 }
-
+.service-category-group {
+    padding: 0;
+    border: none;
+    margin-bottom: 0;
+}
 .services-table .category-divider-row td {
     background-color: #f1f1f1;
     font-weight: 600;
