@@ -291,7 +291,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         currentQuote.quote_data.selected_cardapio[ms.service_id]?.length > 0
                     );
                     stageData.completed = allMenusDefined;
-                    // Adiciona o status do cardápio no início do conteúdo principal
                     stageContentHtml = `<div class="stage-status ${allMenusDefined ? 'status-completed' : 'status-pending'}">
                         ${allMenusDefined ? '✔ Cardápio Definido' : '❗ Cardápio Pendente'}
                     </div>` + stageContentHtml;
@@ -406,6 +405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const action = e.target.dataset.action;
             if (action === 'print-summary') generateEventSummaryPrint();
             if (action === 'print-menu') generateMenuPrint();
+            if (action === 'print-work-order') generateWorkOrderPrint();
             printMenu.classList.remove('show');
         });
     }
@@ -671,6 +671,80 @@ document.addEventListener('DOMContentLoaded', async () => {
             html += `</ul>`;
         });
         
+        output.innerHTML = html;
+        window.print();
+    }
+
+    function generateWorkOrderPrint() {
+        const output = document.getElementById('print-output-evento');
+        let html = `<div class="print-header"><h1>Ordem de Serviço</h1></div>`;
+
+        // Bloco 1: Informações Gerais
+        const firstDate = currentQuote.quote_data.event_dates[0];
+        html += `<div class="print-client-info">
+                    <p><strong>Cliente:</strong> ${currentQuote.client_name}</p>
+                    <p><strong>Data Principal:</strong> ${firstDate ? new Date(firstDate.date + 'T12:00:00Z').toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p><strong>Horário:</strong> ${firstDate ? `${firstDate.start} - ${firstDate.end}`: 'N/A'}</p>
+                    <p><strong>Convidados:</strong> ${currentQuote.quote_data.guest_count}</p>
+                 </div>`;
+        
+        // Bloco 2: Serviços Contratados
+        html += `<h2 class="print-category-title">Serviços Contratados</h2>`;
+        // Reusa a lógica de agrupar por categoria
+        const itemsByCategory = currentQuote.quote_data.items.reduce((acc, item) => {
+            const service = services.find(s => s.id === item.service_id);
+            if (service && service.category !== 'Gastronomia') { // Exclui gastronomia daqui
+                const category = service.category || 'Outros';
+                if (!acc[category]) acc[category] = [];
+                acc[category].push({ ...item, service_name: service.name });
+            }
+            return acc;
+        }, {});
+
+        Object.entries(itemsByCategory).forEach(([category, items]) => {
+            html += `<h3 class="print-subcategory-title">${category}</h3>
+                     <table class="print-table">
+                        <thead><tr><th>Item</th><th>Qtde.</th><th>Horário</th></tr></thead>
+                        <tbody>`;
+            items.forEach(item => {
+                const eventDateInfo = currentQuote.quote_data.event_dates.find(d => d.date === item.event_date);
+                const startTime = item.start_time || eventDateInfo?.start || '';
+                const endTime = item.end_time || eventDateInfo?.end || '';
+                html += `<tr><td>${item.service_name}</td><td>${item.quantity}</td><td>${startTime} - ${endTime}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+        });
+
+        // Bloco 3: Cardápio
+        html += generateMenuPrint(true); // Chama a função de cardápio como sub-rotina
+
+        // Bloco 4: Cronograma e Observações de Produção
+        html += `<h2 class="print-category-title">Cronograma de Produção</h2>`;
+        currentQuote.quote_data.event_dates.forEach(eventDate => {
+            const date = eventDate.date;
+            const productionData = currentQuote.quote_data.production_data[date];
+            if(productionData) {
+                html += `<h3 class="print-subcategory-title">Produção para ${new Date(date + 'T12:00:00Z').toLocaleDateString('pt-BR')}</h3>`;
+                productionStagesTemplate.forEach(stage => {
+                    const stageData = productionData.stages[stage.id];
+                    if (stageData) {
+                        html += `<div class="print-production-stage"><h4>${stage.stage_name}</h4>`;
+                        if(stageData.observations) {
+                            html += `<p class="print-item-obs"><strong>Observações:</strong> ${stageData.observations}</p>`;
+                        }
+                        if(stageData.tasks && stageData.tasks.length > 0) {
+                            html += `<ul>`;
+                            stageData.tasks.forEach(task => {
+                                html += `<li>[${task.completed ? 'X' : ' '}] ${task.text}</li>`;
+                            });
+                            html += `</ul>`;
+                        }
+                        html += `</div>`;
+                    }
+                });
+            }
+        });
+
         output.innerHTML = html;
         window.print();
     }
