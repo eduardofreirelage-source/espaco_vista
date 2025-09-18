@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ESTADO GLOBAL
-    let services = [], priceTables = [], servicePrices = [], quotes = [], paymentMethods = [], menuItems = [], submenus = [], menuComposition = [], units = [];
+    let services = [], priceTables = [], servicePrices = [], quotes = [], paymentMethods = [], menuItems = [], submenus = [], menuComposition = [], units = [], productionStages = [];
     
     // SELETORES DO DOM
     const notification = document.getElementById('save-notification');
@@ -77,10 +77,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             supabase.from('submenus').select('*').order('name'),
             supabase.from('menu_items').select('*').order('name'),
             supabase.from('menu_composition').select('*, service:service_id(*), submenu:submenu_id(*), item:item_id(*)'),
-            supabase.from('units').select('name').order('name')
+            supabase.from('units').select('name').order('name'),
+            supabase.from('production_stages').select('*').order('stage_order')
         ]);
 
-        const [servicesRes, tablesRes, pricesRes, quotesRes, paymentsRes, submenusRes, itemsRes, compositionRes, unitsRes] = results;
+        const [servicesRes, tablesRes, pricesRes, quotesRes, paymentsRes, submenusRes, itemsRes, compositionRes, unitsRes, stagesRes] = results;
         
         services = (servicesRes.status === 'fulfilled') ? servicesRes.value.data : [];
         priceTables = (tablesRes.status === 'fulfilled') ? tablesRes.value.data : [];
@@ -91,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         menuItems = (itemsRes.status === 'fulfilled') ? itemsRes.value.data : [];
         menuComposition = (compositionRes.status === 'fulfilled') ? compositionRes.value.data : [];
         units = (unitsRes.status === 'fulfilled') ? unitsRes.value.data : [];
+        productionStages = (stagesRes.status === 'fulfilled') ? stagesRes.value.data : [];
         
         renderAll();
     }
@@ -103,6 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSimpleTable(document.getElementById('events-table'), quotes.filter(q => q.status === 'Ganho'), createEventRow);
         renderSimpleTable(document.getElementById('price-tables-table'), priceTables, createPriceTableRow);
         renderSimpleTable(document.getElementById('payment-methods-table'), paymentMethods, createPaymentMethodRow);
+        renderSimpleTable(document.getElementById('funnel-stages-table'), productionStages, createFunnelStageRow);
         renderAdminCatalog();
         renderSubmenusManager();
         renderItemsManager();
@@ -149,6 +152,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return row;
     }
     
+    function createFunnelStageRow(stage) {
+        const row = document.createElement('tr');
+        row.dataset.id = stage.id;
+        const tasks = (stage.default_tasks || []).join(', ');
+        row.innerHTML = `
+            <td><input type="number" class="editable-input" data-field="stage_order" value="${stage.stage_order}"></td>
+            <td><input type="text" class="editable-input" data-field="stage_name" value="${stage.stage_name}"></td>
+            <td><input type="number" class="editable-input" data-field="default_deadline_days" value="${stage.default_deadline_days}"></td>
+            <td><input type="text" class="editable-input" data-field="default_tasks" value="${tasks}"></td>
+            <td class="actions"><button class="btn-remove" data-action="delete-funnel-stage" data-id="${stage.id}">&times;</button></td>
+        `;
+        return row;
+    }
+
     function createSubmenuRow(submenu) {
         const row = document.createElement('tr');
         row.dataset.id = submenu.id;
@@ -392,10 +409,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const calendarEl = document.getElementById('calendar');
         if (!calendarEl || calendarInstance) return;
 
-        // PASSO 2: Contar eventos por dia para o mapa de calor
         const eventsPerDay = quotes.reduce((acc, quote) => {
             if (quote.quote_data?.event_dates?.length > 0) {
-                // Considera apenas propostas que não sejam rascunho para a demanda
                 if(quote.status === 'Ganho' || quote.status === 'Em analise'){
                     const date = quote.quote_data.event_dates[0].date;
                     if(date) {
@@ -413,7 +428,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', list: 'Lista' },
             eventClick: (info) => { const { quoteId } = info.event.extendedProps; window.location.href = `evento.html?quote_id=${quoteId}`; },
             height: 'parent',
-            // PASSO 2: Hook para aplicar a classe de cor a cada célula de dia
             dayCellDidMount: function(info) {
                 const dateStr = info.date.toISOString().split('T')[0];
                 const count = eventsPerDay[dateStr];
@@ -565,6 +579,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('addPriceTableForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addUnitForm')?.addEventListener('submit', handleFormSubmit);
+        document.getElementById('addFunnelStageForm')?.addEventListener('submit', handleFormSubmit);
         
         document.body.addEventListener('click', handleTableActions);
         document.body.addEventListener('change', handleTableEdits);
@@ -614,6 +629,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'addUnitForm':
                      result = await supabase.from('units').insert([{ name: form.querySelector('#unitName').value }]);
                      break;
+                case 'addFunnelStageForm':
+                    const tasks = form.querySelector('#stageTasks').value.split(',').map(t => t.trim()).filter(Boolean);
+                    result = await supabase.from('production_stages').insert([{
+                        stage_order: form.querySelector('#stageOrder').value,
+                        stage_name: form.querySelector('#stageName').value,
+                        default_deadline_days: form.querySelector('#stageDeadline').value,
+                        default_tasks: tasks
+                    }]);
+                    break;
             }
             if (result && result.error) throw result.error;
             showNotification(successMessage);
@@ -713,7 +737,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             'delete-payment-method': 'payment_methods',
             'delete-submenu': 'submenus',
             'delete-menu-item': 'menu_items',
-            'delete-unit': 'units'
+            'delete-unit': 'units',
+            'delete-funnel-stage': 'production_stages'
         };
         if (tables[action]) {
             if (!confirm('Tem certeza que deseja excluir?')) return;
@@ -738,8 +763,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const id = row.dataset.id;
         if(!id) return;
 
-        const { field } = input.dataset;
-        const value = input.value;
+        let { field } = input.dataset;
+        let value = input.value;
         const table = row.closest('table');
         if (!table) return;
 
@@ -750,13 +775,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             'price-tables-table': 'price_tables',
             'units-table': 'units',
             'quotes-table': 'quotes',
+            'funnel-stages-table': 'production_stages'
         };
-
+        
         let tableName = tableMap[table.id] || (table.closest('#admin-catalog-container') ? 'services' : null);
+        
+        // Trata o campo de tarefas padrão do funil, que é um array
+        if (tableName === 'production_stages' && field === 'default_tasks') {
+            value = value.split(',').map(t => t.trim()).filter(Boolean);
+        }
+
         if (tableName) {
             const { error } = await supabase.from(tableName).update({ [field]: value }).eq(tableName === 'units' ? 'name' : 'id', id);
             if (error) { showNotification(`Erro: ${error.message}`, true); fetchData(); }
-            else { showFlash(input); }
+            else { showNotification('Salvo!', false, true); }
         }
     }
     
