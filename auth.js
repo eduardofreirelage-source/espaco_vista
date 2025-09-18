@@ -448,6 +448,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.myFunnelChart.destroy();
         }
 
+        Chart.register(ChartDataLabels);
+
         window.myFunnelChart = new Chart(ctx, {
             type: 'funnel',
             data: {
@@ -465,6 +467,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
+                    datalabels: {
+                        color: '#FFFFFF',
+                        font: {
+                            weight: 'bold',
+                            size: 14,
+                        },
+                        formatter: (value, context) => {
+                            if (value === 0) return '';
+                            const initialValue = context.chart.data.datasets[0].data[0];
+                            if (initialValue === 0) return '0%';
+                            const percentage = `${((value / initialValue) * 100).toFixed(0)}%`;
+                            return `${value}\n${percentage}`;
+                        },
+                    },
                 }
             }
         });
