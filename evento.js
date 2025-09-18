@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentClient = null;
     let services = [];
     let cardapioItems = [];
+    let productionStagesTemplate = []; // Molde do funil
     let hasInitializedListeners = false;
     let selectedCardapioServiceId = null;
     let saveTimeout;
@@ -20,24 +21,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadData() {
         try {
-            const [quoteRes, servicesRes, cardapioItemsRes] = await Promise.all([
+            const [quoteRes, servicesRes, cardapioItemsRes, stagesRes] = await Promise.all([
                 supabase.from('quotes').select('*, clients(*)').eq('id', quoteId).single(),
                 supabase.from('services').select('*'),
-                supabase.from('cardapio_items').select('*').order('name')
+                supabase.from('menu_items').select('*').order('name'),
+                supabase.from('production_stages').select('*').order('stage_order')
             ]);
             
             if (quoteRes.error || !quoteRes.data) throw quoteRes.error || new Error('Orçamento não encontrado.');
             if (servicesRes.error) throw servicesRes.error;
             if (cardapioItemsRes.error) throw cardapioItemsRes.error;
+            if (stagesRes.error) throw stagesRes.error;
 
             currentQuote = quoteRes.data;
             currentClient = currentQuote.clients;
             services = servicesRes.data;
             cardapioItems = cardapioItemsRes.data;
+            productionStagesTemplate = stagesRes.data;
             
-            if (!currentQuote.quote_data.selected_cardapio) {
-                currentQuote.quote_data.selected_cardapio = {};
-            }
+            // Inicializa estruturas de dados se não existirem
+            if (!currentQuote.quote_data.selected_cardapio) currentQuote.quote_data.selected_cardapio = {};
+            if (!currentQuote.quote_data.production_data) currentQuote.quote_data.production_data = {};
 
             populatePage();
             if (!hasInitializedListeners) {
@@ -66,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         populateClientForm();
         renderServicesSummary();
         renderPayments();
+        renderProductionFunnel();
     }
 
     function populateClientForm() {
@@ -201,12 +206,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const checklistContainer = document.getElementById('cardapio-items-checklist');
         checklistContainer.innerHTML = '<div>Carregando itens...</div>';
 
-        const selectedItemIds = new Set(currentQuote.quote_data.selected_cardapio[serviceId] || []);
+        const selectedItemIds = new Set((currentQuote.quote_data.selected_cardapio[serviceId] || []).map(String));
 
         if (cardapioItems.length > 0) {
             checklistContainer.innerHTML = cardapioItems.map(item => `
                 <div class="checkbox-item">
-                    <input type="checkbox" id="item-${item.id}" value="${item.id}" ${selectedItemIds.has(item.id) ? 'checked' : ''}>
+                    <input type="checkbox" id="item-${item.id}" value="${item.id}" ${selectedItemIds.has(String(item.id)) ? 'checked' : ''}>
                     <label for="item-${item.id}">${item.name}</label>
                 </div>
             `).join('');
@@ -220,46 +225,258 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const checklistContainer = document.getElementById('cardapio-items-checklist');
         const selectedInputs = checklistContainer.querySelectorAll('input[type="checkbox"]:checked');
-        const selectedItemIds = Array.from(selectedInputs).map(input => input.value);
+        const selectedItemIds = Array.from(selectedInputs).map(input => parseInt(input.value));
         
         currentQuote.quote_data.selected_cardapio[selectedCardapioServiceId] = selectedItemIds;
         
         await saveQuoteData('Cardápio salvo com sucesso!');
         closeCardapioModal();
+        renderProductionFunnel(); // Re-renderiza o funil para atualizar o status da etapa do cardápio
     }
 
     function closeCardapioModal() {
         document.getElementById('cardapioModal').style.display = 'none';
         selectedCardapioServiceId = null;
     }
+    
+    // =================================================================
+    // FUNIL DE PRODUÇÃO
+    // =================================================================
+
+    function renderProductionFunnel() {
+        const container = document.getElementById('production-funnel-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        currentQuote.quote_data.event_dates.forEach(eventDate => {
+            const date = eventDate.date;
+            // Se não houver dados de produção para esta data, inicializa com o template
+            if (!currentQuote.quote_data.production_data[date]) {
+                initializeProductionDataForDate(date);
+            }
+            
+            const dateData = currentQuote.quote_data.production_data[date];
+            const formattedDate = new Date(date + 'T12:00:00Z').toLocaleDateString('pt-BR');
+            
+            const dateCard = document.createElement('details');
+            dateCard.className = 'collapsible-card data-accordion';
+            dateCard.open = true;
+
+            let stagesHtml = productionStagesTemplate.map(stage => {
+                let stageContentHtml = '';
+                const stageData = dateData.stages[stage.id] || {};
+                
+                // Lógica para a etapa de cardápio
+                if (stage.id === 2) { // ID fixo para a etapa de cardápio por enquanto
+                    const menuServices = currentQuote.quote_data.items.filter(i => {
+                        const s = services.find(s => s.id === i.service_id);
+                        return s && s.category === 'Gastronomia';
+                    });
+                    const allMenusDefined = menuServices.length > 0 && menuServices.every(ms => 
+                        currentQuote.quote_data.selected_cardapio[ms.service_id]?.length > 0
+                    );
+                    stageData.completed = allMenusDefined;
+                    stageContentHtml = `<div class="stage-status ${allMenusDefined ? 'status-completed' : 'status-pending'}">
+                        ${allMenusDefined ? '✔ Cardápio Definido' : '❗ Cardápio Pendente'}
+                    </div>`;
+                } else { // Lógica para etapas de checklist
+                    const tasks = stageData.tasks || [];
+                    stageContentHtml = `<ul class="checklist">`;
+                    tasks.forEach((task, taskIndex) => {
+                        stageContentHtml += `
+                            <li class="checklist-item">
+                                <input type="checkbox" id="task-${date}-${stage.id}-${taskIndex}" 
+                                       data-date="${date}" data-stage-id="${stage.id}" data-task-index="${taskIndex}" 
+                                       ${task.completed ? 'checked' : ''}>
+                                <label for="task-${date}-${stage.id}-${taskIndex}">${task.text}</label>
+                                <button class="btn-remove-inline remove-task-btn" 
+                                        data-date="${date}" data-stage-id="${stage.id}" data-task-index="${taskIndex}">&times;</button>
+                            </li>`;
+                    });
+                    stageContentHtml += `</ul>
+                    <form class="inline-form add-task-form" data-date="${date}" data-stage-id="${stage.id}">
+                        <input type="text" placeholder="Adicionar nova tarefa..." required>
+                        <button type="submit" class="btn">Adicionar</button>
+                    </form>`;
+                }
+                
+                const { alertClass, deadlineText } = getDeadlineInfo(date, stageData.deadline_days);
+
+                return `
+                    <div class="production-stage ${alertClass}">
+                        <div class="stage-header">
+                            <h5>${stage.stage_name}</h5>
+                            <div class="stage-deadline">
+                                <span>Prazo: ${deadlineText}</span>
+                                <input type="number" class="deadline-input" value="${stageData.deadline_days}" 
+                                       data-date="${date}" data-stage-id="${stage.id}" title="Dias antes do evento">
+                            </div>
+                        </div>
+                        <div class="stage-content">${stageContentHtml}</div>
+                    </div>
+                `;
+            }).join('');
+
+            dateCard.innerHTML = `
+                <summary class="card-summary-header">
+                    <h3>Produção para ${formattedDate}</h3>
+                    <span class="collapse-icon"></span>
+                </summary>
+                <div class="card-content">
+                    ${stagesHtml}
+                </div>
+            `;
+            container.appendChild(dateCard);
+        });
+    }
+
+    function initializeProductionDataForDate(date) {
+        const newProductionData = { stages: {} };
+        productionStagesTemplate.forEach(stage => {
+            newProductionData.stages[stage.id] = {
+                deadline_days: stage.default_deadline_days,
+                tasks: (stage.default_tasks || []).map(taskText => ({ text: taskText, completed: false }))
+            };
+        });
+        currentQuote.quote_data.production_data[date] = newProductionData;
+    }
+    
+    function getDeadlineInfo(eventDateStr, deadlineDays) {
+        const eventDate = new Date(eventDateStr + 'T23:59:59Z');
+        const deadlineDate = new Date(eventDate);
+        deadlineDate.setDate(eventDate.getDate() - deadlineDays);
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const oneWeekFromNow = new Date(today);
+        oneWeekFromNow.setDate(today.getDate() + 7);
+
+        let alertClass = '';
+        if (deadlineDate < today) {
+            alertClass = 'deadline-overdue'; // Atrasado
+        } else if (deadlineDate <= oneWeekFromNow) {
+            alertClass = 'deadline-soon'; // Vencendo
+        }
+
+        return {
+            alertClass,
+            deadlineText: deadlineDate.toLocaleDateString('pt-BR')
+        };
+    }
+    
+    // =================================================================
+    // EVENT LISTENERS
+    // =================================================================
 
     function setupEventListeners() {
         document.getElementById('client-details-form').addEventListener('submit', handleClientFormSubmit);
         document.getElementById('add-payment-btn').addEventListener('click', handleAddPayment);
         
-        const paymentsTable = document.getElementById('payments-table');
-        paymentsTable.addEventListener('change', handlePaymentChange);
-        paymentsTable.addEventListener('click', handlePaymentClick);
+        document.getElementById('payments-table').addEventListener('change', handlePaymentChange);
+        document.getElementById('payments-table').addEventListener('click', handlePaymentClick);
         
-        document.body.addEventListener('click', (e) => {
-            const header = e.target.closest('.collapsible-card > .card-header');
-            if (header) {
-                header.closest('.collapsible-card')?.classList.toggle('collapsed');
-            }
-            const defineCardapioBtn = e.target.closest('.define-cardapio-btn');
-            if (defineCardapioBtn) {
-                const serviceId = defineCardapioBtn.dataset.serviceId;
-                openCardapioModal(serviceId);
-            }
+        document.body.addEventListener('click', handleBodyClick);
+
+        document.getElementById('services-summary-container').addEventListener('change', (e) => {
+            handleServiceTimeChange(e);
+            handleServiceDateChange(e);
         });
-
-        const servicesContainer = document.getElementById('services-summary-container');
-        servicesContainer.addEventListener('change', handleServiceTimeChange);
-        servicesContainer.addEventListener('change', handleServiceDateChange);
-
 
         document.getElementById('close-cardapio-modal-btn').addEventListener('click', closeCardapioModal);
         document.getElementById('save-cardapio-btn').addEventListener('click', handleCardapioSave);
+        
+        // Listeners para o Funil de Produção
+        const funnelContainer = document.getElementById('production-funnel-container');
+        funnelContainer.addEventListener('change', handleFunnelChange);
+        funnelContainer.addEventListener('submit', handleFunnelSubmit);
+        funnelContainer.addEventListener('click', handleFunnelClick);
+        
+        const printMenu = document.getElementById('print-menu');
+        document.getElementById('print-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            printMenu.classList.toggle('show');
+        });
+        printMenu?.addEventListener('click', (e) => {
+            const action = e.target.dataset.action;
+            if (action === 'print-summary') generateEventSummaryPrint();
+            if (action === 'print-menu') generateMenuPrint();
+            printMenu.classList.remove('show');
+        });
+    }
+
+    function handleBodyClick(e) {
+        // Colapsar cards
+        const header = e.target.closest('.collapsible-card > .card-header, .collapsible-card > summary');
+        if (header) {
+            header.closest('.collapsible-card')?.classList.toggle('collapsed');
+        }
+        // Abrir modal de cardápio
+        const defineCardapioBtn = e.target.closest('.define-cardapio-btn');
+        if (defineCardapioBtn) {
+            const serviceId = parseInt(defineCardapioBtn.dataset.serviceId);
+            openCardapioModal(serviceId);
+        }
+        // Fechar menu de impressão
+        const printMenu = document.getElementById('print-menu');
+        if (printMenu && !e.target.closest('#print-btn')) {
+            printMenu.classList.remove('show');
+        }
+    }
+    
+    // =================================================================
+    // HANDLERS
+    // =================================================================
+    
+    function handleFunnelChange(e) {
+        const target = e.target;
+        const date = target.dataset.date;
+        const stageId = target.dataset.stageId;
+        
+        if (target.matches('.deadline-input')) {
+            currentQuote.quote_data.production_data[date].stages[stageId].deadline_days = parseInt(target.value) || 0;
+            renderProductionFunnel();
+        } else if (target.matches('.checklist-item input[type="checkbox"]')) {
+            const taskIndex = target.dataset.taskIndex;
+            currentQuote.quote_data.production_data[date].stages[stageId].tasks[taskIndex].completed = target.checked;
+        } else {
+            return;
+        }
+        saveQuoteData('Dados de produção salvos.');
+    }
+
+    function handleFunnelSubmit(e) {
+        e.preventDefault();
+        if (e.target.matches('.add-task-form')) {
+            const form = e.target;
+            const input = form.querySelector('input');
+            const taskText = input.value.trim();
+            if (!taskText) return;
+            
+            const date = form.dataset.date;
+            const stageId = form.dataset.stageId;
+            
+            const stageData = currentQuote.quote_data.production_data[date].stages[stageId];
+            if (!stageData.tasks) stageData.tasks = [];
+            
+            stageData.tasks.push({ text: taskText, completed: false });
+            
+            renderProductionFunnel();
+            saveQuoteData('Tarefa adicionada.');
+        }
+    }
+
+    function handleFunnelClick(e) {
+        if (e.target.matches('.remove-task-btn')) {
+            const button = e.target;
+            const date = button.dataset.date;
+            const stageId = button.dataset.stageId;
+            const taskIndex = parseInt(button.dataset.taskIndex);
+            
+            currentQuote.quote_data.production_data[date].stages[stageId].tasks.splice(taskIndex, 1);
+            renderProductionFunnel();
+            saveQuoteData('Tarefa removida.');
+        }
     }
 
     async function handleClientFormSubmit(e) {
@@ -329,12 +546,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (currentQuote.quote_data.items[itemIndex]) {
                 currentQuote.quote_data.items[itemIndex].event_date = newDate;
                 
-                // Limpa o horário customizado para herdar o da nova data
                 delete currentQuote.quote_data.items[itemIndex].start_time;
                 delete currentQuote.quote_data.items[itemIndex].end_time;
 
                 await saveQuoteData('Data do serviço atualizada.');
-                renderServicesSummary(); // Re-renderiza para atualizar os horários
+                renderServicesSummary();
             }
         }
     }
@@ -358,6 +574,104 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveQuoteData('Parcela removida!');
         }
     }
+
+    // =================================================================
+    // FUNÇÕES DE IMPRESSÃO
+    // =================================================================
+    function generateEventSummaryPrint() {
+        const output = document.getElementById('print-output-evento');
+        const firstDate = currentQuote.quote_data.event_dates[0];
+        const formattedDate = firstDate ? new Date(firstDate.date + 'T12:00:00Z').toLocaleDateString('pt-BR') : 'N/A';
+
+        let html = `
+            <div class="print-header"><h1>Resumo do Evento</h1></div>
+            <div class="print-client-info">
+                <p><strong>Cliente:</strong> ${currentQuote.client_name}</p>
+                <p><strong>Data:</strong> ${formattedDate}</p>
+                <p><strong>Convidados:</strong> ${currentQuote.quote_data.guest_count}</p>
+                <p><strong>Valor Total:</strong> ${formatCurrency(currentQuote.total_value)}</p>
+            </div>
+            <h2 class="print-category-title">Serviços Contratados</h2>
+        `;
+
+        const itemsByCategory = currentQuote.quote_data.items.reduce((acc, item) => {
+            const service = services.find(s => s.id === item.service_id);
+            if (service) {
+                const category = service.category || 'Outros';
+                if (!acc[category]) acc[category] = [];
+                acc[category].push({ ...item, service_name: service.name });
+            }
+            return acc;
+        }, {});
+
+        Object.entries(itemsByCategory).forEach(([category, items]) => {
+            html += `<h3 class="print-subcategory-title">${category}</h3>
+                     <table class="print-table">
+                        <thead><tr><th>Item</th><th>Qtde.</th><th>Data</th><th>Horário</th></tr></thead>
+                        <tbody>`;
+            items.forEach(item => {
+                const eventDateInfo = currentQuote.quote_data.event_dates.find(d => d.date === item.event_date);
+                const startTime = item.start_time || eventDateInfo?.start || '';
+                const endTime = item.end_time || eventDateInfo?.end || '';
+                const itemDate = new Date(item.event_date + 'T12:00:00Z').toLocaleDateString('pt-BR');
+                html += `<tr>
+                            <td>${item.service_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${itemDate}</td>
+                            <td>${startTime} - ${endTime}</td>
+                         </tr>`;
+            });
+            html += `</tbody></table>`;
+        });
+
+        output.innerHTML = html;
+        window.print();
+    }
+    
+    function generateMenuPrint() {
+        const output = document.getElementById('print-output-evento');
+        let html = `
+            <div class="print-header"><h1>Cardápio do Evento</h1><p>${currentQuote.client_name}</p></div>
+        `;
+        
+        const menuServices = currentQuote.quote_data.items.filter(i => {
+            const s = services.find(s => s.id === i.service_id);
+            return s && s.category === 'Gastronomia';
+        });
+
+        if (menuServices.length === 0) {
+            html += '<p>Nenhum serviço de gastronomia contratado.</p>';
+            output.innerHTML = html;
+            window.print();
+            return;
+        }
+
+        menuServices.forEach(menuService => {
+            const serviceInfo = services.find(s => s.id === menuService.service_id);
+            html += `<h2 class="print-category-title">${serviceInfo.name}</h2>`;
+            
+            const selectedItemIds = new Set((currentQuote.quote_data.selected_cardapio[menuService.service_id] || []).map(String));
+            if (selectedItemIds.size === 0) {
+                html += '<p>Nenhum item definido para este cardápio.</p>';
+                return;
+            }
+
+            const itemsToPrint = cardapioItems.filter(item => selectedItemIds.has(String(item.id)));
+            html += `<ul class="print-menu-list">`;
+            itemsToPrint.forEach(item => {
+                html += `<li>${item.name}</li>`;
+            });
+            html += `</ul>`;
+        });
+        
+        output.innerHTML = html;
+        window.print();
+    }
+
+
+    // =================================================================
+    // SALVAMENTO E UTILITÁRIOS
+    // =================================================================
 
     async function saveQuoteData(message = 'Dados salvos.') {
         if (!currentQuote) return;
