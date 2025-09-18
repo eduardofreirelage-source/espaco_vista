@@ -1034,11 +1034,13 @@ body.client-view .col-actions { width: 15% !important; }
     align-items: center;
     padding: 0.8rem 1rem;
     border-bottom: 2px solid var(--border-color);
-    background-color: #f4f5f7;
+    background-color: #f4f5f7; /* Cor de fundo padrão e consistente */
 }
 .stage-header h5 {
     margin: 0;
     font-size: 1rem;
+    font-weight: 600; /* Força o peso da fonte */
+    line-height: 1.2;
 }
 .stage-deadline {
     display: flex;
@@ -1065,7 +1067,7 @@ body.client-view .col-actions { width: 15% !important; }
     border: 1px solid #dde1e6;
     border-radius: 4px;
     resize: vertical;
-    margin-bottom: 0.8rem;
+    margin-top: 0.8rem; /* Adicionado para separar do checklist */
     font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
 }
