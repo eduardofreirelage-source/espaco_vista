@@ -1036,11 +1036,12 @@ body.client-view .col-actions { width: 15% !important; }
     border-bottom: 2px solid var(--border-color);
     background-color: #f4f5f7;
 }
-.stage-header h5 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600; /* Força o peso da fonte */
-    line-height: 1.2;
+.kanban-board .production-stage-column .stage-header h5 {
+    margin: 0 !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    color: var(--heading-color) !important;
 }
 .stage-deadline {
     display: flex;
@@ -1056,13 +1057,14 @@ body.client-view .col-actions { width: 15% !important; }
     background-color: #fff;
 }
 .stage-content-main { /* Div que contém o conteúdo que rola */
-    padding: 0.5rem;
+    padding: 0.8rem;
     overflow-y: auto;
     flex-grow: 1;
 }
 .stage-footer { /* Div para conteúdo fixo no rodapé da coluna */
-    padding: 0.5rem;
+    padding: 0.8rem;
     border-top: 1px solid var(--border-color);
+    background-color: #f4f5f7;
 }
 .stage-observations {
     width: 100%;
@@ -1073,14 +1075,14 @@ body.client-view .col-actions { width: 15% !important; }
     resize: vertical;
     font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.8rem;
 }
 .stage-status {
     font-weight: 600;
     padding: 0.8rem;
     border-radius: 4px;
     text-align: center;
-    margin: 0.5rem;
+    margin-bottom: 0.8rem;
 }
 .status-completed {
     color: var(--success-color);
@@ -1131,11 +1133,13 @@ body.client-view .col-actions { width: 15% !important; }
 }
 .add-task-form input {
     flex-grow: 1;
-    border: none;
+    border: 1px solid #dde1e6;
+    border-radius: 4px;
     padding: 0.5rem;
 }
 .add-task-form input:focus {
     box-shadow: none;
+    border-color: rgba(var(--primary-color-rgb), 1);
 }
 .add-task-form .btn {
     padding: 0.3rem 0.8rem;
