@@ -266,7 +266,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const stageData = dateData.stages[stage.id] || { tasks: [], deadline_days: stage.default_deadline_days };
                 const observations = stageData.observations || '';
                 
-                // Lógica para a etapa de cardápio (exemplo, pode ser um tipo de etapa no futuro)
                 if (stage.stage_name === 'Definição de Cardápio') {
                      const menuServices = currentQuote.quote_data.items.filter(i => {
                         const s = services.find(s => s.id === i.service_id);
@@ -279,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     stageContentHtml = `<div class="stage-status ${allMenusDefined ? 'status-completed' : 'status-pending'}">
                         ${allMenusDefined ? '✔ Cardápio Definido' : '❗ Cardápio Pendente'}
                     </div>`;
-                } else { // Lógica para etapas de checklist
+                } else {
                     const tasks = stageData.tasks || [];
                     stageContentHtml = `<ul class="checklist">`;
                     tasks.forEach((task, taskIndex) => {
@@ -308,16 +307,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                                        data-date="${date}" data-stage-id="${stage.id}" title="Dias antes do evento">
                             </div>
                         </div>
-                        <div class="stage-content">
-                            ${stageContentHtml}
+                        <div class="stage-content-main">${stageContentHtml}</div>
+                        <div class="stage-footer">
                             <textarea class="stage-observations" placeholder="Observações da etapa..."
                                       data-date="${date}" data-stage-id="${stage.id}">${observations}</textarea>
+                            ${stage.stage_name !== 'Definição de Cardápio' ? `
+                            <form class="inline-form add-task-form" data-date="${date}" data-stage-id="${stage.id}">
+                                <input type="text" placeholder="Adicionar nova tarefa..." required>
+                                <button type="submit" class="btn">Adicionar</button>
+                            </form>` : ''}
                         </div>
-                        ${stage.stage_name !== 'Definição de Cardápio' ? `
-                        <form class="inline-form add-task-form" data-date="${date}" data-stage-id="${stage.id}">
-                            <input type="text" placeholder="Adicionar nova tarefa..." required>
-                            <button type="submit" class="btn">Adicionar</button>
-                        </form>` : ''}
                     </div>
                 `;
             }).join('');
