@@ -63,11 +63,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // INICIALIZAÇÃO E DADOS
     // =================================================================
     async function initialize() {
+        console.log("DEBUG: Iniciando painel de admin...");
         addEventListeners();
         await fetchData();
     }
 
     async function fetchData() {
+        console.log("DEBUG: Buscando dados do Supabase...");
         const results = await Promise.allSettled([
             supabase.from('services').select('*').order('category').order('name'),
             supabase.from('price_tables').select('*').order('name'),
@@ -92,6 +94,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         menuComposition = (compositionRes.status === 'fulfilled') ? compositionRes.value.data : [];
         units = (unitsRes.status === 'fulfilled') ? unitsRes.value.data : [];
         
+        console.log("DEBUG: Dados recebidos. A variável 'quotes' contém:", quotes);
+        console.log("DEBUG: Chamando renderAll()...");
         renderAll();
     }
     
@@ -99,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // RENDERIZAÇÃO
     // =================================================================
     function renderAll() {
+        console.log("DEBUG: A. renderAll() foi chamada.");
         renderSimpleTable(document.getElementById('quotes-table'), quotes, createQuoteRow);
         renderSimpleTable(document.getElementById('events-table'), quotes.filter(q => q.status === 'Ganho'), createEventRow);
         renderSimpleTable(document.getElementById('price-tables-table'), priceTables, createPriceTableRow);
@@ -431,59 +436,90 @@ document.addEventListener('DOMContentLoaded', async () => {
         calendarInstance.addEventSource(events);
     }
 
+    // Função para aguardar bibliotecas externas carregarem
+    function waitForGlobals(globals, callback) {
+        const check = () => {
+            if (globals.every(g => window[g] !== undefined)) {
+                console.log("DEBUG: Bibliotecas globais carregadas. Executando callback.");
+                callback();
+            } else {
+                console.log(`DEBUG: Aguardando as bibliotecas globais... Faltando: ${globals.filter(g => window[g] === undefined).join(', ')}`);
+                setTimeout(check, 100); // Tenta novamente em 100ms
+            }
+        };
+        check();
+    }
+
+
     function renderSalesFunnel() {
-        const ctx = document.getElementById('salesFunnelChart')?.getContext('2d');
-        if (!ctx) return;
+        // CORREÇÃO: Aguarda as bibliotecas estarem prontas antes de executar o código do gráfico
+        waitForGlobals(['Chart', 'ChartFunnel', 'ChartDataLabels'], () => {
+            try {
+                console.log("DEBUG: 1. renderSalesFunnel foi chamada (após aguardar bibliotecas).");
 
-        // CORREÇÃO: Registrar os plugins manualmente antes de usar.
-        // O `window.ChartFunnel.FunnelController` vem do script `chart.funnel.js`
-        Chart.register(window.ChartFunnel.FunnelController, ChartDataLabels);
-
-        const statusCounts = quotes.reduce((acc, quote) => {
-            acc[quote.status] = (acc[quote.status] || 0) + 1;
-            return acc;
-        }, { 'Rascunho': 0, 'Em analise': 0, 'Ganho': 0, 'Perdido': 0 });
-
-        const totalPropostas = quotes.length;
-        const totalEngajadas = totalPropostas - statusCounts['Rascunho'];
-        const totalGanhos = statusCounts['Ganho'];
-        
-        if (window.myFunnelChart instanceof Chart) {
-            window.myFunnelChart.destroy();
-        }
-
-        window.myFunnelChart = new Chart(ctx, {
-            type: 'funnel',
-            data: {
-                labels: [`Total (${totalPropostas})`, `Análise/Perdidas (${totalEngajadas})`, `Ganhos (${totalGanhos})`],
-                datasets: [{
-                    label: 'Propostas',
-                    data: [ totalPropostas, totalEngajadas, totalGanhos ],
-                    backgroundColor: [ 'rgba(108, 117, 125, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(40, 167, 69, 0.7)' ],
-                    borderColor: [ 'rgba(108, 117, 125, 1)', 'rgba(255, 193, 7, 1)', 'rgba(40, 167, 69, 1)' ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        color: '#FFFFFF',
-                        font: {
-                            weight: 'bold',
-                            size: 14,
-                        },
-                        formatter: (value, context) => {
-                            if (value === 0) return '';
-                            const initialValue = context.chart.data.datasets[0].data[0];
-                            if (initialValue === 0) return '0%';
-                            const percentage = `${((value / initialValue) * 100).toFixed(0)}%`;
-                            return `${value}\n${percentage}`;
-                        },
-                    },
+                const ctx = document.getElementById('salesFunnelChart')?.getContext('2d');
+                console.log("DEBUG: 2. Canvas context (ctx) encontrado:", ctx);
+                if (!ctx) {
+                    console.error("DEBUG: FALHA - O contexto do canvas 'salesFunnelChart' não foi encontrado.");
+                    return;
                 }
+                
+                // O registro agora é feito aqui, com a garantia que os objetos existem
+                Chart.register(window.ChartFunnel.FunnelController, ChartDataLabels);
+
+                const statusCounts = quotes.reduce((acc, quote) => {
+                    acc[quote.status] = (acc[quote.status] || 0) + 1;
+                    return acc;
+                }, { 'Rascunho': 0, 'Em analise': 0, 'Ganho': 0, 'Perdido': 0 });
+                console.log("DEBUG: 3. Contagem de status calculada:", statusCounts);
+
+                const totalPropostas = quotes.length;
+                const totalEngajadas = totalPropostas - statusCounts['Rascunho'];
+                const totalGanhos = statusCounts['Ganho'];
+                console.log("DEBUG: 4. Dados finais para o gráfico:", { totalPropostas, totalEngajadas, totalGanhos });
+                
+                if (window.myFunnelChart instanceof Chart) {
+                    window.myFunnelChart.destroy();
+                }
+
+                window.myFunnelChart = new Chart(ctx, {
+                    type: 'funnel',
+                    data: {
+                        labels: [`Total (${totalPropostas})`, `Análise/Perdidas (${totalEngajadas})`, `Ganhos (${totalGanhos})`],
+                        datasets: [{
+                            label: 'Propostas',
+                            data: [ totalPropostas, totalEngajadas, totalGanhos ],
+                            backgroundColor: [ 'rgba(108, 117, 125, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(40, 167, 69, 0.7)' ],
+                            borderColor: [ 'rgba(108, 117, 125, 1)', 'rgba(255, 193, 7, 1)', 'rgba(40, 167, 69, 1)' ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            datalabels: {
+                                color: '#FFFFFF',
+                                font: {
+                                    weight: 'bold',
+                                    size: 14,
+                                },
+                                formatter: (value, context) => {
+                                    if (value === 0) return '';
+                                    const initialValue = context.chart.data.datasets[0].data[0];
+                                    if (initialValue === 0) return '0%';
+                                    const percentage = `${((value / initialValue) * 100).toFixed(0)}%`;
+                                    return `${value}\n${percentage}`;
+                                },
+                            },
+                        }
+                    }
+                });
+                console.log("DEBUG: 5. Gráfico de funil instanciado com sucesso.");
+
+            } catch (error) {
+                console.error("DEBUG: ERRO CRÍTICO DENTRO DE renderSalesFunnel:", error);
             }
         });
     }
