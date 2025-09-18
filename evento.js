@@ -266,6 +266,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const stageData = dateData.stages[stage.id] || { tasks: [], deadline_days: stage.default_deadline_days };
                 const observations = stageData.observations || '';
                 
+                const tasks = stageData.tasks || [];
+                stageContentHtml = `<ul class="checklist">`;
+                tasks.forEach((task, taskIndex) => {
+                    stageContentHtml += `
+                        <li class="checklist-item">
+                            <input type="checkbox" id="task-${date}-${stage.id}-${taskIndex}" 
+                                   data-date="${date}" data-stage-id="${stage.id}" data-task-index="${taskIndex}" 
+                                   ${task.completed ? 'checked' : ''}>
+                            <label for="task-${date}-${stage.id}-${taskIndex}">${task.text}</label>
+                            <button class="btn-remove-inline remove-task-btn" 
+                                    data-date="${date}" data-stage-id="${stage.id}" data-task-index="${taskIndex}">&times;</button>
+                        </li>`;
+                });
+                stageContentHtml += `</ul>`;
+
+                // Conteúdo especial para a etapa de cardápio
                 if (stage.stage_name === 'Definição de Cardápio') {
                      const menuServices = currentQuote.quote_data.items.filter(i => {
                         const s = services.find(s => s.id === i.service_id);
@@ -275,24 +291,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         currentQuote.quote_data.selected_cardapio[ms.service_id]?.length > 0
                     );
                     stageData.completed = allMenusDefined;
+                    // Adiciona o status do cardápio no início do conteúdo principal
                     stageContentHtml = `<div class="stage-status ${allMenusDefined ? 'status-completed' : 'status-pending'}">
                         ${allMenusDefined ? '✔ Cardápio Definido' : '❗ Cardápio Pendente'}
-                    </div>`;
-                } else {
-                    const tasks = stageData.tasks || [];
-                    stageContentHtml = `<ul class="checklist">`;
-                    tasks.forEach((task, taskIndex) => {
-                        stageContentHtml += `
-                            <li class="checklist-item">
-                                <input type="checkbox" id="task-${date}-${stage.id}-${taskIndex}" 
-                                       data-date="${date}" data-stage-id="${stage.id}" data-task-index="${taskIndex}" 
-                                       ${task.completed ? 'checked' : ''}>
-                                <label for="task-${date}-${stage.id}-${taskIndex}">${task.text}</label>
-                                <button class="btn-remove-inline remove-task-btn" 
-                                        data-date="${date}" data-stage-id="${stage.id}" data-task-index="${taskIndex}">&times;</button>
-                            </li>`;
-                    });
-                    stageContentHtml += `</ul>`;
+                    </div>` + stageContentHtml;
                 }
                 
                 const { alertClass, deadlineText } = getDeadlineInfo(date, stageData.deadline_days);
@@ -311,11 +313,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="stage-footer">
                             <textarea class="stage-observations" placeholder="Observações da etapa..."
                                       data-date="${date}" data-stage-id="${stage.id}">${observations}</textarea>
-                            ${stage.stage_name !== 'Definição de Cardápio' ? `
                             <form class="inline-form add-task-form" data-date="${date}" data-stage-id="${stage.id}">
                                 <input type="text" placeholder="Adicionar nova tarefa..." required>
                                 <button type="submit" class="btn">Adicionar</button>
-                            </form>` : ''}
+                            </form>
                         </div>
                     </div>
                 `;
