@@ -5,12 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão do Evento - Sistema de Orçamentos</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="print.css" media="print">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Painel do Evento</h1>
             <div class="header-actions">
+                <div class="export-container">
+                    <button id="print-btn" class="btn">Imprimir</button>
+                    <div id="print-menu" class="export-menu">
+                        <div data-action="print-summary">Resumo do Evento</div>
+                        <div data-action="print-menu">Cardápio do Evento</div>
+                    </div>
+                </div>
                 <a href="admin.html" class="btn">← Voltar para Admin</a>
             </div>
         </header>
@@ -44,8 +52,16 @@
                     <a href="#" id="view-quote-link" class="btn btn-primary" style="margin-top: 1rem;">Ver/Editar Proposta Original</a>
                 </div>
             </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2>Produção do Evento</h2>
+                </div>
+                <div id="production-funnel-container" class="card-content">
+                    </div>
+            </section>
             
-            <section class="card collapsible-card">
+            <section class="card collapsible-card collapsed">
                  <div class="card-header">
                      <h2>Serviços Contratados e Cardápio</h2>
                      <span class="collapse-icon"></span>
@@ -128,7 +144,8 @@
             </div>
         </div>
     </div>
-
+    
+    <div id="print-output-evento" class="print-only"></div>
     <div id="save-notification" class="notification"></div>
     <script type="module" src="evento.js"></script>
 </body>
