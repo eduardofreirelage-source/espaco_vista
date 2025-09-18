@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const calendarStatusFilter = document.getElementById('calendar-status-filter');
     const compositionManager = document.getElementById('composition-manager');
     const submenusManager = document.getElementById('submenus-manager');
+    const itemsManager = document.getElementById('items-manager');
 
     // =================================================================
     // FUNÇÕES UTILITÁRIAS
@@ -109,9 +110,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSimpleTable(document.getElementById('events-table'), quotes.filter(q => q.status === 'Ganho'), createEventRow);
         renderSimpleTable(document.getElementById('price-tables-table'), priceTables, createPriceTableRow);
         renderSimpleTable(document.getElementById('payment-methods-table'), paymentMethods, createPaymentMethodRow);
-        renderSimpleTable(document.getElementById('menu-items-table'), menuItems, createMenuItemRow);
         renderAdminCatalog();
         renderSubmenusManager();
+        renderItemsManager();
         renderCompositionManager();
         populateUnitSelects();
         renderAnalytics();
@@ -225,7 +226,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('submenus-manager');
         if (!container) return;
         renderSimpleTable(container.querySelector('#submenus-table'), submenus, createSubmenuRow);
-        container.innerHTML += `<div id="submenu-composition-details"></div>`;
+        if (!container.querySelector('#submenu-composition-details')) {
+            container.innerHTML += `<div id="submenu-composition-details"></div>`;
+        }
+    }
+
+    function renderItemsManager() {
+        const container = document.getElementById('items-manager');
+        if (!container) return;
+        renderSimpleTable(container.querySelector('#menu-items-table'), menuItems, createMenuItemRow);
     }
     
     function renderSubmenuCompositionDetails(submenuId) {
