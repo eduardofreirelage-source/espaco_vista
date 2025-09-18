@@ -1034,7 +1034,7 @@ body.client-view .col-actions { width: 15% !important; }
     align-items: center;
     padding: 0.8rem 1rem;
     border-bottom: 2px solid var(--border-color);
-    background-color: #f4f5f7; /* Cor de fundo padrão e consistente */
+    background-color: #f4f5f7;
 }
 .stage-header h5 {
     margin: 0;
@@ -1055,10 +1055,14 @@ body.client-view .col-actions { width: 15% !important; }
     text-align: center;
     background-color: #fff;
 }
-.stage-content {
+.stage-content-main { /* Div que contém o conteúdo que rola */
     padding: 0.5rem;
     overflow-y: auto;
     flex-grow: 1;
+}
+.stage-footer { /* Div para conteúdo fixo no rodapé da coluna */
+    padding: 0.5rem;
+    border-top: 1px solid var(--border-color);
 }
 .stage-observations {
     width: 100%;
@@ -1067,9 +1071,9 @@ body.client-view .col-actions { width: 15% !important; }
     border: 1px solid #dde1e6;
     border-radius: 4px;
     resize: vertical;
-    margin-top: 0.8rem; /* Adicionado para separar do checklist */
     font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
+    margin-bottom: 0.5rem;
 }
 .stage-status {
     font-weight: 600;
@@ -1121,10 +1125,9 @@ body.client-view .col-actions { width: 15% !important; }
 }
 .add-task-form {
     margin: 0;
-    padding: 0.5rem;
+    padding: 0;
     display: flex;
     gap: 0.5rem;
-    border-top: 1px solid var(--border-color);
 }
 .add-task-form input {
     flex-grow: 1;
