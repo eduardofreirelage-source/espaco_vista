@@ -830,7 +830,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
-        document.getElementById('add-date-btn')?.addEventListener('click', () => {
+        document.getElementById('add-date-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation(); // Impede que o clique feche o card
             addDateEntry();
             syncClientData();
             renderQuote();
