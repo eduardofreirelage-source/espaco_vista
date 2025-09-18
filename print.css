@@ -15,11 +15,12 @@
     }
     
     /* Garante que a área de impressão e todo o seu conteúdo sejam visíveis */
-    #print-output, #print-output * { 
+    #print-output, #print-output *,
+    #print-output-evento, #print-output-evento * { 
         visibility: visible; 
     }
     
-    #print-output { 
+    #print-output, #print-output-evento { 
         position: absolute; 
         left: 0; 
         top: 0; 
@@ -37,6 +38,8 @@
     .print-client-info strong { display: inline-block; width: 120px; }
 
     .print-category-title { font-size: 14pt; font-weight: 600; color: #8B0000; margin-top: 25px; border-bottom: 1px solid #8B0000; padding-bottom: 5px; page-break-before: auto; page-break-after: avoid; }
+    .print-subcategory-title { font-size: 11pt; font-weight: 600; color: #333; margin-top: 15px; page-break-after: avoid; }
+    
     .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: avoid; }
     .print-table th, .print-table td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
     .print-table th { background-color: #f9f9f9; font-weight: 600; font-size: 8pt; text-transform: uppercase; border-color: #ddd !important; }
@@ -50,4 +53,20 @@
     .print-summary .total-label { text-align: right; }
     .print-summary .total-value { text-align: right; font-weight: 600; }
     .print-summary .grand-total td { font-size: 16pt; font-weight: bold; background-color: #f9f9f9; }
+
+    .print-menu-list {
+        list-style: none;
+        padding-left: 0;
+        margin-top: 10px;
+        -webkit-column-count: 2;
+        -moz-column-count: 2;
+        column-count: 2;
+        column-gap: 40px;
+    }
+    .print-menu-list li {
+        font-size: 10pt;
+        padding: 4px 0;
+        border-bottom: 1px dotted #ccc;
+        page-break-inside: avoid;
+    }
 }
