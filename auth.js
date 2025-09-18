@@ -391,6 +391,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     function initializeCalendar() {
         const calendarEl = document.getElementById('calendar');
         if (!calendarEl || calendarInstance) return;
+
+        // PASSO 2: Contar eventos por dia para o mapa de calor
+        const eventsPerDay = quotes.reduce((acc, quote) => {
+            if (quote.quote_data?.event_dates?.length > 0) {
+                // Considera apenas propostas que não sejam rascunho para a demanda
+                if(quote.status === 'Ganho' || quote.status === 'Em analise'){
+                    const date = quote.quote_data.event_dates[0].date;
+                    if(date) {
+                        acc[date] = (acc[date] || 0) + 1;
+                    }
+                }
+            }
+            return acc;
+        }, {});
+
         calendarInstance = new FullCalendar.Calendar(calendarEl, {
             locale: 'pt-br',
             initialView: 'dayGridMonth',
@@ -398,6 +413,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', list: 'Lista' },
             eventClick: (info) => { const { quoteId } = info.event.extendedProps; window.location.href = `evento.html?quote_id=${quoteId}`; },
             height: 'parent',
+            // PASSO 2: Hook para aplicar a classe de cor a cada célula de dia
+            dayCellDidMount: function(info) {
+                const dateStr = info.date.toISOString().split('T')[0];
+                const count = eventsPerDay[dateStr];
+                if (count) {
+                    let intensityClass = '';
+                    if (count >= 3) {
+                        intensityClass = 'heatmap-high';
+                    } else if (count === 2) {
+                        intensityClass = 'heatmap-medium';
+                    } else if (count === 1) {
+                        intensityClass = 'heatmap-low';
+                    }
+                    if(intensityClass) {
+                        info.el.classList.add(intensityClass);
+                    }
+                }
+            }
         });
         calendarInstance.render();
         updateCalendarEvents();
@@ -451,12 +484,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         window.myFunnelChart = new Chart(ctx, {
-            type: 'bar', // Mudar tipo para 'bar'
+            type: 'bar',
             data: {
                 labels: [`Total`, `Análise/Perdidas`, `Ganhos`],
                 datasets: [{
                     label: 'Propostas',
-                    // Dados formatados para barras flutuantes e centralizadas
                     data: [
                         [-totalPropostas / 2, totalPropostas / 2],
                         [-totalEngajadas / 2, totalEngajadas / 2],
@@ -465,21 +497,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     backgroundColor: [ 'rgba(108, 117, 125, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(40, 167, 69, 0.7)' ],
                     borderColor: [ 'rgba(108, 117, 125, 1)', 'rgba(255, 193, 7, 1)', 'rgba(40, 167, 69, 1)' ],
                     borderWidth: 1,
-                    barPercentage: 1.0, // Barras ocupam todo o espaço da categoria
-                    categoryPercentage: 1.0 // Sem espaço entre as barras
+                    barPercentage: 1.0,
+                    categoryPercentage: 1.0
                 }]
             },
             options: {
-                indexAxis: 'y', // Eixo principal é o Y (barras horizontais)
+                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: { // Esconder os eixos
+                scales: {
                     x: { display: false, grid: { display: false } },
                     y: { display: false, grid: { display: false } }
                 },
                 plugins: {
                     legend: { display: false },
-                    tooltip: { enabled: false }, // Desativar tooltips que mostram valores negativos
+                    tooltip: { enabled: false },
                     datalabels: {
                         color: '#FFFFFF',
                         font: {
@@ -487,13 +519,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             size: 14,
                         },
                         formatter: (value, context) => {
-                            // Calcular o valor real a partir da barra flutuante
                             const realValue = value[1] - value[0];
                             if (realValue === 0) return '';
                             
                             const label = context.chart.data.labels[context.dataIndex];
                             
-                            // Calcular porcentagem
                             const initialValue = context.chart.data.datasets[0].data[0][1] * 2;
                             if (initialValue === 0) return '0%';
                             const percentage = `${((realValue / initialValue) * 100).toFixed(0)}%`;
