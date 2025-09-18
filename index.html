@@ -42,11 +42,13 @@
                 </div>
             </details>
 
-            <details class="card data-accordion" open>
-                <summary class="card-summary-header">
-                    <h2>Dados do Evento</h2>
+            <details class="card data-accordion" id="event-details-card" open>
+                <div class="card-header-with-action">
+                    <summary class="card-summary-header">
+                        <h2>Dados do Evento</h2>
+                    </summary>
                     <button id="add-date-btn" class="btn btn-primary">+ Adicionar Data</button>
-                </summary>
+                </div>
                 <div class="card-content">
                     <div class="form-grid">
                         <div class="form-group"><label for="guestCount">Nº de Convidados</label><input type="number" id="guestCount" value="100" min="1"></div>
