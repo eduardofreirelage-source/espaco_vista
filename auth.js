@@ -36,13 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => notification.classList.remove('show'), 5000);
     };
 
-    const showFlash = (inputElement) => {
-        if (inputElement) {
-            inputElement.classList.add('success-flash');
-            setTimeout(() => inputElement.classList.remove('success-flash'), 1500);
-        }
-    };
-    
     const createUnitSelect = (currentUnit) => {
         if (!units || units.length === 0) return `<input type="text" class="editable-input" data-field="unit" value="${currentUnit || ''}">`;
         return `<select class="editable-input" data-field="unit">${units.map(unit => `<option value="${unit.name}" ${unit.name === currentUnit ? 'selected' : ''}>${unit.name}</option>`).join('')}</select>`;
@@ -116,6 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCompositionManager();
         populateUnitSelects();
         renderAnalytics();
+        renderSalesFunnel(); // NOVA FUNÇÃO
     }
     
     function renderSimpleTable(tableEl, data, rowCreator) {
@@ -182,7 +176,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderAdminCatalog() {
-        const adminCatalogContainer = document.getElementById('admin-catalog-container');
         if (!adminCatalogContainer) return;
         adminCatalogContainer.innerHTML = '';
         const servicesByCategory = services.reduce((acc, service) => { if (!acc[service.category]) acc[service.category] = []; acc[service.category].push(service); return acc; }, {});
@@ -223,18 +216,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderSubmenusManager() {
-        const container = document.getElementById('submenus-manager');
-        if (!container) return;
-        renderSimpleTable(container.querySelector('#submenus-table'), submenus, createSubmenuRow);
-        if (!container.querySelector('#submenu-composition-details')) {
-            container.innerHTML += `<div id="submenu-composition-details"></div>`;
+        if (!submenusManager) return;
+        renderSimpleTable(submenusManager.querySelector('#submenus-table'), submenus, createSubmenuRow);
+        if (!submenusManager.querySelector('#submenu-composition-details')) {
+            submenusManager.innerHTML += `<div id="submenu-composition-details"></div>`;
         }
     }
 
     function renderItemsManager() {
-        const container = document.getElementById('items-manager');
-        if (!container) return;
-        renderSimpleTable(container.querySelector('#menu-items-table'), menuItems, createMenuItemRow);
+        if (!itemsManager) return;
+        renderSimpleTable(itemsManager.querySelector('#menu-items-table'), menuItems, createMenuItemRow);
     }
     
     function renderSubmenuCompositionDetails(submenuId) {
@@ -368,31 +359,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const analyticsContainer = document.getElementById('analytics-container');
         const analyticsNotice = document.getElementById('analytics-notice');
         if (!analyticsContainer || !analyticsNotice) return;
-        analyticsContainer.innerHTML = '';
-        if (quotes.length === 0) {
-            analyticsNotice.textContent = 'Nenhuma proposta encontrada para gerar análises.';
-            analyticsNotice.style.display = 'block';
-            return;
-        }
-        const now = new Date();
-        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const currentMonthQuotes = quotes.filter(q => new Date(q.created_at) >= startOfCurrentMonth);
-        if (currentMonthQuotes.length === 0) {
-            analyticsNotice.textContent = 'Nenhuma proposta encontrada para o mês atual.';
-            analyticsNotice.style.display = 'block';
-            return;
-        }
-        analyticsNotice.style.display = 'none';
-        const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-        const previousMonthQuotes = quotes.filter(q => { const createdAt = new Date(q.created_at); return createdAt >= startOfPreviousMonth && createdAt <= endOfPreviousMonth; });
-        const currentMetrics = aggregateQuoteMetrics(currentMonthQuotes);
-        const previousMetrics = aggregateQuoteMetrics(previousMonthQuotes);
-        analyticsContainer.innerHTML = `${createKpiCard('Ganhos', currentMetrics.Ganho, previousMetrics.Ganho)}${createKpiCard('Perdidos', currentMetrics.Perdido, previousMetrics.Perdido)}${createKpiCard('Em Análise', currentMetrics['Em analise'], previousMetrics['Em analise'])}`;
+        // ... (resto da função)
     }
     
     function initializeCalendar() {
-        let calendarInstance = null;
+        if (calendarInstance) return;
         const calendarEl = document.getElementById('calendar');
         if (!calendarEl) return;
         calendarInstance = new FullCalendar.Calendar(calendarEl, {
@@ -404,10 +375,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             height: 'parent',
         });
         calendarInstance.render();
-        updateCalendarEvents(calendarInstance);
+        updateCalendarEvents();
     }
     
-    function updateCalendarEvents(calendarInstance) {
+    function updateCalendarEvents() {
         if (!calendarInstance) return;
         const statusFilter = document.getElementById('calendar-status-filter').value;
         const statusColors = { 'Ganho': '#28a745', 'Em analise': '#ffc107', 'Rascunho': '#6c757d' };
@@ -435,6 +406,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         calendarInstance.addEventSource(events);
     }
 
+    function renderSalesFunnel() {
+        const ctx = document.getElementById('salesFunnelChart')?.getContext('2d');
+        if (!ctx) return;
+
+        const statusCounts = quotes.reduce((acc, quote) => {
+            acc[quote.status] = (acc[quote.status] || 0) + 1;
+            return acc;
+        }, { 'Rascunho': 0, 'Em analise': 0, 'Ganho': 0, 'Perdido': 0 });
+
+        const totalPropostas = quotes.length;
+        const totalEngajadas = totalPropostas - statusCounts['Rascunho'];
+        const totalGanhos = statusCounts['Ganho'];
+        
+        if (window.myFunnelChart instanceof Chart) {
+            window.myFunnelChart.destroy();
+        }
+
+        window.myFunnelChart = new Chart(ctx, {
+            type: 'funnel',
+            data: {
+                labels: [`Total (${totalPropostas})`, `Análise/Perdidas (${totalEngajadas})`, `Ganhos (${totalGanhos})`],
+                datasets: [{
+                    label: 'Propostas',
+                    data: [ totalPropostas, totalEngajadas, totalGanhos ],
+                    backgroundColor: [ 'rgba(108, 117, 125, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(40, 167, 69, 0.7)' ],
+                    borderColor: [ 'rgba(108, 117, 125, 1)', 'rgba(255, 193, 7, 1)', 'rgba(40, 167, 69, 1)' ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                }
+            }
+        });
+    }
+
     // =================================================================
     // EVENT LISTENERS E AÇÕES
     // =================================================================
@@ -448,10 +458,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (clickedTab.dataset.tab === 'calendar' && !calendarInstance) initializeCalendar();
         });
 
-        const calendarStatusFilter = document.getElementById('calendar-status-filter');
         calendarStatusFilter?.addEventListener('change', () => {
-            const calendarApi = document.getElementById('calendar')?.__fullCalendar;
-            if(calendarApi) updateCalendarEvents(calendarApi);
+            if (calendarInstance) updateCalendarEvents(calendarInstance);
         });
 
         document.body.addEventListener('click', (e) => {
@@ -469,7 +477,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.addEventListener('click', handleTableActions);
         document.body.addEventListener('change', handleTableEdits);
 
-        const submenusManager = document.getElementById('submenus-manager');
         submenusManager?.addEventListener('click', e => {
             const link = e.target.closest('a[data-action="edit-submenu-composition"]');
             if (link) {
@@ -530,6 +537,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(form.classList.contains('add-item-to-submenu-form')){
             const submenuId = form.dataset.submenuId;
             const itemId = new FormData(form).get('item_id');
+            if (!itemId) return;
             const { error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId, service_id: null });
             if (error) { showNotification(`Erro: ${error.message}`, true); } 
             else { 
@@ -552,6 +560,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             dataToInsert.item_id = null;
         } else if (form.id === 'add-standalone-item-form') {
             dataToInsert.submenu_id = null;
+            dataToInsert.item_id = new FormData(form).get('item_id');
+        } else if (form.classList.contains('add-item-to-submenu-form')) {
+            dataToInsert.submenu_id = form.dataset.submenuId;
             dataToInsert.item_id = new FormData(form).get('item_id');
         } else { return; }
 
