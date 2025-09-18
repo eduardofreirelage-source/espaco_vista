@@ -264,6 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let columnsHtml = productionStagesTemplate.map(stage => {
                 let stageContentHtml = '';
                 const stageData = dateData.stages[stage.id] || { tasks: [], deadline_days: stage.default_deadline_days };
+                const observations = stageData.observations || '';
                 
                 // Lógica para a etapa de cardápio (exemplo, pode ser um tipo de etapa no futuro)
                 if (stage.stage_name === 'Definição de Cardápio') {
@@ -307,7 +308,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                        data-date="${date}" data-stage-id="${stage.id}" title="Dias antes do evento">
                             </div>
                         </div>
-                        <div class="stage-content">${stageContentHtml}</div>
+                        <div class="stage-content">
+                            <textarea class="stage-observations" placeholder="Observações da etapa..."
+                                      data-date="${date}" data-stage-id="${stage.id}">${observations}</textarea>
+                            ${stageContentHtml}
+                        </div>
                         ${stage.stage_name !== 'Definição de Cardápio' ? `
                         <form class="inline-form add-task-form" data-date="${date}" data-stage-id="${stage.id}">
                             <input type="text" placeholder="Adicionar nova tarefa..." required>
@@ -334,7 +339,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         productionStagesTemplate.forEach(stage => {
             newProductionData.stages[stage.id] = {
                 deadline_days: stage.default_deadline_days,
-                tasks: (stage.default_tasks || []).map(taskText => ({ text: taskText, completed: false }))
+                tasks: (stage.default_tasks || []).map(taskText => ({ text: taskText, completed: false })),
+                observations: ''
             };
         });
         currentQuote.quote_data.production_data[date] = newProductionData;
@@ -438,7 +444,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (target.matches('.checklist-item input[type="checkbox"]')) {
             const taskIndex = target.dataset.taskIndex;
             currentQuote.quote_data.production_data[date].stages[stageId].tasks[taskIndex].completed = target.checked;
-        } else {
+        } else if (target.matches('.stage-observations')) {
+            currentQuote.quote_data.production_data[date].stages[stageId].observations = target.value;
+        }else {
             return;
         }
         saveQuoteData('Dados de produção salvos.');
