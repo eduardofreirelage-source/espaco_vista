@@ -28,12 +28,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // =================================================================
     // FUNÇÕES UTILITÁRIAS
     // =================================================================
-    const showNotification = (message, isError = false) => {
+    const showNotification = (message, isError = false, isSaving = false) => {
         if (!notification) return;
         notification.textContent = message;
         notification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        if (isSaving) {
+            notification.style.backgroundColor = '#6c757d';
+        }
         notification.classList.add('show');
-        setTimeout(() => notification.classList.remove('show'), 5000);
+        setTimeout(() => notification.classList.remove('show'), isSaving ? 1000 : 4000);
     };
 
     const createUnitSelect = (currentUnit) => {
@@ -755,7 +758,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (input.classList.contains('service-price-input')) {
             const { serviceId, tableId } = input.dataset;
             const { error } = await supabase.from('service_prices').upsert({ service_id: serviceId, price_table_id: tableId, price: input.value }, { onConflict: 'service_id, price_table_id' });
-            if (error) { showNotification(`Erro: ${error.message}`, true); } else { showFlash(input); }
+            if (error) { showNotification(`Erro: ${error.message}`, true); } else { showNotification('Salvo!', false, true); }
             return;
         }
 
@@ -780,7 +783,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         let tableName = tableMap[table.id] || (table.closest('#admin-catalog-container') ? 'services' : null);
         
-        // Trata o campo de tarefas padrão do funil, que é um array
         if (tableName === 'production_stages' && field === 'default_tasks') {
             value = value.split(',').map(t => t.trim()).filter(Boolean);
         }
