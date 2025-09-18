@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="styles.css">
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/packages/core/locales/pt-br.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-funnel"></script>
 </head>
 <body>
     <div class="container">
@@ -65,15 +67,21 @@
                     <div class="card-content"><div id="calendar"></div></div>
                 </section>
             </div>
+
             <div id="tab-content-analytics" class="tab-content">
+                <section class="card">
+                    <div class="card-header"><h2>Funil de Vendas (Total de Propostas)</h2></div>
+                    <div class="card-content">
+                        <canvas id="salesFunnelChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </section>
                 <div id="analytics-notice" style="display: none; padding: 1rem; background-color: #f0f0f0; border-radius: 6px; text-align: center; color: var(--subtle-text-color);"></div>
                 <section id="analytics-container" class="analytics-grid"></section>
             </div>
 
             <div id="tab-content-catalogs" class="tab-content">
-                
                 <section class="card collapsible-card collapsed">
-                    <div class="card-header"><h2>Cadastrar Serviços e Cardápios Principais</h2><span class="collapse-icon"></span></div>
+                    <div class="card-header"><h2>Gerenciar Cardápios Principais e Serviços</h2><span class="collapse-icon"></span></div>
                     <div class="card-content-wrapper">
                         <div class="card-content">
                              <p class="hint">Cadastre os "pacotes" vendáveis, como "Almoço Executivo" (Cardápio Principal), ou outros serviços como "Aluguel do Salão".</p>
