@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // =================================================================
-    // FUNIL DE PRODUÇÃO
+    // FUNIL DE PRODUÇÃO (KANBAN)
     // =================================================================
 
     function renderProductionFunnel() {
@@ -250,7 +250,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         currentQuote.quote_data.event_dates.forEach(eventDate => {
             const date = eventDate.date;
-            // Se não houver dados de produção para esta data, inicializa com o template
             if (!currentQuote.quote_data.production_data[date]) {
                 initializeProductionDataForDate(date);
             }
@@ -259,16 +258,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const formattedDate = new Date(date + 'T12:00:00Z').toLocaleDateString('pt-BR');
             
             const dateCard = document.createElement('details');
-            dateCard.className = 'collapsible-card data-accordion';
+            dateCard.className = 'data-accordion';
             dateCard.open = true;
 
-            let stagesHtml = productionStagesTemplate.map(stage => {
+            let columnsHtml = productionStagesTemplate.map(stage => {
                 let stageContentHtml = '';
-                const stageData = dateData.stages[stage.id] || {};
+                const stageData = dateData.stages[stage.id] || { tasks: [], deadline_days: stage.default_deadline_days };
                 
-                // Lógica para a etapa de cardápio
-                if (stage.id === 2) { // ID fixo para a etapa de cardápio por enquanto
-                    const menuServices = currentQuote.quote_data.items.filter(i => {
+                // Lógica para a etapa de cardápio (exemplo, pode ser um tipo de etapa no futuro)
+                if (stage.stage_name === 'Definição de Cardápio') {
+                     const menuServices = currentQuote.quote_data.items.filter(i => {
                         const s = services.find(s => s.id === i.service_id);
                         return s && s.category === 'Gastronomia';
                     });
@@ -293,17 +292,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         data-date="${date}" data-stage-id="${stage.id}" data-task-index="${taskIndex}">&times;</button>
                             </li>`;
                     });
-                    stageContentHtml += `</ul>
-                    <form class="inline-form add-task-form" data-date="${date}" data-stage-id="${stage.id}">
-                        <input type="text" placeholder="Adicionar nova tarefa..." required>
-                        <button type="submit" class="btn">Adicionar</button>
-                    </form>`;
+                    stageContentHtml += `</ul>`;
                 }
                 
                 const { alertClass, deadlineText } = getDeadlineInfo(date, stageData.deadline_days);
 
                 return `
-                    <div class="production-stage ${alertClass}">
+                    <div class="production-stage-column ${alertClass}">
                         <div class="stage-header">
                             <h5>${stage.stage_name}</h5>
                             <div class="stage-deadline">
@@ -313,6 +308,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                         </div>
                         <div class="stage-content">${stageContentHtml}</div>
+                        ${stage.stage_name !== 'Definição de Cardápio' ? `
+                        <form class="inline-form add-task-form" data-date="${date}" data-stage-id="${stage.id}">
+                            <input type="text" placeholder="Adicionar nova tarefa..." required>
+                            <button type="submit" class="btn">Adicionar</button>
+                        </form>` : ''}
                     </div>
                 `;
             }).join('');
@@ -320,10 +320,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             dateCard.innerHTML = `
                 <summary class="card-summary-header">
                     <h3>Produção para ${formattedDate}</h3>
-                    <span class="collapse-icon"></span>
                 </summary>
                 <div class="card-content">
-                    ${stagesHtml}
+                    <div class="kanban-board">${columnsHtml}</div>
                 </div>
             `;
             container.appendChild(dateCard);
