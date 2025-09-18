@@ -1002,3 +1002,105 @@ body.client-view .col-actions { width: 15% !important; }
 .fc-daygrid-day.heatmap-low { background-color: rgba(255, 255, 0, 0.2); }
 .fc-daygrid-day.heatmap-medium { background-color: rgba(255, 165, 0, 0.3); }
 .fc-daygrid-day.heatmap-high { background-color: rgba(139, 0, 0, 0.3); }
+
+/* PASSO 3: Estilos para o Funil de Produção */
+#production-funnel-container .data-accordion:not(:last-child) {
+    margin-bottom: 1.5rem;
+}
+
+.production-stage {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    background-color: #fdfdfd;
+    transition: all 0.2s ease-in-out;
+}
+.production-stage:last-child {
+    margin-bottom: 0;
+}
+.stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1.2rem;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid var(--border-color);
+}
+.stage-header h5 {
+    margin: 0;
+    font-size: 1rem;
+}
+.stage-deadline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--subtle-text-color);
+}
+.stage-deadline input.deadline-input {
+    width: 60px;
+    padding: 0.2rem 0.4rem;
+    text-align: center;
+}
+.stage-content {
+    padding: 1.2rem;
+}
+.stage-status {
+    font-weight: 600;
+    padding: 0.8rem;
+    border-radius: 4px;
+    text-align: center;
+}
+.status-completed {
+    color: var(--success-color);
+    background-color: #eaf6ec;
+}
+.status-pending {
+    color: var(--danger-color);
+    background-color: #fbe9e7;
+}
+.checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.checklist-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.checklist-item:last-child {
+    border-bottom: none;
+}
+.checklist-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 1rem;
+    cursor: pointer;
+}
+.checklist-item label {
+    flex-grow: 1;
+    cursor: pointer;
+}
+.checklist-item input[type="checkbox"]:checked + label {
+    text-decoration: line-through;
+    color: var(--subtle-text-color);
+}
+.add-task-form {
+    margin: 1.2rem -1.2rem -1.2rem -1.2rem;
+    padding: 1rem 1.2rem;
+    display: flex;
+    gap: 1rem;
+}
+.add-task-form input {
+    flex-grow: 1;
+}
+
+/* Estilos para Alertas de Prazo */
+.production-stage.deadline-soon {
+    border-left: 4px solid #ffc107; /* Amarelo */
+}
+.production-stage.deadline-overdue {
+    border-left: 4px solid var(--danger-color); /* Vermelho */
+}
