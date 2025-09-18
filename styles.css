@@ -1003,28 +1003,35 @@ body.client-view .col-actions { width: 15% !important; }
 .fc-daygrid-day.heatmap-medium { background-color: rgba(255, 165, 0, 0.3); }
 .fc-daygrid-day.heatmap-high { background-color: rgba(139, 0, 0, 0.3); }
 
-/* PASSO 3: Estilos para o Funil de Produção */
+/* PASSO 3: Estilos para o Funil de Produção (Kanban) */
 #production-funnel-container .data-accordion:not(:last-child) {
     margin-bottom: 1.5rem;
 }
 
-.production-stage {
-    border: 1px solid var(--border-color);
+.kanban-board {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 1rem; /* Espaço para a barra de rolagem */
+    min-height: 400px;
+}
+
+.production-stage-column {
+    flex: 0 0 320px; /* Largura fixa para cada coluna */
+    min-width: 320px;
+    background-color: #f4f5f7;
     border-radius: 6px;
-    margin-bottom: 1rem;
-    background-color: #fdfdfd;
-    transition: all 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    max-height: 70vh;
 }
-.production-stage:last-child {
-    margin-bottom: 0;
-}
+
 .stage-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.8rem 1.2rem;
-    background-color: #f9f9f9;
-    border-bottom: 1px solid var(--border-color);
+    padding: 0.8rem 1rem;
+    border-bottom: 2px solid var(--border-color);
 }
 .stage-header h5 {
     margin: 0;
@@ -1041,15 +1048,19 @@ body.client-view .col-actions { width: 15% !important; }
     width: 60px;
     padding: 0.2rem 0.4rem;
     text-align: center;
+    background-color: #fff;
 }
 .stage-content {
-    padding: 1.2rem;
+    padding: 0.5rem;
+    overflow-y: auto;
+    flex-grow: 1;
 }
 .stage-status {
     font-weight: 600;
     padding: 0.8rem;
     border-radius: 4px;
     text-align: center;
+    margin: 0.5rem;
 }
 .status-completed {
     color: var(--success-color);
@@ -1063,44 +1074,60 @@ body.client-view .col-actions { width: 15% !important; }
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 .checklist-item {
     display: flex;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-.checklist-item:last-child {
-    border-bottom: none;
+    align-items: flex-start;
+    padding: 0.8rem;
+    border-radius: 4px;
+    background-color: var(--card-bg);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
 }
 .checklist-item input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    margin-right: 1rem;
+    width: 16px;
+    height: 16px;
+    margin-right: 0.8rem;
     cursor: pointer;
+    margin-top: 3px;
 }
 .checklist-item label {
     flex-grow: 1;
     cursor: pointer;
+    line-height: 1.4;
 }
 .checklist-item input[type="checkbox"]:checked + label {
     text-decoration: line-through;
     color: var(--subtle-text-color);
 }
 .add-task-form {
-    margin: 1.2rem -1.2rem -1.2rem -1.2rem;
-    padding: 1rem 1.2rem;
+    margin: 0;
+    padding: 0.5rem;
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border-color);
 }
 .add-task-form input {
     flex-grow: 1;
+    border: none;
+    padding: 0.5rem;
+}
+.add-task-form input:focus {
+    box-shadow: none;
+}
+.add-task-form .btn {
+    padding: 0.3rem 0.8rem;
 }
 
 /* Estilos para Alertas de Prazo */
-.production-stage.deadline-soon {
-    border-left: 4px solid #ffc107; /* Amarelo */
+.production-stage-column.deadline-soon .stage-header {
+    background-color: #fff8e1; /* Amarelo claro */
+    border-left: 4px solid #ffc107;
 }
-.production-stage.deadline-overdue {
-    border-left: 4px solid var(--danger-color); /* Vermelho */
+.production-stage-column.deadline-overdue .stage-header {
+    background-color: #fbe9e7; /* Vermelho claro */
+    border-left: 4px solid var(--danger-color);
 }
