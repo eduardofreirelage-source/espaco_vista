@@ -435,8 +435,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ctx = document.getElementById('salesFunnelChart')?.getContext('2d');
         if (!ctx) return;
 
-        // Com o 'defer' no HTML, os plugins já estão registrados quando este código roda.
-        // Apenas registramos o 'datalabels' que é uma boa prática.
         Chart.register(ChartDataLabels);
 
         const statusCounts = quotes.reduce((acc, quote) => {
@@ -453,22 +451,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         window.myFunnelChart = new Chart(ctx, {
-            type: 'funnel',
+            type: 'bar', // Mudar tipo para 'bar'
             data: {
-                labels: [`Total (${totalPropostas})`, `Análise/Perdidas (${totalEngajadas})`, `Ganhos (${totalGanhos})`],
+                labels: [`Total`, `Análise/Perdidas`, `Ganhos`],
                 datasets: [{
                     label: 'Propostas',
-                    data: [ totalPropostas, totalEngajadas, totalGanhos ],
+                    // Dados formatados para barras flutuantes e centralizadas
+                    data: [
+                        [-totalPropostas / 2, totalPropostas / 2],
+                        [-totalEngajadas / 2, totalEngajadas / 2],
+                        [-totalGanhos / 2, totalGanhos / 2]
+                    ],
                     backgroundColor: [ 'rgba(108, 117, 125, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(40, 167, 69, 0.7)' ],
                     borderColor: [ 'rgba(108, 117, 125, 1)', 'rgba(255, 193, 7, 1)', 'rgba(40, 167, 69, 1)' ],
-                    borderWidth: 1
+                    borderWidth: 1,
+                    barPercentage: 1.0, // Barras ocupam todo o espaço da categoria
+                    categoryPercentage: 1.0 // Sem espaço entre as barras
                 }]
             },
             options: {
+                indexAxis: 'y', // Eixo principal é o Y (barras horizontais)
                 responsive: true,
                 maintainAspectRatio: false,
+                scales: { // Esconder os eixos
+                    x: { display: false, grid: { display: false } },
+                    y: { display: false, grid: { display: false } }
+                },
                 plugins: {
                     legend: { display: false },
+                    tooltip: { enabled: false }, // Desativar tooltips que mostram valores negativos
                     datalabels: {
                         color: '#FFFFFF',
                         font: {
@@ -476,11 +487,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                             size: 14,
                         },
                         formatter: (value, context) => {
-                            if (value === 0) return '';
-                            const initialValue = context.chart.data.datasets[0].data[0];
+                            // Calcular o valor real a partir da barra flutuante
+                            const realValue = value[1] - value[0];
+                            if (realValue === 0) return '';
+                            
+                            const label = context.chart.data.labels[context.dataIndex];
+                            
+                            // Calcular porcentagem
+                            const initialValue = context.chart.data.datasets[0].data[0][1] * 2;
                             if (initialValue === 0) return '0%';
-                            const percentage = `${((value / initialValue) * 100).toFixed(0)}%`;
-                            return `${value}\n${percentage}`;
+                            const percentage = `${((realValue / initialValue) * 100).toFixed(0)}%`;
+                            
+                            return `${label} (${realValue})\n${percentage}`;
                         },
                     },
                 }
