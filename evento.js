@@ -309,9 +309,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                         </div>
                         <div class="stage-content">
+                            ${stageContentHtml}
                             <textarea class="stage-observations" placeholder="Observações da etapa..."
                                       data-date="${date}" data-stage-id="${stage.id}">${observations}</textarea>
-                            ${stageContentHtml}
                         </div>
                         ${stage.stage_name !== 'Definição de Cardápio' ? `
                         <form class="inline-form add-task-form" data-date="${date}" data-stage-id="${stage.id}">
