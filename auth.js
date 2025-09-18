@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCompositionManager();
         populateUnitSelects();
         renderAnalytics();
-        renderSalesFunnel(); // NOVA FUNÇÃO
+        renderSalesFunnel();
     }
     
     function renderSimpleTable(tableEl, data, rowCreator) {
@@ -217,14 +217,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderSubmenusManager() {
         if (!submenusManager) return;
+        let html = `
+            <h4>Gerenciar Subcardápios</h4>
+            <p class="hint">Crie e gerencie os Subcardápios. Clique no nome de um subcardápio na lista para adicionar/remover itens (pratos).</p>
+            <div class="table-container">
+                <table id="submenus-table" class="editable-table">
+                    <thead><tr><th>Nome do Subcardápio</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <form id="add-submenu-form" class="inline-form">
+                <div class="form-group"><label for="submenuName">Nome do novo Subcardápio</label><input type="text" id="submenuName" required></div>
+                <div class="form-group"><label for="submenuDescription">Descrição</label><input type="text" id="submenuDescription"></div>
+                <button type="submit" class="btn btn-primary">Criar Subcardápio</button>
+            </form>
+            <div id="submenu-composition-details"></div>`;
+        submenusManager.innerHTML = html;
         renderSimpleTable(submenusManager.querySelector('#submenus-table'), submenus, createSubmenuRow);
-        if (!submenusManager.querySelector('#submenu-composition-details')) {
-            submenusManager.innerHTML += `<div id="submenu-composition-details"></div>`;
-        }
     }
-
+    
     function renderItemsManager() {
         if (!itemsManager) return;
+        itemsManager.innerHTML = `
+            <h4>Gerenciar Itens (Pratos)</h4>
+            <p class="hint">Crie e gerencie os Itens (pratos individuais) que compõem os Subcardápios.</p>
+            <div class="table-container">
+                <table id="menu-items-table" class="editable-table">
+                    <thead><tr><th>Nome do Item</th><th>Descrição</th><th class="actions">Ações</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <form id="add-menu-item-form" class="inline-form">
+                <div class="form-group"><label for="itemName">Nome do novo Item</label><input type="text" id="itemName" required></div>
+                <div class="form-group"><label for="itemDescription">Descrição</label><input type="text" id="itemDescription"></div>
+                <button type="submit" class="btn btn-primary">Criar Item</button>
+            </form>`;
         renderSimpleTable(itemsManager.querySelector('#menu-items-table'), menuItems, createMenuItemRow);
     }
     
@@ -267,7 +294,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderCompositionManager() {
-        const compositionManager = document.getElementById('composition-manager');
         if (!compositionManager) return;
         const cardapios = services.filter(s => s.category === 'Gastronomia');
         let html = `
@@ -359,13 +385,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const analyticsContainer = document.getElementById('analytics-container');
         const analyticsNotice = document.getElementById('analytics-notice');
         if (!analyticsContainer || !analyticsNotice) return;
-        // ... (resto da função)
+        // ... (código existente da função)
     }
     
     function initializeCalendar() {
-        if (calendarInstance) return;
         const calendarEl = document.getElementById('calendar');
-        if (!calendarEl) return;
+        if (!calendarEl || calendarInstance) return;
         calendarInstance = new FullCalendar.Calendar(calendarEl, {
             locale: 'pt-br',
             initialView: 'dayGridMonth',
@@ -458,8 +483,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (clickedTab.dataset.tab === 'calendar' && !calendarInstance) initializeCalendar();
         });
 
+        const calendarStatusFilter = document.getElementById('calendar-status-filter');
         calendarStatusFilter?.addEventListener('change', () => {
-            if (calendarInstance) updateCalendarEvents(calendarInstance);
+            if (calendarInstance) updateCalendarEvents();
         });
 
         document.body.addEventListener('click', (e) => {
@@ -477,6 +503,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.addEventListener('click', handleTableActions);
         document.body.addEventListener('change', handleTableEdits);
 
+        const submenusManager = document.getElementById('submenus-manager');
         submenusManager?.addEventListener('click', e => {
             const link = e.target.closest('a[data-action="edit-submenu-composition"]');
             if (link) {
