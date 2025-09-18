@@ -997,3 +997,8 @@ body.client-view .summary-footer .summary-item:nth-child(3) {
 body.client-view .col-item { width: 70% !important; }
 body.client-view .col-qty { width: 15% !important; }
 body.client-view .col-actions { width: 15% !important; }
+
+/* PASSO 2: Estilos para o Mapa de Calor do Calendário */
+.fc-daygrid-day.heatmap-low { background-color: rgba(255, 255, 0, 0.2); }
+.fc-daygrid-day.heatmap-medium { background-color: rgba(255, 165, 0, 0.3); }
+.fc-daygrid-day.heatmap-high { background-color: rgba(139, 0, 0, 0.3); }
