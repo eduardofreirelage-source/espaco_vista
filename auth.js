@@ -557,7 +557,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // EVENT LISTENERS E AÇÕES
     // =================================================================
     function addEventListeners() {
-        console.log("[DIAGNÓSTICO] Adicionando event listeners...");
         document.querySelector('.tabs-nav')?.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab-btn');
             if (!clickedTab) return;
@@ -576,28 +575,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const header = e.target.closest('.collapsible-card > .card-header');
             if (header) header.closest('.collapsible-card')?.classList.toggle('collapsed');
         });
-
-        const addSubmenuForm = document.getElementById('add-submenu-form');
-        if (addSubmenuForm) {
-            addSubmenuForm.addEventListener('submit', handleFormSubmit);
-            console.log("[DIAGNÓSTICO] Listener de SUBMIT adicionado ao form 'add-submenu-form'.");
-        } else {
-            console.error("[DIAGNÓSTICO] ERRO: Formulário 'add-submenu-form' NÃO encontrado no DOM.");
-        }
-
-        const addMenuItemForm = document.getElementById('add-menu-item-form');
-        if (addMenuItemForm) {
-            addMenuItemForm.addEventListener('submit', handleFormSubmit);
-            console.log("[DIAGNÓSTICO] Listener de SUBMIT adicionado ao form 'add-menu-item-form'.");
-        } else {
-            console.error("[DIAGNÓSTICO] ERRO: Formulário 'add-menu-item-form' NÃO encontrado no DOM.");
-        }
-
-        document.getElementById('addServiceForm')?.addEventListener('submit', handleFormSubmit);
-        document.getElementById('addPriceTableForm')?.addEventListener('submit', handleFormSubmit);
-        document.getElementById('addPaymentMethodForm')?.addEventListener('submit', handleFormSubmit);
-        document.getElementById('addUnitForm')?.addEventListener('submit', handleFormSubmit);
-        document.getElementById('addFunnelStageForm')?.addEventListener('submit', handleFormSubmit);
+        
+        // BUG FIX: Usar delegação de eventos para os formulários dinâmicos
+        document.body.addEventListener('submit', (e) => {
+            const formId = e.target.id;
+            const formIdsToHandle = [
+                'add-submenu-form', 'add-menu-item-form', 'addServiceForm',
+                'addPriceTableForm', 'addPaymentMethodForm', 'addUnitForm', 'addFunnelStageForm'
+            ];
+            if(formIdsToHandle.includes(formId)){
+                handleFormSubmit(e);
+            }
+        });
         
         document.body.addEventListener('click', handleTableActions);
         document.body.addEventListener('change', handleTableEdits);
@@ -626,47 +615,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleFormSubmit(e) {
         e.preventDefault();
         const form = e.target;
-        console.log(`[DIAGNÓSTICO - handleFormSubmit] Formulário '${form.id}' foi submetido.`);
         let successMessage = 'Salvo com sucesso!';
         
         try {
-            let result, newRecord, insertData;
+            let result;
             switch (form.id) {
                 case 'add-submenu-form':
-                    insertData = { name: form.querySelector('#submenuName').value, description: form.querySelector('#submenuDescription').value };
-                    console.log('[DIAGNÓSTICO] Inserindo no Supabase (submenus):', insertData);
-                    result = await supabase.from('submenus').insert([insertData]).select().single();
-                    console.log('[DIAGNÓSTICO] Resposta do Supabase:', result);
+                    result = await supabase.from('submenus').insert([{ name: form.querySelector('#submenuName').value, description: form.querySelector('#submenuDescription').value }]).select().single();
                     if(result.error) throw result.error;
-                    newRecord = result.data;
-                    console.log('[DIAGNÓSTICO] Novo registro recebido:', newRecord);
-                    submenus.push(newRecord);
-                    console.log('[DIAGNÓSTICO] Redesenhando a tabela de submenus...');
+                    submenus.push(result.data);
                     renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
                     break;
                 case 'add-menu-item-form':
-                    insertData = { name: form.querySelector('#itemName').value, description: form.querySelector('#itemDescription').value };
-                    console.log('[DIAGNÓSTICO] Inserindo no Supabase (menu_items):', insertData);
-                    result = await supabase.from('menu_items').insert([insertData]).select().single();
-                    console.log('[DIAGNÓSTICO] Resposta do Supabase:', result);
+                    result = await supabase.from('menu_items').insert([{ name: form.querySelector('#itemName').value, description: form.querySelector('#itemDescription').value }]).select().single();
                     if(result.error) throw result.error;
-                    newRecord = result.data;
-                    console.log('[DIAGNÓSTICO] Novo registro recebido:', newRecord);
-                    menuItems.push(newRecord);
-                    console.log('[DIAGNÓSTICO] Redesenhando a tabela de itens...');
+                    menuItems.push(result.data);
                     renderSimpleTable(document.getElementById('menu-items-table'), menuItems, createMenuItemRow);
                     break;
-                // Os outros forms já usam fetchData, mantemos por enquanto
-                default:
-                    console.log(`[DIAGNÓSTICO] Formulário '${form.id}' usando fetchData() para atualizar.`);
-                    await fetchData();
+                case 'addServiceForm':
+                    await supabase.from('services').insert([{ name: form.querySelector('#serviceName').value, category: form.querySelector('#serviceCategory').value, unit: form.querySelector('#serviceUnit').value }]);
+                    await fetchData(); // Recarrega tudo pois afeta múltiplos locais
+                    break;
+                case 'addPriceTableForm':
+                    await supabase.from('price_tables').insert([{ name: form.querySelector('#tableName').value, consumable_credit: form.querySelector('#tableConsumable').value }]);
+                    await fetchData(); // Recarrega tudo pois afeta múltiplos locais
+                    break;
+                case 'addPaymentMethodForm':
+                     result = await supabase.from('payment_methods').insert([{ name: form.querySelector('#paymentMethodName').value }]).select().single();
+                     if(result.error) throw result.error;
+                     paymentMethods.push(result.data);
+                     renderSimpleTable(document.getElementById('payment-methods-table'), paymentMethods, createPaymentMethodRow);
+                     break;
+                case 'addUnitForm':
+                     result = await supabase.from('units').insert([{ name: form.querySelector('#unitName').value }]).select().single();
+                     if(result.error) throw result.error;
+                     units.push(result.data);
+                     // A tabela de unidades não existe, mas o select precisa ser populado
+                     await fetchData();
+                     break;
+                case 'addFunnelStageForm':
+                    const tasks = form.querySelector('#stageTasks').value.split(',').map(t => t.trim()).filter(Boolean);
+                    result = await supabase.from('production_stages').insert([{
+                        stage_order: form.querySelector('#stageOrder').value,
+                        stage_name: form.querySelector('#stageName').value,
+                        default_deadline_days: form.querySelector('#stageDeadline').value,
+                        default_tasks: tasks
+                    }]).select().single();
+                    if(result.error) throw result.error;
+                    productionStages.push(result.data);
+                    productionStages.sort((a, b) => a.stage_order - b.stage_order);
+                    renderSimpleTable(document.getElementById('funnel-stages-table'), productionStages, createFunnelStageRow);
+                    break;
             }
-
             showNotification(successMessage);
             if(form.tagName === 'FORM') form.reset();
-
         } catch (error) {
-            console.error('[DIAGNÓSTICO] ERRO CAPTURADO no handleFormSubmit:', error);
             showNotification(`Erro: ${error.message}`, true);
         }
     }
