@@ -86,20 +86,19 @@
                             <button id="toggle-settings-nav" class="btn-icon" title="Recolher menu">«</button>
                         </div>
                         <ul>
-                            <li><a href="#" class="settings-nav-link active" data-target="panel-services">Serviços e Cardápios</a></li>
-                            <li><a href="#" class="settings-nav-link" data-target="panel-menus">Subcardápios e Itens</a></li>
-                            <li><a href="#" class="settings-nav-link" data-target="panel-composition">Montagem de Cardápio</a></li>
-                            <li><a href="#" class="settings-nav-link" data-target="panel-funnel">Funil de Produção</a></li>
-                            <li><a href="#" class="settings-nav-link" data-target="panel-pricing">Listas de Preços</a></li>
+                            <li><a href="#" class="settings-nav-link active" data-target="panel-services">Cadastro de Preços</a></li>
+                            <li><a href="#" class="settings-nav-link" data-target="panel-menus">Cadastro de Cardápios</a></li>
+                            <li><a href="#" class="settings-nav-link" data-target="panel-pricing">Cadastro de Tabelas</a></li>
+                            <li><a href="#" class="settings-nav-link" data-target="panel-funnel">Cadastro de Funil</a></li>
                             <li><a href="#" class="settings-nav-link" data-target="panel-other">Outros Cadastros</a></li>
                         </ul>
                     </nav>
                     <div class="settings-content">
                         <div id="panel-services" class="settings-panel active">
                              <section class="card">
-                                <div class="card-header"><h2>Gerenciar Cardápios Principais e Serviços</h2></div>
+                                <div class="card-header"><h2>Cadastro de Preços por Serviço</h2></div>
                                 <div class="card-content">
-                                     <p class="hint">Cadastre os "pacotes" vendáveis, como "Almoço Executivo" (Cardápio Principal), ou outros serviços como "Aluguel do Salão".</p>
+                                     <p class="hint">Cadastre os serviços/produtos vendáveis e defina o preço de cada um em suas respectivas tabelas de preço.</p>
                                     <div id="admin-catalog-container"></div> 
                                     <form id="addServiceForm" class="inline-form">
                                         <div class="form-group"><label for="serviceName">Nome do Serviço/Cardápio</label><input type="text" id="serviceName" required></div>
@@ -111,23 +110,40 @@
                             </section>
                         </div>
                         <div id="panel-menus" class="settings-panel">
-                            <section class="card">
+                            <section class="card" style="margin-bottom: 1.5rem;">
                                 <div class="card-header"><h2>Gerenciar Subcardápios e Itens</h2></div>
                                 <div class="card-content">
                                     <div class="sub-section" id="submenus-manager"></div>
                                     <div class="sub-section" id="items-manager"></div>
                                 </div>
                             </section>
-                        </div>
-                        <div id="panel-composition" class="settings-panel">
                             <section class="card">
-                                <div class="card-header"><h2>Gerenciar Cardápio (Montagem)</h2></div>
+                                <div class="card-header"><h2>Montagem de Cardápio Principal</h2></div>
                                 <div class="card-content" id="composition-manager"></div>
+                            </section>
+                        </div>
+                        <div id="panel-pricing" class="settings-panel">
+                            <section class="card">
+                                <div class="card-header"><h2>Cadastro de Tabelas de Preço</h2></div>
+                                <div class="card-content">
+                                    <p class="hint">Crie as tabelas de preço que serão utilizadas no cadastro de preços. O "Crédito Consumível" é o valor que será abatido dos itens de gastronomia e equipamentos na proposta.</p>
+                                    <div id="price-tables-list" class="table-container">
+                                        <table id="price-tables-table" class="editable-table">
+                                            <thead><tr><th>Nome</th><th class="price-column">Crédito Consumível</th><th>Ações</th></tr></thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                    <form id="addPriceTableForm" class="inline-form">
+                                        <div class="form-group"><label for="tableName">Nome da tabela</label><input type="text" id="tableName" required></div>
+                                        <div class="form-group"><label for="tableConsumable">Crédito R$</label><input type="number" step="0.01" min="0" id="tableConsumable" value="0"></div>
+                                        <button type="submit" class="btn btn-primary">Adicionar Tabela</button>
+                                    </form>
+                                </div>
                             </section>
                         </div>
                         <div id="panel-funnel" class="settings-panel">
                             <section class="card">
-                                <div class="card-header"><h2>Gerenciar Funil de Produção</h2></div>
+                                <div class="card-header"><h2>Cadastro de Funil de Produção</h2></div>
                                 <div class="card-content">
                                     <p class="hint">Defina as etapas padrão para o acompanhamento da produção de cada evento. Elas aparecerão na página de gestão do evento.</p>
                                     <div class="table-container">
@@ -150,24 +166,6 @@
                                         <div class="form-group"><label for="stageDeadline">Prazo (dias)</label><input type="number" id="stageDeadline" value="7" required></div>
                                         <div class="form-group"><label for="stageTasks">Tarefas Padrão</label><input type="text" id="stageTasks" placeholder="Tarefa 1, Tarefa 2, ..."></div>
                                         <button type="submit" class="btn btn-primary">Adicionar Etapa</button>
-                                    </form>
-                                </div>
-                            </section>
-                        </div>
-                        <div id="panel-pricing" class="settings-panel">
-                            <section class="card">
-                                <div class="card-header"><h2>Listas de Preços</h2></div>
-                                <div class="card-content">
-                                    <div id="price-tables-list" class="table-container">
-                                        <table id="price-tables-table" class="editable-table">
-                                            <thead><tr><th>Nome</th><th class="price-column">Crédito Consumível</th><th>Ações</th></tr></thead>
-                                            <tbody></tbody>
-                                        </table>
-                                    </div>
-                                    <form id="addPriceTableForm" class="inline-form">
-                                        <div class="form-group"><label for="tableName">Nome da lista</label><input type="text" id="tableName" required></div>
-                                        <div class="form-group"><label for="tableConsumable">Crédito R$</label><input type="number" step="0.01" min="0" id="tableConsumable" value="0"></div>
-                                        <button type="submit" class="btn btn-primary">Adicionar Lista</button>
                                     </form>
                                 </div>
                             </section>
