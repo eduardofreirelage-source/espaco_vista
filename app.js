@@ -790,6 +790,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function setupEventListeners() {
+        console.log('[DIAGNÓSTICO] setupEventListeners INICIADO.');
         const exportBtn = document.getElementById('export-btn');
         const exportMenu = document.getElementById('export-menu');
         if(exportBtn && exportMenu) {
@@ -828,12 +829,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
-        document.getElementById('add-date-btn')?.addEventListener('click', (e) => {
-            e.stopPropagation(); // BUG FIX: Impede que o clique feche o card
-            addDateEntry();
-            syncClientData();
-            renderQuote();
-        });
+        const addDateBtn = document.getElementById('add-date-btn');
+        if (addDateBtn) {
+            addDateBtn.addEventListener('click', (e) => {
+                console.log('[DIAGNÓSTICO - Add Date Button] Botão clicado!');
+                e.stopPropagation(); // BUG FIX: Impede que o clique feche o card
+                console.log('[DIAGNÓSTICO - Add Date Button] e.stopPropagation() foi chamado.');
+                addDateEntry();
+                syncClientData();
+                renderQuote();
+                console.log('[DIAGNÓSTICO - Add Date Button] Função concluída.');
+            });
+        }
+
 
         document.getElementById('event-dates-container')?.addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-date-btn')) {
