@@ -658,11 +658,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const submenuId = form.dataset.submenuId;
             const itemId = new FormData(form).get('item_id');
             if (!itemId) return;
-            const { error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId, service_id: null });
-            if (error) { showNotification(`Erro: ${error.message}`, true); } 
-            else { 
-                showNotification("Item adicionado ao subcardápio."); 
-                await fetchData(); 
+
+            const { data, error } = await supabase.from('menu_composition').insert({ submenu_id: submenuId, item_id: itemId, service_id: null }).select('*, item:item_id(*)').single();
+            
+            if (error) { 
+                showNotification(`Erro: ${error.message}`, true); 
+            } else { 
+                showNotification("Item adicionado ao subcardápio.");
+                menuComposition.push(data);
                 renderSubmenuCompositionDetails(submenuId); 
             }
         }
@@ -681,21 +684,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (form.id === 'add-standalone-item-form') {
             dataToInsert.submenu_id = null;
             dataToInsert.item_id = new FormData(form).get('item_id');
-        } else if (form.classList.contains('add-item-to-submenu-form')) {
-            dataToInsert.submenu_id = form.dataset.submenuId;
-            dataToInsert.item_id = new FormData(form).get('item_id');
         } else { return; }
 
         if (!dataToInsert.submenu_id && !dataToInsert.item_id) {
             showNotification("Selecione uma opção.", true); return;
         }
 
-        const { error } = await supabase.from('menu_composition').insert(dataToInsert);
+        const { data, error } = await supabase.from('menu_composition').insert(dataToInsert).select('*, service:service_id(*), submenu:submenu_id(*), item:item_id(*)').single();
+
         if (error) {
             showNotification(`Erro: ${error.message}`, true);
         } else {
             showNotification("Cardápio atualizado.");
-            await fetchData();
+            menuComposition.push(data);
             renderCompositionDetails(serviceId);
         }
     }
@@ -713,7 +714,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) { showNotification(error.message, true); } 
             else { 
                 showNotification("Removido."); 
-                await fetchData(); 
+                menuComposition = menuComposition.filter(c => c.id != compositionId);
                 if (serviceId) renderCompositionDetails(serviceId);
                 const submenuId = button.closest('.sub-section')?.querySelector('form')?.dataset.submenuId;
                 if(submenuId) renderSubmenuCompositionDetails(submenuId);
@@ -724,8 +725,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!confirm("Remover este subcardápio e todos os seus itens do cardápio principal?")) return;
              const { submenuId } = button.dataset;
              const { error } = await supabase.from('menu_composition').delete().match({ service_id: serviceId, submenu_id: submenuId });
-             if (error) { showNotification(error.message, true); } 
-             else { showNotification("Subcardápio removido."); await fetchData(); if (serviceId) renderCompositionDetails(serviceId); }
+             if (error) { 
+                 showNotification(error.message, true); 
+             } else { 
+                showNotification("Subcardápio removido."); 
+                menuComposition = menuComposition.filter(c => !(c.service_id == serviceId && c.submenu_id == submenuId));
+                if (serviceId) renderCompositionDetails(serviceId); 
+            }
         }
     }
 
