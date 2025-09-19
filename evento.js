@@ -674,7 +674,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const output = document.getElementById('print-output-evento');
         let html = `<div class="print-header"><h1>Ordem de Serviço</h1></div>`;
 
-        // Bloco 1: Informações Gerais
         const firstDate = currentQuote.quote_data.event_dates[0];
         html += `<div class="print-client-info">
                     <p><strong>Cliente:</strong> ${currentQuote.client_name}</p>
@@ -683,7 +682,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p><strong>Convidados:</strong> ${currentQuote.quote_data.guest_count}</p>
                  </div>`;
         
-        // Bloco 2: Serviços Contratados
         html += `<h2 class="print-category-title">Serviços Contratados</h2>`;
         const itemsByCategory = currentQuote.quote_data.items.reduce((acc, item) => {
             const service = services.find(s => s.id === item.service_id);
@@ -709,10 +707,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             html += `</tbody></table>`;
         });
 
-        // Bloco 3: Cardápio
         html += generateMenuPrint(true);
 
-        // Bloco 4: Cronograma e Observações de Produção
         html += `<h2 class="print-category-title">Cronograma de Produção</h2>`;
         currentQuote.quote_data.event_dates.forEach(eventDate => {
             const date = eventDate.date;
