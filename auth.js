@@ -611,41 +611,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleFormSubmit(e) {
         e.preventDefault();
         const form = e.target;
-        let result, successMessage = 'Salvo com sucesso!';
+        let successMessage = 'Salvo com sucesso!';
+        
         try {
+            let result, newRecord;
             switch (form.id) {
                 case 'add-submenu-form':
-                    result = await supabase.from('submenus').insert([{ name: form.querySelector('#submenuName').value, description: form.querySelector('#submenuDescription').value }]);
+                    result = await supabase.from('submenus').insert([{ name: form.querySelector('#submenuName').value, description: form.querySelector('#submenuDescription').value }]).select().single();
+                    if(result.error) throw result.error;
+                    newRecord = result.data;
+                    submenus.push(newRecord);
+                    renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
                     break;
                 case 'add-menu-item-form':
-                    result = await supabase.from('menu_items').insert([{ name: form.querySelector('#itemName').value, description: form.querySelector('#itemDescription').value }]);
+                    result = await supabase.from('menu_items').insert([{ name: form.querySelector('#itemName').value, description: form.querySelector('#itemDescription').value }]).select().single();
+                    if(result.error) throw result.error;
+                    newRecord = result.data;
+                    menuItems.push(newRecord);
+                    renderSimpleTable(document.getElementById('menu-items-table'), menuItems, createMenuItemRow);
                     break;
-                case 'addServiceForm':
-                    result = await supabase.from('services').insert([{ name: form.querySelector('#serviceName').value, category: form.querySelector('#serviceCategory').value, unit: form.querySelector('#serviceUnit').value }]);
-                    break;
-                case 'addPriceTableForm':
-                    result = await supabase.from('price_tables').insert([{ name: form.querySelector('#tableName').value, consumable_credit: form.querySelector('#tableConsumable').value }]);
-                    break;
-                case 'addPaymentMethodForm':
-                     result = await supabase.from('payment_methods').insert([{ name: form.querySelector('#paymentMethodName').value }]);
-                     break;
-                case 'addUnitForm':
-                     result = await supabase.from('units').insert([{ name: form.querySelector('#unitName').value }]);
-                     break;
-                case 'addFunnelStageForm':
-                    const tasks = form.querySelector('#stageTasks').value.split(',').map(t => t.trim()).filter(Boolean);
-                    result = await supabase.from('production_stages').insert([{
-                        stage_order: form.querySelector('#stageOrder').value,
-                        stage_name: form.querySelector('#stageName').value,
-                        default_deadline_days: form.querySelector('#stageDeadline').value,
-                        default_tasks: tasks
-                    }]);
-                    break;
+                default:
+                    await fetchData(); // Fallback para outros forms que precisam de um refresh completo
             }
-            if (result && result.error) throw result.error;
+
             showNotification(successMessage);
             if(form.tagName === 'FORM') form.reset();
-            await fetchData();
+
         } catch (error) {
             showNotification(`Erro: ${error.message}`, true);
         }
