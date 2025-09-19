@@ -951,7 +951,7 @@ body.client-view .col-actions { width: 15% !important; }
 }
 
 .settings-nav {
-    flex: 0 0 240px; /* Largura do menu */
+    flex: 0 0 240px;
     background-color: var(--card-bg);
     border-radius: 8px;
     border: 1px solid var(--border-color);
@@ -1007,7 +1007,6 @@ body.client-view .col-actions { width: 15% !important; }
     display: block;
 }
 
-/* Estado recolhido do menu */
 .settings-layout.nav-collapsed .settings-nav {
     flex-basis: 50px;
 }
@@ -1032,19 +1031,19 @@ body.client-view .col-actions { width: 15% !important; }
     display: flex;
     gap: 1.5rem;
     overflow-x: auto;
-    padding-bottom: 1rem; /* Espaço para a barra de rolagem */
+    padding-bottom: 1rem;
     min-height: 400px;
 }
 
 .production-stage-column {
-    flex: 0 0 320px; /* Largura fixa para cada coluna */
+    flex: 0 0 320px;
     min-width: 320px;
     background-color: #f4f5f7;
     border-radius: 6px;
     display: flex;
     flex-direction: column;
     max-height: 70vh;
-    border-left: 4px solid transparent; /* Borda para alertas */
+    border-left: 4px solid transparent;
     transition: border-color 0.3s;
 }
 
@@ -1076,12 +1075,12 @@ body.client-view .col-actions { width: 15% !important; }
     text-align: center;
     background-color: #fff;
 }
-.stage-content-main { /* Div que contém o conteúdo que rola */
+.stage-content-main {
     padding: 0.8rem;
     overflow-y: auto;
     flex-grow: 1;
 }
-.stage-footer { /* Div para conteúdo fixo no rodapé da coluna */
+.stage-footer {
     padding: 0.8rem;
     border-top: 1px solid var(--border-color);
     background-color: #f4f5f7;
@@ -1165,10 +1164,9 @@ body.client-view .col-actions { width: 15% !important; }
     padding: 0.3rem 0.8rem;
 }
 
-/* Estilos para Alertas de Prazo */
 .production-stage-column.deadline-soon {
-    border-left-color: #ffc107; /* Amarelo */
+    border-left-color: #ffc107;
 }
 .production-stage-column.deadline-overdue {
-    border-left-color: var(--danger-color); /* Vermelho */
+    border-left-color: var(--danger-color);
 }
