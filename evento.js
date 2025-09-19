@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tableHtml += `<tr class="category-divider-row"><td colspan="6">${category}</td></tr>`;
                 
                 itemsByCategory[category].forEach((item, index) => {
-                    const itemIdentifier = `${item.service_id}-${index}`; // Usar o índice para um ID único na tela
+                    const itemIdentifier = `${item.service_id}-${index}`;
                     const eventDateInfo = currentQuote.quote_data.event_dates.find(d => d.date === item.event_date);
                     
                     const startTime = item.start_time || eventDateInfo?.start || '';
@@ -196,7 +196,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function openCardapioModal(serviceId) {
         selectedCardapioServiceId = serviceId;
-        const service = services.find(s => s.id === serviceId);
+        const service = services.find(s => s.id == serviceId);
+        if (!service) {
+            console.error(`Serviço com ID ${serviceId} não encontrado.`);
+            showNotification('Erro: Serviço não encontrado.', true);
+            return;
+        }
         document.getElementById('cardapio-modal-title').textContent = `Definir Itens para "${service.name}"`;
         populateCardapioModal(serviceId);
         document.getElementById('cardapioModal').style.display = 'block';
@@ -231,7 +236,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         await saveQuoteData('Cardápio salvo com sucesso!');
         closeCardapioModal();
-        renderProductionFunnel(); // Re-renderiza o funil para atualizar o status da etapa do cardápio
+        renderProductionFunnel();
     }
 
     function closeCardapioModal() {
@@ -281,7 +286,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 stageContentHtml += `</ul>`;
 
-                // Conteúdo especial para a etapa de cardápio
                 if (stage.stage_name === 'Definição de Cardápio') {
                      const menuServices = currentQuote.quote_data.items.filter(i => {
                         const s = services.find(s => s.id === i.service_id);
@@ -358,9 +362,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let alertClass = '';
         if (deadlineDate < today) {
-            alertClass = 'deadline-overdue'; // Atrasado
+            alertClass = 'deadline-overdue';
         } else if (deadlineDate <= oneWeekFromNow) {
-            alertClass = 'deadline-soon'; // Vencendo
+            alertClass = 'deadline-soon';
         }
 
         return {
@@ -390,7 +394,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('close-cardapio-modal-btn').addEventListener('click', closeCardapioModal);
         document.getElementById('save-cardapio-btn').addEventListener('click', handleCardapioSave);
         
-        // Listeners para o Funil de Produção
         const funnelContainer = document.getElementById('production-funnel-container');
         funnelContainer.addEventListener('change', handleFunnelChange);
         funnelContainer.addEventListener('submit', handleFunnelSubmit);
@@ -411,18 +414,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handleBodyClick(e) {
-        // Colapsar cards
         const header = e.target.closest('.collapsible-card > .card-header, .collapsible-card > summary');
         if (header) {
             header.closest('.collapsible-card')?.classList.toggle('collapsed');
         }
-        // Abrir modal de cardápio
         const defineCardapioBtn = e.target.closest('.define-cardapio-btn');
         if (defineCardapioBtn) {
             const serviceId = parseInt(defineCardapioBtn.dataset.serviceId);
             openCardapioModal(serviceId);
         }
-        // Fechar menu de impressão
         const printMenu = document.getElementById('print-menu');
         if (printMenu && !e.target.closest('#print-btn')) {
             printMenu.classList.remove('show');
@@ -635,12 +635,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.print();
     }
     
-    function generateMenuPrint() {
-        const output = document.getElementById('print-output-evento');
-        let html = `
-            <div class="print-header"><h1>Cardápio do Evento</h1><p>${currentQuote.client_name}</p></div>
-        `;
-        
+    function generateMenuPrint(isSubcall = false) {
+        let html = '';
         const menuServices = currentQuote.quote_data.items.filter(i => {
             const s = services.find(s => s.id === i.service_id);
             return s && s.category === 'Gastronomia';
@@ -648,30 +644,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (menuServices.length === 0) {
             html += '<p>Nenhum serviço de gastronomia contratado.</p>';
-            output.innerHTML = html;
-            window.print();
-            return;
-        }
+        } else {
+            menuServices.forEach(menuService => {
+                const serviceInfo = services.find(s => s.id === menuService.service_id);
+                html += `<h2 class="print-category-title">${serviceInfo.name}</h2>`;
+                
+                const selectedItemIds = new Set((currentQuote.quote_data.selected_cardapio[menuService.service_id] || []).map(String));
+                if (selectedItemIds.size === 0) {
+                    html += '<p>Nenhum item definido para este cardápio.</p>';
+                    return;
+                }
 
-        menuServices.forEach(menuService => {
-            const serviceInfo = services.find(s => s.id === menuService.service_id);
-            html += `<h2 class="print-category-title">${serviceInfo.name}</h2>`;
-            
-            const selectedItemIds = new Set((currentQuote.quote_data.selected_cardapio[menuService.service_id] || []).map(String));
-            if (selectedItemIds.size === 0) {
-                html += '<p>Nenhum item definido para este cardápio.</p>';
-                return;
-            }
-
-            const itemsToPrint = cardapioItems.filter(item => selectedItemIds.has(String(item.id)));
-            html += `<ul class="print-menu-list">`;
-            itemsToPrint.forEach(item => {
-                html += `<li>${item.name}</li>`;
+                const itemsToPrint = cardapioItems.filter(item => selectedItemIds.has(String(item.id)));
+                html += `<ul class="print-menu-list">`;
+                itemsToPrint.forEach(item => {
+                    html += `<li>${item.name}</li>`;
+                });
+                html += `</ul>`;
             });
-            html += `</ul>`;
-        });
+        }
         
-        output.innerHTML = html;
+        if(isSubcall) return html;
+        const output = document.getElementById('print-output-evento');
+        output.innerHTML = `<div class="print-header"><h1>Cardápio do Evento</h1><p>${currentQuote.client_name}</p></div>` + html;
         window.print();
     }
 
@@ -690,10 +685,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Bloco 2: Serviços Contratados
         html += `<h2 class="print-category-title">Serviços Contratados</h2>`;
-        // Reusa a lógica de agrupar por categoria
         const itemsByCategory = currentQuote.quote_data.items.reduce((acc, item) => {
             const service = services.find(s => s.id === item.service_id);
-            if (service && service.category !== 'Gastronomia') { // Exclui gastronomia daqui
+            if (service && service.category !== 'Gastronomia') {
                 const category = service.category || 'Outros';
                 if (!acc[category]) acc[category] = [];
                 acc[category].push({ ...item, service_name: service.name });
@@ -716,7 +710,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Bloco 3: Cardápio
-        html += generateMenuPrint(true); // Chama a função de cardápio como sub-rotina
+        html += generateMenuPrint(true);
 
         // Bloco 4: Cronograma e Observações de Produção
         html += `<h2 class="print-category-title">Cronograma de Produção</h2>`;
