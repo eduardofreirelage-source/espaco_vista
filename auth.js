@@ -557,6 +557,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // EVENT LISTENERS E AÇÕES
     // =================================================================
     function addEventListeners() {
+        console.log("[DIAGNÓSTICO] Adicionando event listeners...");
         document.querySelector('.tabs-nav')?.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab-btn');
             if (!clickedTab) return;
@@ -576,8 +577,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (header) header.closest('.collapsible-card')?.classList.toggle('collapsed');
         });
 
-        document.getElementById('add-submenu-form')?.addEventListener('submit', handleFormSubmit);
-        document.getElementById('add-menu-item-form')?.addEventListener('submit', handleFormSubmit);
+        const addSubmenuForm = document.getElementById('add-submenu-form');
+        if (addSubmenuForm) {
+            addSubmenuForm.addEventListener('submit', handleFormSubmit);
+            console.log("[DIAGNÓSTICO] Listener de SUBMIT adicionado ao form 'add-submenu-form'.");
+        } else {
+            console.error("[DIAGNÓSTICO] ERRO: Formulário 'add-submenu-form' NÃO encontrado no DOM.");
+        }
+
+        const addMenuItemForm = document.getElementById('add-menu-item-form');
+        if (addMenuItemForm) {
+            addMenuItemForm.addEventListener('submit', handleFormSubmit);
+            console.log("[DIAGNÓSTICO] Listener de SUBMIT adicionado ao form 'add-menu-item-form'.");
+        } else {
+            console.error("[DIAGNÓSTICO] ERRO: Formulário 'add-menu-item-form' NÃO encontrado no DOM.");
+        }
+
         document.getElementById('addServiceForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPriceTableForm')?.addEventListener('submit', handleFormSubmit);
         document.getElementById('addPaymentMethodForm')?.addEventListener('submit', handleFormSubmit);
@@ -611,33 +626,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleFormSubmit(e) {
         e.preventDefault();
         const form = e.target;
+        console.log(`[DIAGNÓSTICO - handleFormSubmit] Formulário '${form.id}' foi submetido.`);
         let successMessage = 'Salvo com sucesso!';
         
         try {
-            let result, newRecord;
+            let result, newRecord, insertData;
             switch (form.id) {
                 case 'add-submenu-form':
-                    result = await supabase.from('submenus').insert([{ name: form.querySelector('#submenuName').value, description: form.querySelector('#submenuDescription').value }]).select().single();
+                    insertData = { name: form.querySelector('#submenuName').value, description: form.querySelector('#submenuDescription').value };
+                    console.log('[DIAGNÓSTICO] Inserindo no Supabase (submenus):', insertData);
+                    result = await supabase.from('submenus').insert([insertData]).select().single();
+                    console.log('[DIAGNÓSTICO] Resposta do Supabase:', result);
                     if(result.error) throw result.error;
                     newRecord = result.data;
+                    console.log('[DIAGNÓSTICO] Novo registro recebido:', newRecord);
                     submenus.push(newRecord);
+                    console.log('[DIAGNÓSTICO] Redesenhando a tabela de submenus...');
                     renderSimpleTable(document.getElementById('submenus-table'), submenus, createSubmenuRow);
                     break;
                 case 'add-menu-item-form':
-                    result = await supabase.from('menu_items').insert([{ name: form.querySelector('#itemName').value, description: form.querySelector('#itemDescription').value }]).select().single();
+                    insertData = { name: form.querySelector('#itemName').value, description: form.querySelector('#itemDescription').value };
+                    console.log('[DIAGNÓSTICO] Inserindo no Supabase (menu_items):', insertData);
+                    result = await supabase.from('menu_items').insert([insertData]).select().single();
+                    console.log('[DIAGNÓSTICO] Resposta do Supabase:', result);
                     if(result.error) throw result.error;
                     newRecord = result.data;
+                    console.log('[DIAGNÓSTICO] Novo registro recebido:', newRecord);
                     menuItems.push(newRecord);
+                    console.log('[DIAGNÓSTICO] Redesenhando a tabela de itens...');
                     renderSimpleTable(document.getElementById('menu-items-table'), menuItems, createMenuItemRow);
                     break;
+                // Os outros forms já usam fetchData, mantemos por enquanto
                 default:
-                    await fetchData(); // Fallback para outros forms que precisam de um refresh completo
+                    console.log(`[DIAGNÓSTICO] Formulário '${form.id}' usando fetchData() para atualizar.`);
+                    await fetchData();
             }
 
             showNotification(successMessage);
             if(form.tagName === 'FORM') form.reset();
 
         } catch (error) {
+            console.error('[DIAGNÓSTICO] ERRO CAPTURADO no handleFormSubmit:', error);
             showNotification(`Erro: ${error.message}`, true);
         }
     }
