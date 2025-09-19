@@ -105,9 +105,7 @@ summary.card-summary-header::-webkit-details-marker {
 
 .tab-content { display: none; }
 .tab-content.active { 
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+    display: block;
 }
 
 .table-container { overflow-x: auto; }
@@ -923,67 +921,6 @@ summary.card-summary-header::-webkit-details-marker {
     background-color: #fce8e6;
 }
 
-/* Lógica de Composição do Admin */
-.service-name-highlight {
-    color: rgba(var(--primary-color-rgb), 1);
-}
-
-.item-composition-group .composition-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-.item-composition-group h5 {
-    margin-bottom: 0;
-    font-size: 1rem;
-}
-.subitem-list {
-    list-style: none;
-    padding-left: 0;
-    margin-bottom: 1rem;
-}
-.subitem-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem;
-    border-radius: 4px;
-}
-.subitem-list li:nth-child(odd) {
-    background-color: #fdfdfd;
-}
-.btn-remove-inline {
-    background: none;
-    border: none;
-    color: var(--subtle-text-color);
-    cursor: pointer;
-    font-size: 1.2rem;
-}
-.btn-remove-inline:hover {
-    color: var(--danger-color);
-}
-.inline-form-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-}
-#submenus-table tr.selected {
-    background-color: #fffbe8; /* Cor de destaque para a linha selecionada */
-}
-.editable-link {
-    color: rgba(var(--primary-color-rgb), 1);
-    text-decoration: none;
-    font-weight: 600;
-}
-.editable-link:hover {
-    text-decoration: underline;
-}
-.hidden {
-    display: none;
-}
-
-
 /* Visão do Cliente */
 body.client-view #priceTableSelect,
 body.client-view #discountValue,
@@ -1002,6 +939,89 @@ body.client-view .col-actions { width: 15% !important; }
 .fc-daygrid-day.heatmap-low { background-color: rgba(255, 255, 0, 0.2); }
 .fc-daygrid-day.heatmap-medium { background-color: rgba(255, 165, 0, 0.3); }
 .fc-daygrid-day.heatmap-high { background-color: rgba(139, 0, 0, 0.3); }
+
+/* =================================================================
+   NOVO LAYOUT DE CADASTROS
+   ================================================================= */
+
+.settings-layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.settings-nav {
+    flex: 0 0 240px; /* Largura do menu */
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem;
+    transition: all 0.3s ease-in-out;
+}
+.settings-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+}
+.settings-nav-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: opacity 0.3s, width 0.3s;
+}
+.settings-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.settings-nav-link {
+    display: block;
+    padding: 0.8rem 1rem;
+    text-decoration: none;
+    color: var(--text-color);
+    border-radius: 6px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background-color 0.2s, color 0.2s;
+}
+.settings-nav-link:hover {
+    background-color: #f0f0f0;
+}
+.settings-nav-link.active {
+    background-color: rgba(var(--primary-color-rgb), 1);
+    color: white;
+    font-weight: 600;
+}
+
+.settings-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+.settings-panel {
+    display: none;
+}
+.settings-panel.active {
+    display: block;
+}
+
+/* Estado recolhido do menu */
+.settings-layout.nav-collapsed .settings-nav {
+    flex-basis: 50px;
+}
+.settings-layout.nav-collapsed .settings-nav-title {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+.settings-layout.nav-collapsed .settings-nav-link {
+    text-align: center;
+}
+.settings-layout.nav-collapsed #toggle-settings-nav {
+    transform: rotate(180deg);
+}
 
 /* PASSO 3: Estilos para o Funil de Produção (Kanban) */
 #production-funnel-container .data-accordion:not(:last-child) {
