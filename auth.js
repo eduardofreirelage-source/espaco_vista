@@ -569,16 +569,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         calendarStatusFilter?.addEventListener('change', () => {
             if (calendarInstance) updateCalendarEvents();
         });
-
-        document.body.addEventListener('click', (e) => {
-            const header = e.target.closest('.collapsible-card > .card-header');
-            if (header) header.closest('.collapsible-card')?.classList.toggle('collapsed');
-        });
         
-        // Listener delegado para todos os formulários da página
         document.body.addEventListener('submit', handleFormSubmit);
         
-        document.body.addEventListener('click', handleTableActions);
+        document.body.addEventListener('click', (e) => {
+            const header = e.target.closest('.collapsible-card > .card-header');
+            if (header) {
+                header.closest('.collapsible-card')?.classList.toggle('collapsed');
+            }
+            handleTableActions(e);
+
+            const settingsLink = e.target.closest('.settings-nav-link');
+            if(settingsLink) {
+                e.preventDefault();
+                const targetPanelId = settingsLink.dataset.target;
+                
+                document.querySelectorAll('.settings-nav-link').forEach(link => link.classList.remove('active'));
+                settingsLink.classList.add('active');
+
+                document.querySelectorAll('.settings-panel').forEach(panel => panel.classList.remove('active'));
+                document.getElementById(targetPanelId)?.classList.add('active');
+            }
+
+            const toggleBtn = e.target.closest('#toggle-settings-nav');
+            if(toggleBtn) {
+                const layout = toggleBtn.closest('.settings-layout');
+                layout.classList.toggle('nav-collapsed');
+                toggleBtn.textContent = layout.classList.contains('nav-collapsed') ? '»' : '«';
+            }
+        });
+
         document.body.addEventListener('change', handleTableEdits);
 
         const submenusManager = document.getElementById('submenus-manager');
@@ -641,7 +661,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                      result = await supabase.from('units').insert([{ name: form.querySelector('#unitName').value }]).select().single();
                      if(result.error) throw result.error;
                      units.push(result.data);
-                     await fetchData(); // Precisa recarregar para popular os selects
+                     await fetchData();
                      break;
                 case 'addFunnelStageForm':
                     const tasks = form.querySelector('#stageTasks').value.split(',').map(t => t.trim()).filter(Boolean);
@@ -656,10 +676,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     productionStages.sort((a, b) => a.stage_order - b.stage_order);
                     renderSimpleTable(document.getElementById('funnel-stages-table'), productionStages, createFunnelStageRow);
                     break;
-                // Forms que afetam muitos lugares diferentes ainda usam fetchData
                 case 'addServiceForm':
+                    result = await supabase.from('services').insert([{ name: form.querySelector('#serviceName').value, category: form.querySelector('#serviceCategory').value, unit: form.querySelector('#serviceUnit').value }]);
+                    if(result && result.error) throw result.error;
+                    await fetchData();
+                    break;
                 case 'addPriceTableForm':
-                    await supabase.from(form.id === 'addServiceForm' ? 'services' : 'price_tables').insert([/* ...payload... */]); // Lógica original omitida por simplicidade, já que o foco é o refresh
+                    result = await supabase.from('price_tables').insert([{ name: form.querySelector('#tableName').value, consumable_credit: form.querySelector('#tableConsumable').value }]);
+                    if(result && result.error) throw result.error;
                     await fetchData();
                     break;
             }
