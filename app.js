@@ -254,7 +254,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.calculated_unit_price = basePrice;
             item.calculated_total = total;
             
-            // *** LÓGICA CORRIGIDA CONFORME SOLICITADO ***
             if (service.category === 'Gastronomia' || service.category === 'Equipamentos') {
                 consumableSubtotal += total;
             } else {
@@ -791,7 +790,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function setupEventListeners() {
-        // MODIFICADO: Lógica do menu de exportação
         const exportBtn = document.getElementById('export-btn');
         const exportMenu = document.getElementById('export-menu');
         if(exportBtn && exportMenu) {
@@ -831,7 +829,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.getElementById('add-date-btn')?.addEventListener('click', (e) => {
-            e.stopPropagation(); // Impede que o clique feche o card
+            e.stopPropagation(); // BUG FIX: Impede que o clique feche o card
             addDateEntry();
             syncClientData();
             renderQuote();
